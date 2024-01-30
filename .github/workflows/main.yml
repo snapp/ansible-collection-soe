@@ -1,0 +1,106 @@
+---
+
+name: CI
+
+# yamllint disable-line rule:truthy
+on:
+  # Run against all pushes (direct commits, also merged PRs)
+  push:
+  # Run against all Pull Requests to the main branch
+  pull_request:
+    branches:
+      - main
+  # Run once a week to ensure that even if there haven't been commits that we are still testing against latest version of GitHub Actions
+  # See: https://crontab.guru
+  schedule:
+    - cron: '36 6 * * 4'
+  # Enable manual pipeline execution
+  workflow_dispatch:
+
+concurrency:
+  group: '${{ github.workflow }}@${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@main
+
+      - name: Set up Python
+        uses: actions/setup-python@main
+        with:
+          python-version: '3.12'
+
+      - name: Configure Ansible Galaxy authentication
+        run: |
+          cat >> ansible.cfg << EOF
+          [galaxy]
+          server_list=redhat_automation_hub_certified, redhat_automation_hub_validated, community
+
+          [galaxy_server.community]
+          url=https://galaxy.ansible.com/
+
+          [galaxy_server.redhat_automation_hub_certified]
+          url=https://console.redhat.com/api/automation-hub/content/published/
+          auth_url=https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token
+          token=${{ secrets.AH_TOKEN }}
+
+          [galaxy_server.redhat_automation_hub_validated]
+          url=https://console.redhat.com/api/automation-hub/content/validated/
+          auth_url=https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token
+          token=${{ secrets.AH_TOKEN }}
+          EOF
+
+      - name: Install collection and dependencies
+        run: |
+          ansible-galaxy collection build .
+          ansible-galaxy collection install infra-soe-*.tar.gz
+
+      - name: Run pre-commit Linter
+        uses: pre-commit/action@main
+
+  docsite:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out code
+        uses: actions/checkout@main
+
+      - name: Set up Python
+        uses: actions/setup-python@main
+        with:
+          python-version: '3.12'
+
+      - name: Configure Ansible Galaxy authentication
+        run: |
+          cat >> ansible.cfg << EOF
+          [galaxy]
+          server_list=redhat_automation_hub_certified, redhat_automation_hub_validated, community
+
+          [galaxy_server.community]
+          url=https://galaxy.ansible.com/
+
+          [galaxy_server.redhat_automation_hub_certified]
+          url=https://console.redhat.com/api/automation-hub/content/published/
+          auth_url=https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token
+          token=${{ secrets.AH_TOKEN }}
+
+          [galaxy_server.redhat_automation_hub_validated]
+          url=https://console.redhat.com/api/automation-hub/content/validated/
+          auth_url=https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token
+          token=${{ secrets.AH_TOKEN }}
+          EOF
+
+      - name: Install collection and dependencies
+        run: |
+          ansible-galaxy collection build .
+          ansible-galaxy collection install infra-soe-*.tar.gz
+
+      - name: Install antsibull-docs
+        run: pip install antsibull-docs --disable-pip-version-check
+
+      - name: Run antsibull-docs collection linter
+        run: antsibull-docs lint-collection-docs . --plugin-docs --skip-rstcheck
