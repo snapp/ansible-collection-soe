@@ -1,0 +1,43 @@
+---
+
+- name: Red Hat Subscription Management (RHSM) registration of Red Hat Enterprise Linux (RHEL) systems using Remote Host Configuration (RHC)
+  hosts: redhat
+  gather_facts: false
+  become: true
+  tags:
+    - redhat
+    - redhat_register
+  pre_tasks:
+    # REDO| Katello RPM will be disappearing in the future; switch to pulling the CA cert directly
+    - name: Install the Red Hat Certificate Authority (CA) required for access to Red Hat repositories and Insights services
+      ansible.builtin.dnf:
+        name: "http://{{ satellite_hostname }}/pub/katello-ca-consumer-latest.noarch.rpm"
+        disable_gpg_check: true
+        state: present
+      when: rhc_server.hostname != 'subscription.rhsm.redhat.com'
+
+    # REDO| Associate host with Satellite Host Group from Activation Key
+    # Try setting a `foreman_hostgroup` fact to have the host automatically added to the correct Satellite Host Group at registration
+
+    - name: Configure default location of Satellite Content Hosts
+      ansible.builtin.copy:
+        dest: /etc/rhsm/facts/location.facts
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          {"foreman_location":"{{ satellite_location }}"}
+      when: rhc_server.hostname != 'subscription.rhsm.redhat.com'
+  roles:
+    - role: redhat.rhel_system_roles.rhc
+      tags: redhat.rhel_system_roles.rhc
+  tasks:
+    - name: Add Host to Satellite Host Group
+      redhat.satellite.host:
+        server_url: "{{ satellite_server_url }}"
+        validate_certs: "{{ satellite_validate_certs }}"
+        username: "{{ satellite_username }}"
+        password: "{{ satellite_password }}"
+        name: "{{ inventory_hostname }}"
+        hostgroup: "{{ satellite_host_group }}"
+      when: rhc_server.hostname != 'subscription.rhsm.redhat.com'

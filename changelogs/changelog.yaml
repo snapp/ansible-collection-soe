@@ -1,0 +1,11 @@
+---
+ancestor: null
+releases:
+  0.2.0:
+    changes:
+      minor_changes:
+        - redhat_register - Added playbook to handle Red Hat Subscription Management
+          (RHSM) registration.
+    fragments:
+      - add-redhat-register-playbook.yml
+    release_date: '2024-02-01'
