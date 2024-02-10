@@ -9,3 +9,11 @@ releases:
     fragments:
       - add-redhat-register-playbook.yml
     release_date: '2024-02-01'
+  0.3.0:
+    changes:
+      minor_changes:
+        - redhat_update - Added playbook to update Red Hat Enterprise Linux (RHEL)
+          Systems
+    fragments:
+      - add-redhat-update-playbook.yml
+    release_date: '2024-02-09'

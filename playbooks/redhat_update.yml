@@ -1,0 +1,26 @@
+---
+
+- name: Update Red Hat Enterprise Linux (RHEL) Systems
+  hosts: redhat:!satellite
+  gather_facts: false
+  become: true
+  tags:
+    - redhat
+    - redhat_update
+  tasks:
+    - name: Update Red Hat packages to latest version
+      ansible.builtin.dnf:
+        name: '*'
+        state: latest
+        bugfix: "{{ soe_redhat_update_bugfix | default(false) }}"
+        update_only: "{{ soe_redhat_update_update_only | default(true) }}"
+        update_cache: "{{ soe_redhat_update_update_cache | default(false) }}"
+      register: __soe_redhat_update_patch_update_result
+      changed_when: __soe_redhat_update_patch_update_result.changed
+      notify: Reboot host following patch update
+      when: soe_redhat_update_enabled | default(false)
+  handlers:
+    - name: Reboot host following patch update
+      ansible.builtin.reboot:
+      # FIXME|2024-05-01| create a proper collection scoped variable for the `reboot_enabled` boolean
+      when: soe_redhat_update_reboot_enabled | default(false)

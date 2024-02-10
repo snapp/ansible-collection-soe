@@ -2,3 +2,6 @@
 
 - name: Register Red Hat Enterprise Linux (RHEL) Hosts
   ansible.builtin.import_playbook: redhat_register.yml
+
+- name: Update Red Hat Enterprise Linux (RHEL) Hosts
+  ansible.builtin.import_playbook: redhat_update.yml
