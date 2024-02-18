@@ -4,6 +4,14 @@ infra.soe Release Notes
 
 .. contents:: Topics
 
+v0.4.0
+======
+
+Minor Changes
+-------------
+
+- firewall - Added playbook to configure Red Hat Enterprise Linux (RHEL) firewall
+
 v0.3.0
 ======
 

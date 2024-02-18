@@ -5,3 +5,6 @@
 
 - name: Update Red Hat Enterprise Linux (RHEL) Hosts
   ansible.builtin.import_playbook: redhat_update.yml
+
+- name: Host Firewall
+  ansible.builtin.import_playbook: firewall.yml

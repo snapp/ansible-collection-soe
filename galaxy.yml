@@ -8,7 +8,7 @@ namespace: "infra"
 name: "soe"
 
 # NOTE| The version of the collection.
-version: "0.3.0"
+version: "0.4.0"
 
 # The path to the Markdown (.md) readme file.
 readme: README.md

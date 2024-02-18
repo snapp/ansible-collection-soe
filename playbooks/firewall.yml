@@ -1,0 +1,42 @@
+---
+
+- name: Configure Red Hat Enterprise Linux (RHEL) Firewall
+  hosts: redhat
+  gather_facts: true
+  become: true
+  tags:
+    - firewall
+    - redhat
+    - redhat_firewall
+    - redhat.rhel_system_roles.firewall
+  roles:
+    - role: redhat.rhel_system_roles.firewall
+      firewall_disable_conflicting_services: "{{ soe_firewall_disable_conflicting_services }}"
+      firewall: "{{ soe_firewall }}"
+      when: soe_firewall_enabled | default(false)
+  tasks:
+    # TODO|2024-02-18| Add firewalld_conf.LogDenied parameter support to redhat.rhel_system_roles.firewall_lib module
+    - name: Toggle firewall logging of denied packets
+      ansible.builtin.lineinfile:
+        path: /etc/firewalld/firewalld.conf
+        regexp: '^LogDenied\s*=.*'
+        line: "LogDenied={{ soe_firewall_log_denied | default(false) | ternary('all', 'off') }}"
+        backrefs: false
+      notify: Reload firewalld
+      when: soe_firewall_enabled | default(false)
+  handlers:
+    - name: Reload firewalld
+      ansible.builtin.service:
+        name: firewalld
+        state: reloaded
+
+# TODO| Add Microsoft Windows Firewall support
+# - name: Configure Microsoft Windows Firewall
+#   hosts: microsoft
+#   gather_facts: false
+#   become: true
+#   tags:
+#     - firewall
+#     - microsoft
+#     - microsoft_firewall
+#   tasks:

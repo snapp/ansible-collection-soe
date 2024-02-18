@@ -17,3 +17,10 @@ releases:
     fragments:
       - add-redhat-update-playbook.yml
     release_date: '2024-02-09'
+  0.4.0:
+    changes:
+      minor_changes:
+        - firewall - Added playbook to configure Red Hat Enterprise Linux (RHEL) firewall
+    fragments:
+      - add-firewall-playbook.yml
+    release_date: '2024-02-18'
