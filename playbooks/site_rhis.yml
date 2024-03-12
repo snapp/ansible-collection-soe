@@ -8,3 +8,6 @@
 
 - name: Host Firewall
   ansible.builtin.import_playbook: firewall.yml
+
+- name: Red Hat Enterprise Linux (RHEL) Cockpit Web Console
+  ansible.builtin.import_playbook: redhat_cockpit.yml

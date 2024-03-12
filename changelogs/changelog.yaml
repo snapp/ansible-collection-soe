@@ -24,3 +24,11 @@ releases:
     fragments:
       - add-firewall-playbook.yml
     release_date: '2024-02-18'
+  0.5.0:
+    changes:
+      minor_changes:
+        - redhat_cockpit - Added playbook to configure Red Hat Enterprise Linux (RHEL)
+          Cockpit Web Console
+    fragments:
+      - add-redhat-cockpit-playbook.yml
+    release_date: '2024-03-12'

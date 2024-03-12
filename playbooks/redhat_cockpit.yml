@@ -1,0 +1,32 @@
+---
+
+- name: Configure Red Hat Enterprise Linux (RHEL) Cockpit Web Console
+  hosts: redhat:!satellite
+  gather_facts: false
+  become: true
+  tags:
+    - cockpit
+    - redhat
+    - redhat_cockpit
+  pre_tasks:
+      # https://access.redhat.com/solutions/2761591
+    - name: Enable SELinux context on Cockpit Web Console port
+      redhat.rhel_system_roles.seport:
+        ports: "{{ soe_redhat_cockpit_port | default(9090) }}"
+        proto: tcp
+        setype: websm_port_t
+        state: present
+      notify: Reload SELinux Policy
+      when: soe_redhat_cockpit_enabled | default(false)
+  roles:
+    - role: redhat.rhel_system_roles.cockpit
+      cockpit_enabled: "{{ soe_redhat_cockpit_enabled | default(false) }}"
+      cockpit_started: "{{ soe_redhat_cockpit_started | default(false) }}"
+      cockpit_port: "{{ soe_redhat_cockpit_port | default(9090) }}"
+      cockpit_packages: "{{ soe_redhat_cockpit_packages | default('default') }}"
+      tags: redhat.rhel_system_roles.cockpit
+      when: soe_redhat_cockpit_enabled | default(false)
+  handlers:
+    - name: Reload SELinux Policy
+      ansible.builtin.command: semodule -R
+      changed_when: true

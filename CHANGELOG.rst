@@ -4,6 +4,14 @@ infra.soe Release Notes
 
 .. contents:: Topics
 
+v0.5.0
+======
+
+Minor Changes
+-------------
+
+- redhat_cockpit - Added playbook to configure Red Hat Enterprise Linux (RHEL) Cockpit Web Console
+
 v0.4.0
 ======
 
