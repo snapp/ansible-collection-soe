@@ -1,0 +1,132 @@
+---
+
+- name: Install Red Hat Satellite Server
+  hosts: satellite_server
+  gather_facts: true
+  become: true
+  tags:
+    - redhat
+    - satellite_install
+    - satellite
+    - satellite_server
+  pre_tasks:
+    - name: Ensure Satellite Server resolves its own IPv4 Address to its FQDN
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regex: "^{{ ansible_default_ipv4.address }}"
+        line: "{{ ansible_default_ipv4.address }} {{ inventory_hostname }} {{ inventory_hostname_short }}"
+        state: present
+        mode: "0644"
+        owner: root
+        group: root
+
+    - name: Disable IPv6
+      ansible.builtin.copy:
+        dest: /etc/sysctl.d/ipv6.conf
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          # For the internal working of Red Hat Satellite services, it is required to have IPv6 address on the loopback interface.
+          # https://access.redhat.com/solutions/5045841
+          net.ipv6.conf.all.disable_ipv6 = 1
+          net.ipv6.conf.lo.disable_ipv6 = 0
+      notify:
+        - Reload sysctl
+        - Rebuild Initial RAM Disk Image
+
+    - name: Reinitialize network if necessary
+      ansible.builtin.meta: flush_handlers
+
+    - name: Install Satellite Server package
+      ansible.builtin.dnf:
+        name: satellite
+        update_cache: true
+      tags: install_satellite
+  roles:
+    - role: redhat.satellite_operations.installer
+      tags: redhat.satellite_operations.installer
+  handlers:
+    - name: Reload sysctl
+      ansible.builtin.command:
+        cmd: 'sysctl -p /etc/sysctl.d/ipv6.conf'
+      changed_when: true
+
+    - name: Rebuild Initial RAM Disk Image
+      ansible.builtin.command:
+        cmd: 'dracut -f'
+      changed_when: true
+
+- name: Configure Red Hat Satellite Server
+  hosts: satellite_server
+  gather_facts: true
+  become: true
+  tags:
+    - redhat
+    - satellite
+    - satellite_server
+    - satellite_configure
+  tasks:
+    - name: Configure Satellite Manifest
+      ansible.builtin.import_role:
+        name: redhat.satellite.manifest
+      tags: redhat.satellite.manifest
+      when: satellite_manifest_import | default(false)
+
+    - name: Configure Satellite Organization(s)
+      ansible.builtin.import_role:
+        name: redhat.satellite.organizations
+      tags: redhat.satellite.organizations
+
+    - name: Configure Satellite Location(s)
+      ansible.builtin.import_role:
+        name: redhat.satellite.locations
+      tags: redhat.satellite.locations
+
+    - name: Configure Satellite Content Credentials
+      ansible.builtin.import_role:
+        name: redhat.satellite.content_credentials
+      tags: redhat.satellite.content_credentials
+
+    - name: Configure Satellite Server Repositories
+      ansible.builtin.import_role:
+        name: redhat.satellite.repositories
+      tags:
+        - satellite_configure
+        - redhat.satellite.repositories
+
+    # TODO|redhat.satellite.sync_plans| role is not idempotent
+    - name: Configure Satellite Sync Plans
+      ansible.builtin.import_role:
+        name: redhat.satellite.sync_plans
+      tags: redhat.satellite.sync_plans
+
+    - name: Configure Satellite Host Collections
+      ansible.builtin.import_role:
+        name: redhat.satellite.host_collections
+      tags: redhat.satellite.host_collections
+
+    - name: Configure Satellite Lifecycle Environments
+      ansible.builtin.import_role:
+        name: redhat.satellite.lifecycle_environments
+      tags: redhat.satellite.lifecycle_environments
+
+    - name: Configure Satellite Content Views
+      ansible.builtin.import_role:
+        name: redhat.satellite.content_views
+      tags: redhat.satellite.content_views
+
+    - name: Clean up old Content View versions
+      ansible.builtin.import_role:
+        name: redhat.satellite.content_view_version_cleanup
+      tags: redhat.satellite.content_view_version_cleanup
+
+    - name: Configure Satellite Activation Keys
+      ansible.builtin.import_role:
+        name: redhat.satellite.activation_keys
+      tags: redhat.satellite.activation_keys
+
+    - name: Configure Satellite Host Groups
+      ansible.builtin.import_role:
+        name: redhat.satellite.hostgroups
+      tags: redhat.satellite.hostgroups

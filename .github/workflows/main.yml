@@ -55,6 +55,9 @@ jobs:
 
       - name: Install collection and dependencies
         run: |
+          # REDO|2024-04-11| Remove redhat.satellite collection version override
+          ansible-galaxy collection install git+https://github.com/snapp/ansible-collection-satellite.git,feature/add_host_collections_role
+
           ansible-galaxy collection build .
           ansible-galaxy collection install infra-soe-*.tar.gz
 
@@ -96,6 +99,9 @@ jobs:
 
       - name: Install collection and dependencies
         run: |
+          # REDO|2024-04-11| Remove redhat.satellite collection version override
+          ansible-galaxy collection install git+https://github.com/snapp/ansible-collection-satellite.git,feature/add_host_collections_role
+
           ansible-galaxy collection build .
           ansible-galaxy collection install infra-soe-*.tar.gz
 

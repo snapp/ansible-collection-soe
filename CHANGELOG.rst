@@ -4,6 +4,14 @@ infra.soe Release Notes
 
 .. contents:: Topics
 
+v0.6.0
+======
+
+Minor Changes
+-------------
+
+- redhat_satellite - Added playbook to install Red Hat Satellite Server
+
 v0.5.0
 ======
 

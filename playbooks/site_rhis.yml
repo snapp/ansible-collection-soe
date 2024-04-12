@@ -11,3 +11,6 @@
 
 - name: Red Hat Enterprise Linux (RHEL) Cockpit Web Console
   ansible.builtin.import_playbook: redhat_cockpit.yml
+
+- name: Red Hat Satellite Server
+  ansible.builtin.import_playbook: redhat_satellite.yml
