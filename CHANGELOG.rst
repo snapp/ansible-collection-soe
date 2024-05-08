@@ -4,6 +4,14 @@ infra.soe Release Notes
 
 .. contents:: Topics
 
+v0.8.0
+======
+
+Minor Changes
+-------------
+
+- redhat_idm_register - Added playbook to perform Red Hat Identity Management (IdM) Client Registration
+
 v0.7.0
 ======
 

@@ -1,0 +1,21 @@
+---
+
+- name: Red Hat Identity Management (IdM) Client Registration
+  hosts: redhat:!identity_management
+  gather_facts: false
+  become: true
+  tags:
+    - redhat
+    - redhat_idm_register
+  vars:
+    ipaadmin_password: "{{ idm_admin_password }}"
+    ipaclient_hostname: "{{ inventory_hostname }}"
+    ipaclient_subid: "{{ idm_client_subid | default(true) | bool }}"
+    ipaclient_mkhomedir: "{{ idm_client_mkhomedir | default(true) | bool }}"
+    ipaclient_allow_repair: "{{ idm_client_allow_repair | default(false) | bool }}"
+    ipaclient_force: "{{ idm_client_force | default(false) | bool }}"
+    ipaclient_force_join: "{{ idm_client_force_join | default(false) | bool }}"
+    ipaclient_all_ip_addresses: "{{ idm_client_all_ip_addresses | default(true) | bool }}"
+  roles:
+    - role: redhat.rhel_idm.ipaclient
+      tags: redhat.rhel_idm.ipaclient
