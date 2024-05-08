@@ -1,0 +1,12 @@
+---
+
+- name: Create Red Hat Identity Management groups
+  redhat.rhel_idm.ipagroup:
+    ipaadmin_password: "{{ ipaadmin_password }}"
+    name: "{{ item.name }}"
+    gid: "{{ item.gid | default(omit) }}"
+    description: "{{ item.description }}"
+    user: "{{ item.users | default(omit) }}"
+    state: present
+  loop: "{{ redhat_idm_groups | default([]) }}"
+  no_log: true

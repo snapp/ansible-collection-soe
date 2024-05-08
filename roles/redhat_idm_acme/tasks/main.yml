@@ -1,0 +1,26 @@
+---
+
+- name: Check status of IdM ACME
+  ansible.builtin.uri:
+    url: "https://{{ idm_primary_server | default('127.0.0.1') }}/acme/directory"
+    method: GET
+    validate_certs: false
+    return_content: false
+    timeout: 10
+  register: _redhat_idm_acme_check
+  failed_when: false
+  changed_when: false
+
+- name: Configure Automatic Certificate Management Environment (ACME)
+  become: true
+  ansible.builtin.command: "{{ item }}"
+  loop:
+    - /usr/sbin/ipa-acme-manage "{{ service_enabled }}"
+    - /usr/sbin/ipa-acme-manage pruning "--{{ service_enabled }}"
+  vars:
+    service_enabled: "{{ (redhat_idm_acme_enabled | default(false) | bool) | ternary('enable', 'disable') }}"
+  when: >-
+    (service_enabled == 'enable') and ((_redhat_idm_acme_check.status | default(0) | int) != 200)
+    or
+    (service_enabled == 'disable') and ((_redhat_idm_acme_check.status | default(0) | int) == 200)
+  changed_when: true

@@ -1,0 +1,191 @@
+---
+# Initially register IdM directly to Red Hat CDN
+# Install and configure IdM fully
+# Later re-register IdM to Satellite once Satellite exists
+
+- name: Red Hat Identity Management (IdM) Bootstrap configuration
+  hosts: identity_management
+  gather_facts: true
+  become: true
+  tags:
+    - redhat
+    - identity_management
+    - idm
+    - idm_install
+    - idm_server
+    - idm_replica
+  pre_tasks:
+    - name: Gather facts for all IdM peers to identify default_ipv4
+      ansible.builtin.setup:
+      delegate_to: "{{ item }}"
+      delegate_facts: true
+      loop: "{{ ((groups['idm_server'] | default([])) + (groups['idm_replica'] | default([]))) | unique | sort }}"
+      when:
+        - bootstrap | default(false) | bool
+        - inventory_hostname == ansible_play_hosts[0]
+  tasks:
+    - name: Ensure canonical hostname is statically set
+      ansible.builtin.hostname:
+        name: "{{ inventory_hostname }}"
+
+    - name: Ensure IdM peers resolve locally via /etc/hosts (bootstrap block)
+      ansible.builtin.blockinfile:
+        path: /etc/hosts
+        marker: "# {mark} ANSIBLE IDM BOOTSTRAP HOSTS"
+        block: |
+          {% for h in ((groups['idm_server'] | default([])) + (groups['idm_replica'] | default([]))) | unique | sort %}
+          {{ hostvars[h].ansible_default_ipv4.address }} {{ h }} {{ h.split('.')[0] }}
+          {% endfor %}
+      when: bootstrap | default(false) | bool
+
+- name: Install Red Hat Identity Management (IdM) Server
+  hosts: idm_server
+  gather_facts: true
+  become: true
+  tags:
+    - redhat
+    - identity_management
+    - idm
+    - idm_install
+    - idm_server
+  vars:
+    ipadm_password: "{{ idm_admin_password }}"
+    ipaadmin_password: "{{ idm_admin_password }}"
+  roles:
+    - role: redhat.rhel_idm.ipaserver
+      tags: redhat.rhel_idm.ipaserver
+
+- name: Install Red Hat Identity Management (IdM) Replica
+  hosts: idm_replica
+  gather_facts: true
+  become: true
+  tags:
+    - redhat
+    - identity_management
+    - idm
+    - idm_install
+    - idm_replica
+  vars:
+    ipadm_password: "{{ idm_admin_password }}"
+    ipaadmin_password: "{{ idm_admin_password }}"
+  pre_tasks:
+    # REDO|2024-05-08| Document the need for this task (CIS-L2?)
+    - name: Change umask to 022
+      ansible.builtin.lineinfile:
+        path: "{{ item }}"
+        regexp: '^umask 077'
+        line: umask 022
+      with_items:
+        - /etc/profile
+        - /etc/bashrc
+  roles:
+    - role: redhat.rhel_idm.ipaclient
+      tags: redhat.rhel_idm.ipaclient
+
+    - role: redhat.rhel_idm.ipareplica
+      tags: redhat.rhel_idm.ipareplica
+  post_tasks:
+    # REDO|2024-05-08| Document the need for this task (CIS-L2?)
+    - name: Change umask back to 077
+      ansible.builtin.lineinfile:
+        path: "{{ item }}"
+        regexp: '^umask 022'
+        line: umask 077
+      with_items:
+        - /etc/profile
+        - /etc/bashrc
+
+- name: Configure Red Hat Identity Management (IdM)
+  hosts: "{{ groups['idm_server'][0] | default(omit) }}"
+  tags:
+    - redhat
+    - identity_management
+    - idm
+    - idm_server
+    - idm_replica
+    - idm_configure
+  vars:
+    ipaadmin_password: "{{ idm_admin_password }}"
+  module_defaults:
+    group/redhat.rhel_idm.modules:
+      ipaadmin_password: "{{ idm_admin_password }}"
+  pre_tasks:
+    - name: Kerberos init as IdM admin for IPA CLI
+      ansible.builtin.shell: |
+        set -euo pipefail
+        echo '{{ idm_admin_password }}' | kinit admin
+      args:
+        executable: /bin/bash
+      changed_when: false
+      no_log: true
+      tags:
+        - redhat_idm_users
+
+    - name: Set IdM global defaults
+      redhat.rhel_idm.ipaconfig:
+        defaultgroup: "{{ idm_default_group }}"
+        defaultshell: "{{ idm_default_shell }}"
+        emaildomain: "{{ idm_default_email_domain }}"
+        homedirectory: "{{ idm_default_home_directory }}"
+        searchrecordslimit: "{{ idm_default_search_size_limit }}"
+        enable_sid: "{{ idm_enable_sid | default(omit) }}"
+        add_sids: "{{ idm_add_sids | default(omit) }}"
+  roles:
+    - role: redhat_idm_acme
+      tags: redhat_idm_acme
+
+    - role: redhat_idm_users
+      tags: redhat_idm_users
+
+    - role: redhat_idm_groups
+      tags: redhat_idm_groups
+
+    - role: redhat_idm_sudo
+      tags: redhat_idm_sudo
+
+    - role: redhat_idm_hbac
+      tags: redhat_idm_hbac
+  tasks:
+    - name: Set password policy for service accounts
+      redhat.rhel_idm.ipapwpolicy:
+        name: service-accounts
+        maxlife: "{{ idm_service_account_max_life }}"
+        priority: 0
+
+    - name: Set password policy for administrator accounts
+      redhat.rhel_idm.ipapwpolicy:
+        name: admin-accounts
+        maxlife: "{{ idm_admin_account_max_life }}"
+        priority: 1
+
+    - name: Set external IP address for the primary DNS domain
+      redhat.rhel_idm.ipadnsrecord:
+        zone_name: "{{ idm_domain }}"
+        records:
+          - name: "@"
+            record_type: A
+            record_value: "{{ idm_domain_external_ip_address }}"
+      when: idm_domain_external_ip_address is defined and idm_domain_external_ip_address | length > 0
+
+    - name: Set DNS Forward Zones
+      redhat.rhel_idm.ipadnsforwardzone:
+        name: "{{ item.name }}"
+        forwarders: "{{ item.forwarders | flatten }}"
+        forwardpolicy: "{{ item.policy }}"
+        skip_overlap_check: "{{ item.skip_overlap_check | default(false) }}"
+      loop: "{{ idm_forwarder_zones | default([]) }}"
+
+    - name: Allow synchronization of forward (A, AAAA) and reverse (PTR) records.
+      redhat.rhel_idm.ipadnszone:
+        name: "{{ item }}"
+        allow_sync_ptr: true
+        dynamic_update: true
+      loop: "{{ [ipaserver_domain] + (ipaserver_reverse_zones | default([])) }}"
+
+    - name: Ensure identity CNAME points to the first host in the idm_server group
+      redhat.rhel_idm.ipadnsrecord:
+        zone_name: "{{ idm_domain }}"
+        records:
+          - name: "{{ idm_cname }}"
+            cname_hostname: "{{ groups['idm_server'][0] | regex_replace('.' + idm_domain + '$', '') }}"
+      when: idm_cname is defined

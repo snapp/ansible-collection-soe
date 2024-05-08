@@ -12,5 +12,8 @@
 - name: Red Hat Enterprise Linux (RHEL) Cockpit Web Console
   ansible.builtin.import_playbook: redhat_cockpit.yml
 
+- name: Red Hat Identity Management (IdM)
+  ansible.builtin.import_playbook: redhat_identity_management.yml
+
 - name: Red Hat Satellite Server
   ansible.builtin.import_playbook: redhat_satellite.yml

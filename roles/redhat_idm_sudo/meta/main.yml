@@ -1,0 +1,41 @@
+---
+# https://docs.ansible.com/ansible/latest/galaxy/user_guide.html#using-meta-main-yml
+
+galaxy_info:
+  # The name of the role.
+  role_name: "redhat_idm_sudo"
+
+  # A short summary description of the role.
+  description: "Manage Red Hat IdM SUDO Rules."
+
+  # The company claiming ownership of the role.
+  # company: ""
+
+  # A list of the role's content authors.
+  author: "snapp@redhat.com"
+
+  # The license for content inside of a role.
+  license: "GPL-3.0-or-later"
+
+  # The minimum Ansible version.
+  min_ansible_version: ">=2.15.0"
+
+  # The list of supported platforms
+  # platforms:
+  #   - name: EL
+  #     versions:
+  #       - "8"
+  #       - "9"
+  #       - "10"
+  # A list of tags (20 max) you want to associate with the role for indexing/searching.
+  galaxy_tags:
+    - "tools"
+
+# The list of role dependencies
+# dependencies:
+#   - role: foo
+#     vars:
+#       foo_variable1: 3
+#   - role: bar
+#     vars:
+#       bar_variable1: 'example'

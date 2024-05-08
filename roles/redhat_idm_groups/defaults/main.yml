@@ -1,0 +1,9 @@
+---
+# https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#role-directory-structure
+
+# redhat_idm_groups:
+#   - name: service-accounts
+#     description: Service Accounts
+#     users:
+#       - ansible
+#       - satellite

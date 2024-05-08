@@ -1,0 +1,32 @@
+---
+
+- name: Create Red Hat Identity Management user accounts
+  redhat.rhel_idm.ipauser:
+    ipaadmin_password: "{{ ipaadmin_password }}"
+    gecos: "{{ item.description | default(item.name.full, true) | default(item.name.first ~ ' ' ~ item.name.last) }}"
+    displayname: "{{ item.name.display | default(item.name.full, true) | default(item.name.first ~ ' ' ~ item.name.last) }}"
+    email: "{{ item.email | default(omit) }}"
+    first: "{{ item.name.first }}"
+    fullname: "{{ item.name.full | default(item.name.display, true) | default(item.name.first ~ ' ' ~ item.name.last) }}"
+    gid: "{{ item.gid | default(item.uid) | default(omit) }}"
+    homedir: "{{ item.home | default(omit) }}"
+    initials: "{{ item.initials }}"
+    last: "{{ item.name.last }}"
+    name: "{{ item.name.username }}"
+    password: "{{ item.password | default(omit) | regex_replace('\\s+', '') }}"
+    sshpubkey: "{{ item.ssh_public_key | default(omit) | regex_replace('\n', '') | trim }}"
+    title: "{{ item.title | default(omit) }}"
+    uid: "{{ item.uid | default(omit) }}"
+    update_password: on_create
+  loop: "{{ redhat_idm_users | default([]) }}"
+  no_log: "{{ item.password is defined }}"
+
+- name: Enable subid range for Identity Management users
+  ansible.builtin.command:
+    cmd: "ipa subid-generate --owner={{ item.name.username }}"
+  register: __redhat_idm_users_subid_gen
+  changed_when: "'Added' in __redhat_idm_users_subid_gen.stdout or 'generated' in __redhat_idm_users_subid_gen.stdout"
+  failed_when: __redhat_idm_users_subid_gen.rc != 0 and ('already' not in (__redhat_idm_users_subid_gen.stderr | lower))
+  when: item.enable_subid | default(false)
+  loop: "{{ redhat_idm_users | default([]) }}"
+  no_log: "{{ item.password is defined }}"

@@ -1,0 +1,15 @@
+---
+
+- name: Configure Red Hat Identity Management Host Based Access Control Rules
+  redhat.rhel_idm.ipahbacrule:
+    ipaadmin_password: "{{ ipaadmin_password }}"
+    name: "{{ item.name }}"
+    description: "{{ item.description }}"
+    user: "{{ item.users | default(omit) }}"
+    usercategory: "{{ item.usercategory | default('') }}"
+    host: "{{ item.hosts | default(omit) }}"
+    hostcategory: "{{ item.hostcategory | default('') }}"
+    hbacsvc: "{{ item.services | default(omit) }}"
+    servicecategory: "{{ item.servicecategory | default('') }}"
+  loop: "{{ redhat_idm_hbac_rules | default([]) }}"
+  no_log: true

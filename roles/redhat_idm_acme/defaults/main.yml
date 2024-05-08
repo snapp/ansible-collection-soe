@@ -1,0 +1,6 @@
+---
+# https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#role-directory-structure
+
+# idm_primary_server: idm-1.example.com
+
+# redhat_idm_acme_enable: true

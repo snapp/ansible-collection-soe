@@ -1,0 +1,25 @@
+---
+# https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#role-directory-structure
+
+# redhat_idm_users:
+#   - description: Satellite Automation Account
+#     name:
+#       username: satellite
+#       first: Satellite
+#       last: Automation
+#       full: Satellite Automation Account
+#     initials: SAA
+#     uid: 800
+#     groups: ''
+#     home: /var/lib
+#     password: |
+#       $6$rounds=100000$redacted
+#     ssh_public_key: |
+#       ssh-rsa AAAAredacted
+#   - name:
+#       username: example
+#       first: Example
+#       last: User
+#       full: Example User
+#     initials: EU
+#     email: user@example.com

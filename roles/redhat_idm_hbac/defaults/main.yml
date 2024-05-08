@@ -1,0 +1,8 @@
+---
+# https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#role-directory-structure
+
+# redhat_idm_hbac_rules:
+#   - name: allow_all
+#     description: Allow all commands
+#     users:
+#       - exampleuser

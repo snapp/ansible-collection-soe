@@ -1,0 +1,16 @@
+---
+
+- name: Configure Red Hat Identity Management Sudo Rules
+  redhat.rhel_idm.ipasudorule:
+    ipaadmin_password: "{{ ipaadmin_password }}"
+    name: "{{ item.name }}"
+    description: "{{ item.description }}"
+    user: "{{ item.users | default(omit) }}"
+    runasusercategory: "{{ item.runasusercategory | default(omit) }}"
+    host: "{{ item.hosts | default(omit) }}"
+    hostcategory: "{{ item.hostcategory | default(omit) }}"
+    cmdcategory: "{{ item.cmdcategory | default(omit) }}"
+    runasgroupcategory: "{{ item.runasgroupcategory | default(omit) }}"
+    sudooption: "{{ item.options | default(omit) }}"
+  loop: "{{ redhat_idm_sudo_rules | default([]) }}"
+  no_log: true
