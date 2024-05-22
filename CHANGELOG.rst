@@ -4,6 +4,14 @@ infra.soe Release Notes
 
 .. contents:: Topics
 
+v0.9.0
+======
+
+Minor Changes
+-------------
+
+- reboot - Added playbook to reboot hosts
+
 v0.8.0
 ======
 

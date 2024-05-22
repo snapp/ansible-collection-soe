@@ -55,3 +55,10 @@ releases:
     fragments:
       - add-redhat-idm-register-playbook.yml
     release_date: '2024-05-08'
+  0.9.0:
+    changes:
+      minor_changes:
+        - reboot - Added playbook to reboot hosts
+    fragments:
+      - add-reboot-playbook.yml
+    release_date: '2024-05-22'

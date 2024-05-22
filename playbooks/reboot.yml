@@ -1,0 +1,23 @@
+---
+
+- name: Reboot Red Hat Enterprise Linux (RHEL) Systems
+  hosts: "{{ target | default('redhat:!satellite') }}"
+  gather_facts: false
+  become: true
+  tags:
+    - reboot
+    - redhat_reboot
+  tasks:
+    - name: Reboot host
+      ansible.builtin.reboot:
+        # Message to display to users before reboot.
+        msg: "{{ soe_reboot_message | default('Reboot initiated by Ansible') }}"
+        # Seconds to wait before reboot.
+        pre_reboot_delay: "{{ soe_pre_reboot_delay | default(0) }}"
+        # Seconds to wait after the reboot command was successful before attempting to validate the system rebooted successfully.
+        post_reboot_delay: "{{ soe_post_reboot_delay | default(5) }}"
+        # Maximum seconds to wait for machine to reboot and respond to a test command.
+        # This timeout is evaluated separately for both reboot verification and test command success so the maximum execution time for the module is twice this amount.
+        reboot_timeout: "{{ soe_reboot_timeout | default(300) }}"
+        # Command to run on the rebooted host and expect success from to determine the machine is ready for further tasks.
+        test_command: "{{ soe_reboot_test_command | default('whoami') }}"
