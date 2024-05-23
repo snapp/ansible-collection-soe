@@ -1,0 +1,7 @@
+---
+# https://redhat-cop.github.io/automation-good-practices/#_platform_specific_variables
+
+- name: set_vars | Ensure ansible_facts required by role have been gathered
+  ansible.builtin.setup:
+    gather_subset: "{{ __ping_required_facts_subsets }}"
+  when: not ansible_facts.keys() | list | intersect(__ping_required_facts) == __ping_required_facts

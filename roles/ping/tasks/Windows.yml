@@ -1,0 +1,5 @@
+---
+# https://redhat-cop.github.io/automation-good-practices/#_platform_specific_tasks
+
+- name: Windows | Verify Ansible Connection
+  ansible.windows.win_ping:

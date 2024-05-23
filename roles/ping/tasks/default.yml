@@ -1,0 +1,5 @@
+---
+# https://redhat-cop.github.io/automation-good-practices/#_platform_specific_tasks
+
+- name: default | Verify Ansible Connection
+  ansible.builtin.ping:

@@ -4,6 +4,14 @@ infra.soe Release Notes
 
 .. contents:: Topics
 
+v0.10.0
+=======
+
+Minor Changes
+-------------
+
+- ping - Added playbook to update verify Ansible connectivity
+
 v0.9.0
 ======
 

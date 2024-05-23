@@ -1,0 +1,20 @@
+---
+# https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#role-directory-structure
+
+# https://redhat-cop.github.io/automation-good-practices/#_platform_specific_variables
+- name: Ensure ansible_facts required by role have been gathered
+  ansible.builtin.setup:
+    gather_subset: "{{ __ping_required_facts_subsets }}"
+  when: not ansible_facts.keys() | list | intersect(__ping_required_facts) == __ping_required_facts
+
+# https://redhat-cop.github.io/automation-good-practices/#_platform_specific_tasks
+- name: Perform platform/version specific tasks
+  ansible.builtin.include_tasks: "{{ lookup('first_found', __ping_ff_params) }}"
+  vars:
+    __ping_ff_params:
+      files:
+        - "{{ ansible_facts['os_family'] }}.yml"
+        - default.yml
+      paths:
+        - "{{ role_path }}/tasks"
+      skip: true

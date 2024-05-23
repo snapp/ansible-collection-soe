@@ -1,0 +1,10 @@
+---
+# https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#role-directory-structure
+
+# https://redhat-cop.github.io/automation-good-practices/#_platform_specific_variables
+__ping_required_facts:
+  - distribution
+
+# ensure the minimum number of required facts are gathered by the 'gather_subset' parameter of the 'setup' module
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/setup_module.html#parameter-gather_subset
+__ping_required_facts_subsets: "{{ ['!all', '!min'] + __ping_required_facts }}"

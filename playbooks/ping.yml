@@ -1,0 +1,9 @@
+---
+
+- name: Verify Ansible Connectivity
+  hosts: "{{ target | default('all') }}"
+  gather_facts: false
+  tags:
+    - ping
+  roles:
+    - ping
