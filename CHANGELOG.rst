@@ -4,6 +4,14 @@ infra.soe Release Notes
 
 .. contents:: Topics
 
+v0.11.0
+=======
+
+Minor Changes
+-------------
+
+- local_users - Added playbook to manage local user accounts
+
 v0.10.0
 =======
 

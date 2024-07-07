@@ -1,5 +1,8 @@
 ---
 
+- name: Configure Local Users
+  ansible.builtin.import_playbook: local_users.yml
+
 - name: Register Red Hat Enterprise Linux (RHEL) Hosts
   ansible.builtin.import_playbook: redhat_register.yml
 

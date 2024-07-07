@@ -8,7 +8,7 @@ namespace: "infra"
 name: "soe"
 
 # NOTE| The version of the collection.
-version: "0.10.0"
+version: "0.11.0"
 
 # The path to the Markdown (.md) readme file.
 readme: README.md
@@ -34,6 +34,7 @@ tags:
 # NOTE| The list of collection dependencies this collection requires to be installed for it to be usable.
 dependencies:
   ansible.windows: ">=2.3.0"
+  community.windows: ">=2.2.0"
   redhat.rhel_idm: ">=1.12.1"
   redhat.rhel_system_roles: ">=1.22.0"
   redhat.satellite: ">=4.0.0"

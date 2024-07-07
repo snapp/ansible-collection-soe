@@ -1,0 +1,13 @@
+---
+# https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#role-directory-structure
+
+# local_users:
+#   - name: example
+#     uid: 1234
+#     group: example
+#     gid: 1234
+#     groups: ''
+#     comment: 'Example User'
+#     home: '/home'
+#     ssh_public_key: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDBen854/P1pb2Q4G2bvdLYkthxTzr7MWoQModZA1fUz1e/jg3NMqRmRlphBfqtTHEh/PFsZp1CPhysf469pdBHcRy6pbcsywV9xGPvxC9GFjf6j4zSwy35SP1b2lhX3baqD+xOnTjlplAxEtBdhGALXaPOqna9euTaJVaGP4JaEEb4LL6U/Uz6jltBZ1YRUU7Mgl2yFoj5B4gT+swG3gaH7cj94ngHZvFOLGBO3NF2TDBXNBXu2MWlKiz7BZwVea2sMa6Y0YW3EEntxZhyfkqKcUuY3MsJjjc2wr+KJrmrUruTRsCQgVnc6BBMhIxcS7lHTrQYtu07TyQKRHYYTtxlAGZo4lvzjwkEA0a9qVfD/c4gBsVHF/pYy4TOx60d2j7j7zY7BVQFGuGm7DA7sM7ssiGKUA4Pw8Cuq5mSWx3vbt3I880QkCyqw+stSQxXetfyooSf3QFIJWk0KbcuTEM3No9gYKPTbGjnPApG5yEo2JTVn4L7+lAu8OtR87hDUHt4/avqZX9gZyrxrQG1uSJqMq9wHGm+UhQciRyWNfGTZmDx4d5Biq96AqKUlieJOeYddrnqYC6V1sSgQymlvuNHkMSELDkoD9iabQoqd4e72pZIQo9Q4va9hPgIBaKbfkxD2ObY/y63ItOQlm7XXQCOR3ZTFFgf44asMK51NOQmEQ== openpgp:0x27A1452E'
+#     sudo: 'ALL=(ALL)  ALL'

@@ -8,6 +8,13 @@ releases:
     fragments:
       - add-ping-playbook.yml
     release_date: '2024-05-22'
+  0.11.0:
+    changes:
+      minor_changes:
+        - local_users - Added playbook to manage local user accounts
+    fragments:
+      - add-local-users-playbook.yml
+    release_date: '2024-07-07'
   0.2.0:
     changes:
       minor_changes:

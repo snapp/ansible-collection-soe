@@ -1,0 +1,45 @@
+---
+# https://redhat-cop.github.io/automation-good-practices/#_platform_specific_tasks
+
+- name: Windows | Create local Windows user accounts
+  block:
+    - name: Windows | Create local user
+      ansible.windows.win_user:
+        name: "{{ item.name }}"
+        fullname: "{{ item.comment }}"
+        description: Ansible managed local user account
+        password: "{{ item.password | default(omit) }}"
+        groups: "{{ item.groups | default(['Users']) }}"
+        state: "{{ item.state | default('present') }}"
+
+    - name: Windows | Add authorized_keys file to global administrators_authorized_keys
+      community.windows.win_lineinfile:
+        path: 'C:\ProgramData\ssh\administrators_authorized_keys'
+        regexp: "^{{ item.ssh_public_key[:50] }}"
+        line: "{{ item.ssh_public_key | replace('\n', '') }}"
+        create: true
+        state: present
+      when: "'Administrators' in item.groups"
+
+    # TODO|Add support for non-administrator users to use SSH keys defined in their ~/.ssh/authorized_keys file
+
+- name: Windows | Remove inheritance from global administrators_authorized_keys
+  ansible.windows.win_acl_inheritance:
+    path: 'C:\ProgramData\ssh\administrators_authorized_keys'
+    state: absent
+
+- name: Windows | Set full control permissions for Administrators
+  ansible.windows.win_acl:
+    path: C:\ProgramData\ssh\administrators_authorized_keys
+    user: Administrators
+    type: allow
+    rights: FullControl
+    state: present
+
+- name: Windows | Set permissions for administrators_authorized_keys
+  ansible.windows.win_acl:
+    path: 'C:\ProgramData\ssh\administrators_authorized_keys'
+    user: SYSTEM
+    type: allow
+    rights: FullControl
+    state: present

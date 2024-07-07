@@ -1,0 +1,15 @@
+---
+# https://redhat-cop.github.io/automation-good-practices/#_platform_specific_variables
+
+- name: set_vars | Ensure ansible_facts required by role have been gathered
+  ansible.builtin.setup:
+    gather_subset: "{{ __local_users_required_facts_subsets }}"
+  when: not ansible_facts.keys() | list | intersect(__local_users_required_facts) == __local_users_required_facts
+
+- name: set_vars | Set platform/version specific variables
+  ansible.builtin.include_vars: "{{ __local_users_vars_file }}"
+  loop:
+    - "{{ ansible_facts['os_family'] }}.yml"
+  vars:
+    __local_users_vars_file: "{{ role_path }}/vars/{{ item }}"
+  when: __local_users_vars_file is file

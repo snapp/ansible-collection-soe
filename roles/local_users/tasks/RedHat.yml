@@ -1,0 +1,65 @@
+---
+# https://redhat-cop.github.io/automation-good-practices/#_platform_specific_tasks
+
+- name: RedHat | Create local Red Hat user accounts
+  become: true
+  block:
+    - name: RedHat | Create local user group
+      ansible.builtin.group:
+        name: "{{ item.name }}"
+        gid: "{{ item.gid }}"
+
+    - name: RedHat | Create local user
+      ansible.builtin.user:
+        name: "{{ item.name }}"
+        uid: "{{ item.gid }}"
+        group: "{{ item.group }}"
+        comment: "{{ item.comment }}"
+        home: "{{ item.home }}/{{ item.name }}"
+
+    - name: RedHat | Add local sudo access via /etc/sudoers.d
+      ansible.builtin.copy:
+        mode: '0440'
+        dest: "/etc/sudoers.d/{{ item.name }}"
+        owner: 'root'
+        group: 'root'
+        content: |
+          {{ item.name }}  {{ item.sudo }}
+      when: item.sudo is defined
+
+    - name: RedHat | Create user home
+      ansible.builtin.file:
+        path: "{{ item.home }}/{{ item.name }}"
+        state: directory
+        mode: '0700'
+        owner: "{{ item.name }}"
+        group: "{{ item.group }}"
+
+    - name: RedHat | Apply SELinux context for user home
+      redhat.rhel_system_roles.sefcontext:
+        target: "{{ item.home }}/{{ item.name }}"
+        substitute: "/home/{{ item.name }}"
+
+    - name: RedHat | Create local user ~/.ssh
+      ansible.builtin.file:
+        mode: '0700'
+        owner: "{{ item.name }}"
+        group: "{{ item.group }}"
+        state: directory
+        path: "{{ item.home }}/{{ item.name }}/.ssh"
+
+    - name: RedHat | Inject SSH Public Key
+      ansible.builtin.lineinfile:
+        path: '{{ item.home }}/{{ item.name }}/.ssh/authorized_keys'
+        regexp: "^{{ item.ssh_public_key[:50] }}"
+        line: "{{ item.ssh_public_key | replace('\n', '') }}"
+        owner: "{{ item.name }}"
+        group: "{{ item.group }}"
+        mode: '0600'
+        create: true
+      when: item.ssh_public_key is defined
+
+    # REDO| this should be a handler to avoid being run unnecessarily
+    - name: RedHat | Restore local user home directory SELinux context
+      ansible.builtin.command: restorecon -RFv "{{ item.home }}/{{ item.name }}"
+      changed_when: false

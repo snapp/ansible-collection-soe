@@ -1,0 +1,9 @@
+---
+
+- name: Manage local user accounts
+  hosts: "{{ target | default('all') }}"
+  gather_facts: false
+  tags:
+    - local_users
+  roles:
+    - local_users
