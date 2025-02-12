@@ -57,6 +57,90 @@
         cmd: 'dracut -f'
       changed_when: true
 
+- name: Configure Red Hat Satellite Server Certificate
+  hosts: satellite_server
+  gather_facts: false
+  become: true
+  any_errors_fatal: true
+  tags:
+    - redhat
+    - satellite_install
+    - satellite
+    - satellite_server
+    - satellite_configure
+    - redhat_idm_service
+  vars:
+    ipaadmin_password: "{{ idm_admin_password }}"
+  pre_tasks:
+    - name: Configure Red Hat Satellite Server IdM Service
+      ansible.builtin.include_role:
+        name: redhat_idm_service
+      vars:
+        redhat_idm_service_principal: "{{ satellite_idm_service_principal }}"
+        redhat_idm_service_tls_enabled: true
+        redhat_idm_service_tls_request_id: "satellite_idm_service"
+        redhat_idm_service_tls_sans: "{{ satellite_idm_service_tls_sans | default([]) }}"
+      tags: redhat_idm_service
+  tasks:
+    - name: Checksum Satellite Server IdM service certificate
+      ansible.builtin.stat:
+        path: /etc/pki/satellite_idm_service/service.crt
+        checksum_algorithm: sha256
+        get_checksum: true
+      register: _satellite_idm_service_certificate
+
+    - name: Checksum Satellite Server certificate
+      ansible.builtin.stat:
+        path: "/root/ssl-build/{{ satellite_hostname }}/{{ satellite_hostname }}-apache.crt"
+        checksum_algorithm: sha256
+        get_checksum: true
+      register: _satellite_server_certificate
+
+    - name: Run satellite-installer to configure SSL certificates
+      ansible.builtin.command:
+        cmd: >-
+          satellite-installer
+          --certs-server-cert /etc/pki/satellite_idm_service/service.crt
+          --certs-server-key /etc/pki/satellite_idm_service/private/service.key
+          --certs-server-ca-cert /etc/pki/satellite_idm_service/ipa-ca.crt
+          --certs-update-server
+          --certs-update-server-ca
+      register: __satellite_installer_result
+      changed_when: >-
+        'Success!' in __satellite_installer_result.stdout
+      notify: Verify Satellite Server certificate
+      when: >-
+        not _satellite_server_certificate.stat.exists or
+        _satellite_idm_service_certificate.stat.checksum != _satellite_server_certificate.stat.checksum
+  handlers:
+    - name: Wait for HTTPS to become available
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: 443
+        timeout: 120
+      listen: Verify Satellite Server certificate
+
+    - name: Retrieve HTTPS certificate from Satellite Server
+      ansible.builtin.shell:
+        cmd: >-
+          openssl s_client
+          -connect 127.0.0.1:443
+          -showcerts
+          </dev/null
+      register: _satellite_ssl_result
+      changed_when: false
+      listen: Verify Satellite Server certificate
+
+    - name: Verify Satellite Server HTTPS certificate
+      ansible.builtin.assert:
+        that:
+          - satellite_hostname in _satellite_ssl_result.stdout
+        fail_msg: >-
+          SSL certificate does not contain the expected hostname
+        success_msg: >-
+          SSL certificate confirmed
+      listen: Verify Satellite Server certificate
+
 - name: Configure Red Hat Satellite Server
   hosts: satellite_server
   gather_facts: true

@@ -4,6 +4,14 @@ infra.soe Release Notes
 
 .. contents:: Topics
 
+v0.13.0
+=======
+
+Minor Changes
+-------------
+
+- redhat_satellite - Add IdM Service support to redhat_satellite
+
 v0.12.0
 =======
 

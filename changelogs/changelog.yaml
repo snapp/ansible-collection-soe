@@ -23,6 +23,13 @@ releases:
     fragments:
       - add-redhat-idm-service-playbook.yml
     release_date: '2025-02-11'
+  0.13.0:
+    changes:
+      minor_changes:
+        - redhat_satellite - Add IdM Service support to redhat_satellite
+    fragments:
+      - add-redhat-satellite-idm-service.yml
+    release_date: '2025-02-12'
   0.2.0:
     changes:
       minor_changes:
