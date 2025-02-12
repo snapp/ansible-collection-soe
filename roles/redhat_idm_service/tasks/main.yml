@@ -1,0 +1,129 @@
+---
+
+- name: Ensure IdM Service CNAME exists
+  redhat.rhel_idm.ipadnsrecord:
+    ipaadmin_password: "{{ ipaadmin_password }}"
+    zone_name: "{{ item.split('.', 1)[1] }}"
+    records:
+      - name: "{{ item.split('.', 1)[0] }}"
+        cname_hostname: "{{ inventory_hostname.split('.', 1)[0] }}"
+  loop: >-
+    {{
+      redhat_idm_service_tls_sans |
+      reject('equalto', inventory_hostname) |
+      list
+      if (redhat_idm_service_tls_sans | default([]) | length > 0)
+      else []
+    }}
+  no_log: true
+
+- name: Ensure IdM service principal exists
+  redhat.rhel_idm.ipaservice:
+    ipaadmin_password: "{{ ipaadmin_password }}"
+    name: "{{ redhat_idm_service_principal }}"
+    host: "{{ redhat_idm_service_fqdn }}"
+    principal: >-
+      {{
+        redhat_idm_service_tls_sans |
+        reject('equalto', redhat_idm_service_principal.split('/')[1]) |
+        map('regex_replace', '^', (redhat_idm_service_principal.split('/')[0] ~ '/')) |
+        list
+        if (redhat_idm_service_tls_sans | default([]) | length > 0)
+        else omit
+      }}
+    skip_host_check: true
+    state: present
+
+- name: Request TLS certificate
+  when: redhat_idm_service_tls_enabled
+  block:
+    - name: Ensure certmonger service is enabled
+      become: true
+      become_user: root
+      ansible.builtin.service:
+        name: certmonger
+        state: started
+        enabled: true
+
+    - name: Ensure directories for TLS material exist
+      become: true
+      become_user: root
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ redhat_idm_service_user }}"
+        group: "{{ redhat_idm_service_group }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - path: "{{ redhat_idm_service_tls_dir }}"
+          mode: "0755"
+        - path: "{{ redhat_idm_service_tls_dir }}/private"
+          mode: "0700"
+
+    - name: Copy IdM CA cert to working directory
+      become: true
+      become_user: root
+      ansible.builtin.copy:
+        src: "/etc/ipa/ca.crt"
+        dest: "{{ redhat_idm_service_tls_ca }}"
+        remote_src: true
+        owner: "{{ redhat_idm_service_user }}"
+        group: "{{ redhat_idm_service_group }}"
+        mode: "0644"
+
+    - name: Request TLS certificate for service principal (tracked by certmonger)
+      become: true
+      become_user: root
+      ansible.builtin.command: >
+        ipa-getcert request
+        -r
+        -I {{ redhat_idm_service_tls_request_id }}
+        -f {{ redhat_idm_service_tls_cert }}
+        -k {{ redhat_idm_service_tls_key }}
+        -K {{ redhat_idm_service_principal }}
+        -D {{ redhat_idm_service_fqdn }}
+        {% for san in redhat_idm_service_tls_sans %}-D {{ san }} {% endfor %}
+        -N CN={{ redhat_idm_service_fqdn }}
+      args:
+        creates: "{{ redhat_idm_service_tls_cert }}"
+      register: _redhat_idm_service_getcert_request
+
+    - name: Accept existing certmonger request if already present
+      become: true
+      become_user: root
+      ansible.builtin.assert:
+        that:
+          - _redhat_idm_service_getcert_request.rc == 0 or
+            ('already used by request' in (_redhat_idm_service_getcert_request.stderr | default('')) ) or
+            ('already exists' in (_redhat_idm_service_getcert_request.stderr | default('')) )
+        fail_msg: |
+          ipa-getcert request failed unexpectedly.
+          rc={{ _redhat_idm_service_getcert_request.rc }}
+          stdout={{ _redhat_idm_service_getcert_request.stdout | default('') }}
+          stderr={{ _redhat_idm_service_getcert_request.stderr | default('') }}
+
+    - name: Wait for certmonger to finish issuance
+      become: true
+      become_user: root
+      ansible.builtin.command: "ipa-getcert list -i {{ redhat_idm_service_tls_request_id }}"
+      register: _redhat_idm_service_getcert_status
+      changed_when: false
+      retries: 30
+      delay: 2
+      until: >
+        ('MONITORING' in _redhat_idm_service_getcert_status.stdout) or
+        ('Status: MONITORING' in _redhat_idm_service_getcert_status.stdout)
+
+    - name: Tighten TLS material permissions
+      become: true
+      become_user: root
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        owner: "{{ redhat_idm_service_user }}"
+        group: "{{ redhat_idm_service_group }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - path: "{{ redhat_idm_service_tls_cert }}"
+          mode: "0640"
+        - path: "{{ redhat_idm_service_tls_key }}"
+          mode: "0600"

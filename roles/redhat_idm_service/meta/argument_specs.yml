@@ -1,0 +1,92 @@
+---
+
+argument_specs:
+  main:
+    short_description: Configure Red Hat IdM service integration
+    description:
+      - Configures TLS material and service principal integration.
+    options:
+      redhat_idm_service_user:
+        type: str
+        required: false
+        default: root
+        description:
+          - User that owns TLS assets
+          - Defaults to root
+
+      redhat_idm_service_group:
+        type: str
+        required: false
+        default: root
+        description:
+          - Group that owns TLS assets
+          - Defaults to root
+
+      redhat_idm_service_fqdn:
+        type: str
+        required: false
+        default: "{{ inventory_hostname }}"
+        description:
+          - Fully qualified domain name of the service host.
+          - Defaults to inventory_hostname.
+
+      redhat_idm_service_principal:
+        type: str
+        required: false
+        default: "HTTP/{{ redhat_idm_service_fqdn }}"
+        description:
+          - Kerberos service principal.
+          - Defaults to HTTP/<service_fqdn>.
+
+      redhat_idm_service_tls_enabled:
+        type: bool
+        required: false
+        default: false
+        description:
+          - Whether to enable TLS certificate management for the service.
+          - Defaults to false.
+
+      redhat_idm_service_tls_request_id:
+        type: str
+        required: false
+        default: "idm_service"
+        description:
+          - certmonger request ID used when requesting the TLS certificate.
+
+      redhat_idm_service_tls_sans:
+        type: list
+        elements: str
+        required: false
+        default: []
+        description:
+          - List of Subject Alternative Names (SANs) for the service TLS certificate.
+          - Each entry must be a string.
+          - Defaults to an empty list.
+
+      redhat_idm_service_tls_dir:
+        type: str
+        required: false
+        default: "/etc/pki/{{ redhat_idm_service_tls_request_id }}"
+        description:
+          - Directory where TLS assets are stored.
+
+      redhat_idm_service_tls_cert:
+        type: str
+        required: false
+        default: "{{ redhat_idm_service_tls_dir }}/service.crt"
+        description:
+          - Path to the issued TLS certificate.
+
+      redhat_idm_service_tls_key:
+        type: str
+        required: false
+        default: "{{ redhat_idm_service_tls_dir }}/private/service.key"
+        description:
+          - Path to the private key.
+
+      redhat_idm_service_tls_ca:
+        type: str
+        required: false
+        default: "{{ redhat_idm_service_tls_dir }}/ipa-ca.crt"
+        description:
+          - Path to the CA certificate.

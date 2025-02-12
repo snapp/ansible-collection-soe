@@ -1,0 +1,24 @@
+---
+# https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#role-directory-structure
+
+redhat_idm_service_user: root
+
+redhat_idm_service_group: root
+
+redhat_idm_service_fqdn: "{{ inventory_hostname }}"
+
+redhat_idm_service_tls_sans: []
+
+redhat_idm_service_principal: "HTTP/{{ redhat_idm_service_fqdn }}"
+
+redhat_idm_service_tls_enabled: false
+
+redhat_idm_service_tls_request_id: "idm_service"
+
+redhat_idm_service_tls_dir: "/etc/pki/{{ redhat_idm_service_tls_request_id }}"
+
+redhat_idm_service_tls_cert: "{{ redhat_idm_service_tls_dir }}/service.crt"
+
+redhat_idm_service_tls_key: "{{ redhat_idm_service_tls_dir }}/private/service.key"
+
+redhat_idm_service_tls_ca: "{{ redhat_idm_service_tls_dir }}/ipa-ca.crt"

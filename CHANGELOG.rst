@@ -4,6 +4,14 @@ infra.soe Release Notes
 
 .. contents:: Topics
 
+v0.12.0
+=======
+
+Minor Changes
+-------------
+
+- redhat_idm_service - Added playbook to configure Red Hat Identity Management (IdM) service integration
+
 v0.11.0
 =======
 

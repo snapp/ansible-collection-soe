@@ -1,0 +1,9 @@
+---
+
+- name: Configure Red Hat Identity Management (IdM) service integration
+  hosts: "{{ target | default('all') }}"
+  gather_facts: false
+  tags:
+    - redhat_idm_service
+  roles:
+    - redhat_idm_service

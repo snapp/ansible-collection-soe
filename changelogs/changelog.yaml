@@ -15,6 +15,14 @@ releases:
     fragments:
       - add-local-users-playbook.yml
     release_date: '2024-07-07'
+  0.12.0:
+    changes:
+      minor_changes:
+        - redhat_idm_service - Added playbook to configure Red Hat Identity Management
+          (IdM) service integration
+    fragments:
+      - add-redhat-idm-service-playbook.yml
+    release_date: '2025-02-11'
   0.2.0:
     changes:
       minor_changes:
