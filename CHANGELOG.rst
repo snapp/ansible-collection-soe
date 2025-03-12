@@ -4,6 +4,14 @@ infra.soe Release Notes
 
 .. contents:: Topics
 
+v0.14.0
+=======
+
+Minor Changes
+-------------
+
+- redhat_ansible_automation_platform - Added playbook to install Red Hat Ansible Automation Platform (AAP)
+
 v0.13.0
 =======
 

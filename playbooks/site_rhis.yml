@@ -23,3 +23,6 @@
 
 - name: Red Hat Satellite Server
   ansible.builtin.import_playbook: redhat_satellite.yml
+
+- name: Red Hat Ansible Automation Platform
+  ansible.builtin.import_playbook: redhat_ansible_automation_platform.yml

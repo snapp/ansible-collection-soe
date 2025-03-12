@@ -30,6 +30,14 @@ releases:
     fragments:
       - add-redhat-satellite-idm-service.yml
     release_date: '2025-02-12'
+  0.14.0:
+    changes:
+      minor_changes:
+        - redhat_ansible_automation_platform - Added playbook to install Red Hat Ansible
+          Automation Platform (AAP)
+    fragments:
+      - add-redhat-ansible-automation-platform-playbook.yml
+    release_date: '2025-03-11'
   0.2.0:
     changes:
       minor_changes:

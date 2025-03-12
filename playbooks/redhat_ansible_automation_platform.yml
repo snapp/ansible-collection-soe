@@ -1,0 +1,144 @@
+---
+
+- name: Install Red Hat Ansible Automation Platform (AAP)
+  hosts: aap_installer
+  gather_facts: false
+  become: true
+  become_user: "{{ aap_service_user }}"
+  any_errors_fatal: true
+  tags:
+    - redhat
+    - ansible_automation_platform
+    - aap
+    - aap_install
+    - redhat_idm_service
+  vars:
+    ipaadmin_password: "{{ idm_admin_password }}"
+  pre_tasks:
+    - name: Configure Red Hat Ansible Automation Platform (AAP) IdM Service
+      ansible.builtin.include_role:
+        name: redhat_idm_service
+      vars:
+        redhat_idm_service_principal: "{{ aap_idm_service_principal }}"
+        redhat_idm_service_user: "{{ aap_service_user }}"
+        redhat_idm_service_group: "{{ aap_idm_service_group }}"
+        redhat_idm_service_tls_enabled: true
+        redhat_idm_service_tls_request_id: "aap_idm_service"
+        redhat_idm_service_tls_sans: "{{ aap_idm_service_tls_sans | default([]) }}"
+      tags: redhat_idm_service
+  tasks:
+    - name: Install Red Hat Ansible Automation Platform (AAP)
+      block:
+        - name: Enable systemd lingering for AAP service user
+          become: true
+          become_user: root
+          ansible.builtin.command:
+            cmd: "loginctl enable-linger {{ aap_service_user }}"
+            creates: "/var/lib/systemd/linger/{{ aap_service_user }}"
+          when: aap_service_user != 'root'
+
+        - name: Grant AAP service user sudo privileges during installation
+          become: true
+          become_user: root
+          ansible.builtin.copy:
+            dest: "/etc/sudoers.d/{{ aap_service_user }}"
+            content: "{{ aap_service_user }} ALL=(ALL) NOPASSWD: ALL"
+            owner: root
+            group: root
+            mode: '0440'
+            validate: /usr/sbin/visudo -cf %s
+          when: aap_service_user != 'root'
+
+        - name: Create AAP install location
+          become: true
+          become_user: root
+          ansible.builtin.file:
+            path: "{{ aap_setup_prep_working_dir }}"
+            state: directory
+            owner: "{{ aap_service_user }}"
+            group: "{{ aap_service_user }}"
+            mode: '0750'
+
+        - name: Download AAP Installer
+          ansible.builtin.include_role:
+            name: infra.aap_utilities.aap_setup_download
+          tags: infra.aap_utilities.aap_setup_download
+
+        # FIXME|2025-03-11| Add become_user: root to infra.aap_utilities.aap_setup_prepare : Install absolutely necessary packages
+        - name: Configure AAP Installer
+          ansible.builtin.include_role:
+            name: infra.aap_utilities.aap_setup_prepare
+          tags: infra.aap_utilities.aap_setup_prepare
+
+        - name: Identify AAP Installer
+          become: true
+          become_user: root
+          ansible.builtin.find:
+            paths: "{{ aap_setup_down_dest_dir }}"
+            patterns: "ansible-automation-platform*"
+            recurse: false
+            file_type: any
+          register: __aap_installer
+
+        - name: Disable Preflight Checks
+          become: true
+          become_user: root
+          ansible.builtin.lineinfile:
+            path: "{{ item.path }}/collections/ansible_collections/ansible/containerized_installer/playbooks/install.yml"
+            insertafter: '^\s+- name: Run variable preflight checks'
+            line: '      when: not aap_setup_ignore_preflight_errors | default(false) | bool'
+            state: present
+          when:
+            - aap_setup_ignore_preflight_errors | default(false)
+            - item.isdir
+          loop: "{{ __aap_installer.files }}"
+          loop_control:
+            label: "{{ item.path }}"
+
+        - name: Ensure AAP Installer is accessible to service account
+          become: true
+          become_user: root
+          ansible.builtin.file:
+            path: "{{ item.path }}"
+            owner: "{{ aap_service_user }}"
+            group: "{{ aap_service_user }}"
+            state: "{{ item.isdir | ternary('directory', 'absent') }}"
+            recurse: "{{ item.isdir | ternary(true, false) }}"
+          loop: "{{ __aap_installer.files }}"
+          loop_control:
+            label: "{{ item.path }}"
+
+        - name: Run AAP Installer
+          ansible.builtin.include_role:
+            name: infra.aap_utilities.aap_setup_install
+          tags: infra.aap_utilities.aap_setup_install
+      always:
+        - name: Revoke AAP service user sudo privileges
+          become: true
+          become_user: root
+          ansible.builtin.file:
+            path: "/etc/sudoers.d/{{ aap_service_user }}"
+            state: absent
+          when: aap_service_user != 'root'
+
+- name: Configure Red Hat Ansible Automation Platform (AAP)
+  hosts: aap_installer
+  gather_facts: false
+  become: false
+  tags:
+    - redhat
+    - ansible_automation_platform
+    - aap
+    - aap_configure
+  tasks:
+    - name: Configure AAP Manifest
+      ansible.builtin.import_role:
+        name: infra.aap_configuration.controller_license
+      vars:
+        aap_validate_certs: true
+        aap_hostname: "{{ _vault_aap_routable_hostname }}"
+        aap_username: admin
+        aap_password: "{{ _vault_aap_controller_admin_password }}"
+        controller_license: "{{ aap_controller_license }}"
+      tags: infra.aap_configuration.controller_license
+      when: aap_manifest_import | default(false)
