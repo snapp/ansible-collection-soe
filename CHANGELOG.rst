@@ -4,6 +4,14 @@ infra.soe Release Notes
 
 .. contents:: Topics
 
+v0.15.0
+=======
+
+Minor Changes
+-------------
+
+- local_storage - Added playbook to configure local storage
+
 v0.14.0
 =======
 

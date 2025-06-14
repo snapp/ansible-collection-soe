@@ -38,6 +38,13 @@ releases:
     fragments:
       - add-redhat-ansible-automation-platform-playbook.yml
     release_date: '2025-03-11'
+  0.15.0:
+    changes:
+      minor_changes:
+        - local_storage - Added playbook to configure local storage
+    fragments:
+      - add-local-storage-playbook.yml
+    release_date: '2025-06-14'
   0.2.0:
     changes:
       minor_changes:

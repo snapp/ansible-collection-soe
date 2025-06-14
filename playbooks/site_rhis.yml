@@ -1,5 +1,8 @@
 ---
 
+- name: Configure Local Storage
+  ansible.builtin.import_playbook: local_storage.yml
+
 - name: Configure Local Users
   ansible.builtin.import_playbook: local_users.yml
 
