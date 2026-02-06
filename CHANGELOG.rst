@@ -4,6 +4,14 @@ infra.soe Release Notes
 
 .. contents:: Topics
 
+v0.16.0
+=======
+
+Minor Changes
+-------------
+
+- bootstrap - Added role to discover host group bootstrap variable files
+
 v0.15.0
 =======
 

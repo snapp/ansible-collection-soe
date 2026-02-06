@@ -45,6 +45,13 @@ releases:
     fragments:
       - add-local-storage-playbook.yml
     release_date: '2025-06-14'
+  0.16.0:
+    changes:
+      minor_changes:
+        - bootstrap - Added role to discover host group bootstrap variable files
+    fragments:
+      - add-bootstrap-role.yml
+    release_date: '2026-02-05'
   0.2.0:
     changes:
       minor_changes:

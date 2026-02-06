@@ -1,0 +1,10 @@
+---
+
+- name: Discover Host Group bootstrap variable files
+  ansible.builtin.include_vars:
+    file: "{{ bootstrap_directory }}/{{ item }}.vault.yml"
+  loop: "{{ group_names | sort }}"
+  when:
+    - bootstrap | default(false) | bool
+    - lookup('ansible.builtin.fileglob', bootstrap_directory ~ '/' ~ item ~ '.vault.yml', wantlist=True) | length > 0
+  register: bootstrap_vars
