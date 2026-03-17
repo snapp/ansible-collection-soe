@@ -18,6 +18,8 @@ rules:
   indentation:
     spaces: 2
     indent-sequences: true
+  key-duplicates:
+    forbid-duplicated-merge-keys: true
   hyphens:
     max-spaces-after: 1
   empty-lines:
