@@ -52,6 +52,15 @@ releases:
     fragments:
       - add-bootstrap-role.yml
     release_date: '2026-02-05'
+  0.17.0:
+    changes:
+      minor_changes:
+        - scap_remediation - Added playbook for Security Content Automation Protocol
+          (SCAP) remediation
+    fragments:
+      - add-scap-remediation.yml
+      - update-lint-versions.yml
+    release_date: '2026-04-16'
   0.2.0:
     changes:
       minor_changes:

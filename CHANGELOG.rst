@@ -4,6 +4,14 @@ infra.soe Release Notes
 
 .. contents:: Topics
 
+v0.17.0
+=======
+
+Minor Changes
+-------------
+
+- scap_remediation - Added playbook for Security Content Automation Protocol (SCAP) remediation
+
 v0.16.0
 =======
 
