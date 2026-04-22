@@ -4,6 +4,16 @@ infra.soe Release Notes
 
 .. contents:: Topics
 
+v0.18.0
+=======
+
+Minor Changes
+-------------
+
+- redhat_cockpit - Add TLS certification via IdM service
+- redhat_cockpit - Allow websm_port_t on port 443 when necessary
+- redhat_cockpit - Ensure cockpit systemd units are not masked
+
 v0.17.0
 =======
 

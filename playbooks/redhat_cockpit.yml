@@ -1,14 +1,37 @@
 ---
 
 - name: Configure Red Hat Enterprise Linux (RHEL) Cockpit Web Console
-  hosts: redhat:!satellite
+  hosts: redhat:!identity_management:!satellite
   gather_facts: false
   become: true
   tags:
     - cockpit
     - redhat
     - redhat_cockpit
+    - redhat_idm_service
+  vars:
+    ipaadmin_password: "{{ idm_admin_password }}"
   pre_tasks:
+    - name: Ensure cockpit systemd units are not masked
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        masked: false
+      loop:
+        - cockpit.service
+        - cockpit.socket
+      when: soe_redhat_cockpit_enabled | default(false)
+
+    - name: Configure Red Hat Cockpit IdM Service
+      ansible.builtin.include_role:
+        name: redhat_idm_service
+      vars:
+        redhat_idm_service_principal: "{{ redhat_cockpit_idm_service_principal }}"
+        redhat_idm_service_tls_enabled: true
+        redhat_idm_service_tls_request_id: "redhat_cockpit_idm_service"
+        redhat_idm_service_tls_sans: "{{ redhat_cockpit_idm_service_tls_sans | default([]) }}"
+      tags: redhat_idm_service
+      when: soe_redhat_cockpit_enabled | default(false)
+
       # https://access.redhat.com/solutions/2761591
     - name: Enable SELinux context on Cockpit Web Console port
       redhat.rhel_system_roles.seport:
@@ -17,13 +40,22 @@
         setype: websm_port_t
         state: present
       notify: Reload SELinux Policy
-      when: soe_redhat_cockpit_enabled | default(false)
+      when:
+        - soe_redhat_cockpit_enabled | default(false)
+        - (cockpit_port | default(9090)) | int != 443
+
+    - name: Allow websm_port_t on port 443 (Cockpit on HTTPS default port)
+      redhat.rhel_system_roles.seport:
+        ports: 443
+        proto: tcp
+        setype: websm_port_t
+        state: present
+      notify: Reload SELinux Policy
+      when:
+        - soe_redhat_cockpit_enabled | default(false)
+        - (cockpit_port | default(9090)) | int == 443
   roles:
     - role: redhat.rhel_system_roles.cockpit
-      cockpit_enabled: "{{ soe_redhat_cockpit_enabled | default(false) }}"
-      cockpit_started: "{{ soe_redhat_cockpit_started | default(false) }}"
-      cockpit_port: "{{ soe_redhat_cockpit_port | default(9090) }}"
-      cockpit_packages: "{{ soe_redhat_cockpit_packages | default('default') }}"
       tags: redhat.rhel_system_roles.cockpit
       when: soe_redhat_cockpit_enabled | default(false)
   handlers:

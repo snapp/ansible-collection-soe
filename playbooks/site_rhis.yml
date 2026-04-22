@@ -15,14 +15,14 @@
 - name: Host Firewall
   ansible.builtin.import_playbook: firewall.yml
 
-- name: Red Hat Enterprise Linux (RHEL) Cockpit Web Console
-  ansible.builtin.import_playbook: redhat_cockpit.yml
-
 - name: Red Hat Identity Management (IdM)
   ansible.builtin.import_playbook: redhat_identity_management.yml
 
 - name: Register Red Hat Enterprise Linux (RHEL) Hosts with Identity Management (IdM)
   ansible.builtin.import_playbook: redhat_idm_register.yml
+
+- name: Red Hat Enterprise Linux (RHEL) Cockpit Web Console
+  ansible.builtin.import_playbook: redhat_cockpit.yml
 
 - name: Red Hat Satellite Server
   ansible.builtin.import_playbook: redhat_satellite.yml

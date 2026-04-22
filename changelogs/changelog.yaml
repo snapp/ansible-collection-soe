@@ -61,6 +61,15 @@ releases:
       - add-scap-remediation.yml
       - update-lint-versions.yml
     release_date: '2026-04-16'
+  0.18.0:
+    changes:
+      minor_changes:
+        - redhat_cockpit - Add TLS certification via IdM service
+        - redhat_cockpit - Allow websm_port_t on port 443 when necessary
+        - redhat_cockpit - Ensure cockpit systemd units are not masked
+    fragments:
+      - modify-redhat-cockpit-playbook.yml
+    release_date: '2026-04-21'
   0.2.0:
     changes:
       minor_changes:
