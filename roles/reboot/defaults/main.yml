@@ -1,0 +1,8 @@
+---
+# https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#role-directory-structure
+
+reboot_message: Reboot initiated by Ansible
+reboot_pre_delay: 0
+reboot_post_delay: 5
+reboot_timeout: 300
+reboot_test_command: "whoami"

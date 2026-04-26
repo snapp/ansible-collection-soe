@@ -70,6 +70,13 @@ releases:
     fragments:
       - modify-redhat-cockpit-playbook.yml
     release_date: '2026-04-21'
+  0.19.0:
+    changes:
+      minor_changes:
+        - reboot - relocate task logic to standalone cross-platform role
+    fragments:
+      - modify-reboot-playbook.yml
+    release_date: '2026-04-26'
   0.2.0:
     changes:
       minor_changes:

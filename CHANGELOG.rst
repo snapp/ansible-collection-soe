@@ -4,6 +4,14 @@ infra.soe Release Notes
 
 .. contents:: Topics
 
+v0.19.0
+=======
+
+Minor Changes
+-------------
+
+- reboot - relocate task logic to standalone cross-platform role
+
 v0.18.0
 =======
 

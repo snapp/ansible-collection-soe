@@ -1,0 +1,12 @@
+---
+# https://redhat-cop.github.io/automation-good-practices/#_platform_specific_tasks
+
+- name: default | Reboot host
+  ansible.builtin.reboot:
+    msg: "{{ reboot_message }}"
+    pre_reboot_delay: "{{ reboot_pre_delay }}"
+    post_reboot_delay: "{{ reboot_post_delay }}"
+    reboot_timeout: "{{ reboot_timeout }}"
+    test_command: "{{ reboot_test_command }}"
+  become: true
+  become_user: root
