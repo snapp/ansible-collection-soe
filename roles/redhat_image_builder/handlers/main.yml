@@ -1,0 +1,7 @@
+---
+
+- name: Restart Image Builder
+  ansible.builtin.systemd:
+    daemon_reload: true
+    state: restarted
+    name: osbuild-composer

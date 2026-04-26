@@ -1,0 +1,87 @@
+---
+
+- name: Check if Satellite CA is present
+  ansible.builtin.stat:
+    path: /etc/rhsm/ca/katello-server-ca.pem
+  register: _redhat_image_builder_satellite_ca
+
+- name: Replace redhat-uep.pem with Satellite CA for osbuild-composer RHSM trust
+  ansible.builtin.copy:
+    src: /etc/rhsm/ca/katello-server-ca.pem
+    dest: /etc/rhsm/ca/redhat-uep.pem
+    remote_src: true
+    owner: root
+    group: root
+    mode: '0644'
+  when: _redhat_image_builder_satellite_ca.stat.exists
+  notify: Restart Image Builder
+
+- name: Create Image Builder Repositories Directory
+  ansible.builtin.file:
+    path: /etc/osbuild-composer/repositories
+    state: directory
+    owner: root
+    mode: '0755'
+  loop:
+    - /etc/osbuild-composer
+    - /etc/osbuild-composer/repositories
+
+- name: Define Image Builder Repositories
+  ansible.builtin.template:
+    src: templates/rhel.json.j2
+    dest: /etc/osbuild-composer/repositories/{{ item.name }}.json
+    owner: root
+    mode: '0644'
+  loop: "{{ redhat_image_builder_repositories }}"
+  notify: Restart Image Builder
+
+- name: Install Image Builder Packages
+  ansible.builtin.dnf:
+    state: present
+    name:
+      - bash-completion
+      - cockpit
+      - cockpit-image-builder  # TODO| RHEL-9 does not have this package
+      - composer-cli
+      - firewalld
+      - httpd
+      - lorax
+      - osbuild-composer
+      - pykickstart
+      - python3
+      - rsync
+      - syslinux
+      - weldr-client
+
+- name: Find default osbuild-composer repository files targeting Red Hat CDN
+  ansible.builtin.find:
+    paths: /usr/share/osbuild-composer/repositories/
+    patterns: "rhel-*.json"
+  register: _redhat_image_builder_default_repo_files
+  when: _redhat_image_builder_satellite_ca.stat.exists
+
+- name: Remove RHEL Image Builder repositories that target Red Hat CDN
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ _redhat_image_builder_default_repo_files.files }}"
+  when: _redhat_image_builder_satellite_ca.stat.exists
+  notify: Restart Image Builder
+
+- name: Add Image Builder users to local weldr group
+  ansible.builtin.command:
+    cmd: gpasswd -a {{ item }} weldr
+  loop: "{{ redhat_image_builder_users | default([]) }}"
+  register: _redhat_image_builder_gpasswd_result
+  changed_when: "'Adding user' in _redhat_image_builder_gpasswd_result.stdout"
+
+- name: Enable Image Builder Services
+  ansible.builtin.systemd:
+    state: started
+    enabled: true
+    name: "{{ item }}"
+  loop:
+    - osbuild-composer.socket
+    - cockpit.socket
+    - httpd.service
+    - firewalld

@@ -1,0 +1,14 @@
+{
+  "{{ ansible_facts.architecture }}": [
+    {
+      "name": "baseos",
+      "baseurl": "{{ item.baseos_repo_url.rstrip('/') }}",
+      "rhsm": {{ item.rhsm | default(true) | bool | lower }}
+    },
+    {
+      "name": "appstream",
+      "baseurl": "{{ item.appstream_repo_url.rstrip('/') }}",
+      "rhsm": {{ item.rhsm | default(true) | bool | lower }}
+    }
+  ]
+}

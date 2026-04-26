@@ -1,0 +1,24 @@
+---
+
+- name: Configure Red Hat Image Builder
+  hosts: "{{ target | default('image_builder') }}"
+  gather_facts: true
+  become: true
+  tags:
+    - redhat
+    - image_builder
+  vars:
+    ipaadmin_password: "{{ idm_admin_password }}"
+  roles:
+    - role: redhat_idm_groups
+      tags:
+        - redhat_idm_groups
+        - idm_configure
+
+    - role: redhat_idm_hbac
+      tags:
+        - redhat_idm_hbac
+        - idm_configure
+
+    - role: redhat_image_builder
+      tags: redhat_image_builder

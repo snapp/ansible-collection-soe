@@ -30,5 +30,8 @@
 - name: Red Hat Ansible Automation Platform
   ansible.builtin.import_playbook: redhat_ansible_automation_platform.yml
 
+- name: Red Hat Image Builder
+  ansible.builtin.import_playbook: redhat_image_builder.yml
+
 - name: Security Content Automation Protocol (SCAP) Remediation
   ansible.builtin.import_playbook: scap_remediation.yml

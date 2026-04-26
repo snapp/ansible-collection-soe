@@ -85,6 +85,13 @@ releases:
     fragments:
       - add-redhat-register-playbook.yml
     release_date: '2024-02-01'
+  0.20.0:
+    changes:
+      minor_changes:
+        - image_builder - Added playbook to install Red Hat Image Builder
+    fragments:
+      - add-image-builder-playbook.yml
+    release_date: '2026-04-26'
   0.3.0:
     changes:
       minor_changes:

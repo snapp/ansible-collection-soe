@@ -4,6 +4,14 @@ infra.soe Release Notes
 
 .. contents:: Topics
 
+v0.20.0
+=======
+
+Minor Changes
+-------------
+
+- image_builder - Added playbook to install Red Hat Image Builder
+
 v0.19.0
 =======
 
