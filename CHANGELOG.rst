@@ -4,6 +4,17 @@ infra.soe Release Notes
 
 .. contents:: Topics
 
+v0.21.0
+=======
+
+Minor Changes
+-------------
+
+- redhat_identity_management - Remove local bootstrap user after IdM initialization
+- redhat_idm_register - Add idm_client_all_ip_addresses
+- redhat_idm_service - Fix IdM service CNAME
+- redhat_idm_users - Ensure kerberos init before subid range enablement
+
 v0.20.0
 =======
 

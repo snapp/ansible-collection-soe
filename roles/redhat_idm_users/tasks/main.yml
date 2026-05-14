@@ -15,13 +15,29 @@
     name: "{{ item.name.username }}"
     password: "{{ item.password | default(omit) | regex_replace('\\s+', '') }}"
     sshpubkey: "{{ item.ssh_public_key | default(omit) | regex_replace('\n', '') | trim }}"
+    shell: "{{ item.shell | default('/bin/bash') }}"
     title: "{{ item.title | default(omit) }}"
     uid: "{{ item.uid | default(omit) }}"
     update_password: on_create
   loop: "{{ redhat_idm_users | default([]) }}"
-  no_log: "{{ item.password is defined }}"
+  no_log: "{{ item.password is defined and soe_no_log_enabled | default(true) }}"
 
+# TODO| Avoid shell commands and hardcoded delegation to idm_server group
+- name: Kerberos init as IdM admin for IPA CLI
+  delegate_to: "{{ groups['idm_server'][0] }}"
+  ansible.builtin.shell: |
+    set -euo pipefail
+    echo '{{ idm_admin_password }}' | kinit admin
+  args:
+    executable: /bin/bash
+  changed_when: false
+  no_log: "{{ soe_no_log_enabled | default(true) }}"
+  tags:
+    - redhat_idm_users
+
+# TODO| Avoid shell commands and hardcoded delegation to idm_server group
 - name: Enable subid range for Identity Management users
+  delegate_to: "{{ groups['idm_server'][0] }}"
   ansible.builtin.command:
     cmd: "ipa subid-generate --owner={{ item.name.username }}"
   register: __redhat_idm_users_subid_gen
@@ -29,4 +45,4 @@
   failed_when: __redhat_idm_users_subid_gen.rc != 0 and ('already' not in (__redhat_idm_users_subid_gen.stderr | lower))
   when: item.enable_subid | default(false)
   loop: "{{ redhat_idm_users | default([]) }}"
-  no_log: "{{ item.password is defined }}"
+  no_log: "{{ item.password is defined and soe_no_log_enabled | default(true) }}"

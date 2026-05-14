@@ -20,23 +20,20 @@
       delegate_to: "{{ item }}"
       delegate_facts: true
       loop: "{{ ((groups['idm_server'] | default([])) + (groups['idm_replica'] | default([]))) | unique | sort }}"
-      when:
-        - bootstrap | default(false) | bool
-        - inventory_hostname == ansible_play_hosts[0]
   tasks:
     - name: Ensure canonical hostname is statically set
       ansible.builtin.hostname:
         name: "{{ inventory_hostname }}"
 
-    - name: Ensure IdM peers resolve locally via /etc/hosts (bootstrap block)
+    - name: Ensure IdM peers resolve locally via /etc/hosts
       ansible.builtin.blockinfile:
         path: /etc/hosts
-        marker: "# {mark} ANSIBLE IDM BOOTSTRAP HOSTS"
+        marker: "# {mark} ANSIBLE IDM HOSTS"
         block: |
           {% for h in ((groups['idm_server'] | default([])) + (groups['idm_replica'] | default([]))) | unique | sort %}
           {{ hostvars[h].ansible_default_ipv4.address }} {{ h }} {{ h.split('.')[0] }}
           {% endfor %}
-      when: bootstrap | default(false) | bool
+        state: present
 
 - name: Install Red Hat Identity Management (IdM) Server
   hosts: idm_server
@@ -117,7 +114,7 @@
       args:
         executable: /bin/bash
       changed_when: false
-      no_log: true
+      no_log: "{{ soe_no_log_enabled | default(true) }}"
       tags:
         - redhat_idm_users
 
@@ -167,6 +164,11 @@
             record_value: "{{ idm_domain_external_ip_address }}"
       when: idm_domain_external_ip_address is defined and idm_domain_external_ip_address | length > 0
 
+    - name: Set DNS Global Forwarders to `only` policy
+      redhat.rhel_idm.ipadnsconfig:
+        forwarders: "{{ idm_global_forwarders | default([]) }}"
+        forwardpolicy: only
+
     - name: Set DNS Forward Zones
       redhat.rhel_idm.ipadnsforwardzone:
         name: "{{ item.name }}"
@@ -180,12 +182,52 @@
         name: "{{ item }}"
         allow_sync_ptr: true
         dynamic_update: true
-      loop: "{{ [ipaserver_domain] + (ipaserver_reverse_zones | default([])) }}"
+      loop: "{{ (idm_dns_zones | default([])) + (ipaserver_reverse_zones | default([])) }}"
 
-    - name: Ensure identity CNAME points to the first host in the idm_server group
+    - name: Ensure IDM A records exist in each managed zone for NS
       redhat.rhel_idm.ipadnsrecord:
-        zone_name: "{{ idm_domain }}"
-        records:
-          - name: "{{ idm_cname }}"
-            cname_hostname: "{{ groups['idm_server'][0] | regex_replace('.' + idm_domain + '$', '') }}"
-      when: idm_cname is defined
+        zone_name: "{{ item }}"
+        name: "{{ inventory_hostname | regex_replace('\\.' + item + '\\.?$', '') }}"
+        record_type: A
+        record_value: "{{ idm_ip | default(ansible_default_ipv4.address) }}"
+        state: present
+      loop: "{{ idm_dns_zones }}"
+  post_tasks:
+    # TODO| bootstrap user delete causes next play to fail with permissions on /home/ansible/.ansible/tmp
+    - name: Remove local bootstrap user after IdM initialization
+      become: true
+      become_user: root
+      ansible.builtin.shell: |
+        set -o pipefail
+
+        # Scrub the local bootstrap user from all relevant files
+        find "/var/db/sudo/lectured/$(id -u {{ bootstrap_user }} 2>/dev/null || echo _missing_)" -exec rm -f {} \; 2>/dev/null || true
+        sed -i "/^{{ bootstrap_user }}:/d;" /etc/{group,gshadow,passwd,shadow,subgid,subuid}{,-}
+        rm -rf "/home/{{ bootstrap_user }}"
+        find /etc/sudoers.d/ -type f -exec grep -l "{{ bootstrap_user }}" {} \; | xargs -r rm -f
+
+        sss_cache -E
+        # Flush SSSD caches so IdM user resolution is clean
+        systemctl stop sssd
+        kdestroy -A 2>/dev/null
+        rm -rf /var/lib/sss/{db,mc}/*
+        systemctl start sssd
+
+        # Wait until the IdM service account resolves to IdM UID (i.e. >=1100)
+        for i in $(seq 1 30); do
+          uid=$(id -u "{{ bootstrap_user }}" 2>/dev/null) || { sleep 2; continue; }
+
+          [ "$uid" -ge 1100 ] || { sleep 2; continue; }
+
+          sudo -l -U "{{ bootstrap_user }}" 2>/dev/null | grep -q '(ALL' || { sleep 2; continue; }
+
+          break
+        done
+
+        if ! [ -d "/home/{{ bootstrap_user }}" ]; then
+          cp -r /etc/skel "/home/{{ bootstrap_user }}"
+          mkdir -p "/home/{{ bootstrap_user }}/.ansible/tmp"
+          chown -R {{ bootstrap_user }}:{{ bootstrap_user }} "/home/{{ bootstrap_user }}"
+        fi
+      changed_when: true
+      when: bootstrap_user is defined and bootstrap_user | length > 0

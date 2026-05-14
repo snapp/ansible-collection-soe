@@ -6,16 +6,9 @@
     zone_name: "{{ item.split('.', 1)[1] }}"
     records:
       - name: "{{ item.split('.', 1)[0] }}"
-        cname_hostname: "{{ inventory_hostname.split('.', 1)[0] }}"
-  loop: >-
-    {{
-      redhat_idm_service_tls_sans |
-      reject('equalto', inventory_hostname) |
-      list
-      if (redhat_idm_service_tls_sans | default([]) | length > 0)
-      else []
-    }}
-  no_log: true
+        cname_hostname: "{{ inventory_hostname }}."
+  loop: "{{ redhat_idm_service_tls_sans | reject('equalto', inventory_hostname) | select('search', '\\.' + idm_domain + '$') | list }}"
+  no_log: "{{ soe_no_log_enabled | default(true) }}"
 
 - name: Ensure IdM service principal exists
   redhat.rhel_idm.ipaservice:
@@ -56,7 +49,7 @@
         mode: "{{ item.mode }}"
       loop:
         - path: "{{ redhat_idm_service_tls_dir }}"
-          mode: "0755"
+          mode: '0755'
         - path: "{{ redhat_idm_service_tls_dir }}/private"
           mode: "0700"
 
@@ -69,7 +62,7 @@
         remote_src: true
         owner: "{{ redhat_idm_service_user }}"
         group: "{{ redhat_idm_service_group }}"
-        mode: "0644"
+        mode: '0644'
 
     - name: Request TLS certificate for service principal (tracked by certmonger)
       become: true
@@ -108,7 +101,7 @@
       ansible.builtin.command: "ipa-getcert list -i {{ redhat_idm_service_tls_request_id }}"
       register: _redhat_idm_service_getcert_status
       changed_when: false
-      retries: 30
+      retries: 5
       delay: 2
       until: >
         ('MONITORING' in _redhat_idm_service_getcert_status.stdout) or

@@ -7,6 +7,7 @@
     gid: "{{ item.gid | default(omit) }}"
     description: "{{ item.description }}"
     user: "{{ item.users | default(omit) }}"
+    group: "{{ item.groups | default(omit) }}"
     state: present
   loop: "{{ redhat_idm_groups | default([]) }}"
-  no_log: true
+  no_log: "{{ soe_no_log_enabled | default(true) }}"
