@@ -39,6 +39,7 @@
       redhat.rhel_system_roles.sefcontext:
         target: "{{ item.home }}/{{ item.name }}"
         substitute: "/home/{{ item.name }}"
+      when: item.selinux_home_equivalent | default(true)
 
     - name: RedHat | Create local user ~/.ssh
       ansible.builtin.file:

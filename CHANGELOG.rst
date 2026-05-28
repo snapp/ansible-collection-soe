@@ -4,6 +4,14 @@ infra.soe Release Notes
 
 .. contents:: Topics
 
+v0.22.0
+=======
+
+Minor Changes
+-------------
+
+- local_users - Add support for disabling selinux home equivalent for service accounts whose home dir is an app directory
+
 v0.21.0
 =======
 

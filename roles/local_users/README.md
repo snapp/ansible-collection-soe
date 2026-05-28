@@ -24,6 +24,10 @@ The following example shows how this role can be defined in a playbook with para
           home: '/home'
           sudo: 'ALL=(ALL)  ALL'
           ssh_public_key: 'ssh-rsa AAAAB3NzaC1yc2EAmEQ== Example User'
+          selinux_home_equivalent: true   # default; set false for service accounts whose
+                                          # home dir is an app directory (e.g. /opt/rhbk)
+                                          # to prevent a home-dir equivalency rule that
+                                          # would block custom SELinux fcontext policies
       tags: infra.soe.local_users
 ```
 
