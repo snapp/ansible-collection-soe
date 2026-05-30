@@ -110,6 +110,13 @@ releases:
     fragments:
       - modify-local-users.yml
     release_date: '2026-05-28'
+  0.23.0:
+    changes:
+      minor_changes:
+        - redhat_keycloak - Added playbook to install Red Hat Build of Keycloak (RHBK)
+    fragments:
+      - add-redhat-keycloak-playbook.yml
+    release_date: '2026-05-30'
   0.3.0:
     changes:
       minor_changes:

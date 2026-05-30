@@ -4,6 +4,14 @@ infra.soe Release Notes
 
 .. contents:: Topics
 
+v0.23.0
+=======
+
+Minor Changes
+-------------
+
+- redhat_keycloak - Added playbook to install Red Hat Build of Keycloak (RHBK)
+
 v0.22.0
 =======
 

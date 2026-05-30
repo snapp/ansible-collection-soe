@@ -1,0 +1,134 @@
+---
+# https://console.redhat.com/ansible/automation-hub/collections/published/redhat/rhbk/documentation/role/rhbk
+
+- name: Install Red Hat Build of Keycloak (RHBK)
+  hosts: keycloak
+  gather_facts: true
+  become: true
+  tags:
+    - redhat
+    - keycloak
+    - sso
+    - sso_install
+    - redhat_idm_service
+  vars:
+    ipaadmin_password: "{{ idm_admin_password }}"
+  pre_tasks:
+    # REDO| workaround redhat.rhbk.rhbk blindly evaluates a dynamic fact inside an always tag without a safety net
+    - name: Ensure ansible_facts required by redhat.rhbk.rhbk have been gathered
+      ansible.builtin.setup:
+        gather_subset:
+          - '!all'
+          - '!min'
+          - os_family
+      tags:
+        - always
+
+    - name: Configure Keycloak IdM Service
+      ansible.builtin.include_role:
+        name: redhat_idm_service
+      vars:
+        redhat_idm_service_principal: "{{ keycloak_idm_service_principal }}"
+        redhat_idm_service_user: "{{ keycloak_idm_service_user }}"
+        redhat_idm_service_group: "{{ keycloak_idm_service_group }}"
+        redhat_idm_service_tls_enabled: true
+        redhat_idm_service_tls_request_id: "keycloak_idm_service"
+        redhat_idm_service_tls_sans: "{{ keycloak_idm_service_tls_sans | default([]) }}"
+      tags: redhat_idm_service
+  roles:
+    - role: redhat_idm_users
+      run_once: true
+      tags:
+        - redhat_idm_users
+        - idm_configure
+
+    - role: redhat_idm_groups
+      run_once: true
+      tags:
+        - redhat_idm_groups
+        - idm_configure
+
+    - role: redhat.rhbk.rhbk
+      tags: redhat.rhbk.rhbk
+
+- name: Red Hat Build of Keycloak (RHBK)
+  hosts: keycloak
+  gather_facts: true
+  become: true
+  tags:
+    - redhat
+    - keycloak
+    - keycloak_configure
+  roles:
+    - role: redhat.rhbk.rhbk_realm
+      vars:
+        # REDO|2026/05/30| Remove rhbk_realm when redhat.rhbk no longer hardcodes rhbk_realm to null
+        rhbk_realm: "{{ keycloak_primary_realm }}"
+        organizations_enabled: true
+      delegate_to: localhost
+      tags: redhat.rhbk.rhbk_realm
+  tasks:
+    - name: Configure keycloak clients
+      redhat.rhbk.rhbk_client:
+        auth_rhbk_url: "{{ rhbk_url }}"
+        auth_realm: master
+        auth_username: "{{ rhbk_bootstrap_admin_user }}"
+        auth_password: "{{ rhbk_bootstrap_admin_password }}"
+        realm: "{{ item.realm }}"
+        client_id: "{{ item.client_id }}"
+        name: "{{ item.name | default(omit) }}"
+        description: "{{ item.description | default(omit) }}"
+        public_client: "{{ item.public_client | default(omit) }}"
+        client_authenticator_type: "{{ item.client_authenticator_type | default(omit) }}"
+        service_accounts_enabled: "{{ item.service_accounts_enabled | default(omit) }}"
+        direct_access_grants_enabled: "{{ item.direct_access_grants_enabled | default(omit) }}"
+        standard_flow_enabled: "{{ item.standard_flow_enabled | default(omit) }}"
+        redirect_uris: "{{ item.redirect_uris | default(omit) }}"
+        web_origins: "{{ item.web_origins | default(omit) }}"
+        optional_client_scopes: "{{ item.optional_client_scopes | default(omit) }}"
+        attributes: "{{ item.attributes | default(omit) }}"
+        secret: "{{ item.secret | default(omit) }}"
+        protocol_mappers: "{{ item.protocol_mappers | default(omit) }}"
+        state: "{{ item.state | default('present') }}"
+      loop: "{{ rhbk_clients }}"
+      loop_control:
+        label: "{{ item.client_id }}"
+      no_log: true
+      delegate_to: localhost
+      tags: redhat.rhbk.rhbk_client
+
+    # REDO|2026/05/30| Replace with redhat.rhbk when available
+    - name: Map keycloak client roles to groups
+      community.general.keycloak_client_rolemapping:
+        auth_keycloak_url: "{{ rhbk_url }}"
+        auth_realm: master
+        auth_username: "{{ rhbk_bootstrap_admin_user }}"
+        auth_password: "{{ rhbk_bootstrap_admin_password }}"
+        realm: "{{ item.realm }}"
+        client_id: "{{ item.client_id }}"
+        group_name: "{{ item.group_name }}"
+        roles: "{{ item.roles }}"
+        state: present
+      loop: "{{ rhbk_client_rolemappings }}"
+      loop_control:
+        label: "{{ item.group_name }} -> {{ item.client_id }}"
+      no_log: true
+      delegate_to: localhost
+      tags: redhat.rhbk.rhbk_client_rolemapping
+
+    # REDO|2026/05/30| Replace with redhat.rhbk when available
+    - name: Map keycloak user roles to groups
+      community.general.keycloak_user_rolemapping:
+        auth_keycloak_url: "{{ rhbk_url }}"
+        auth_realm: master
+        auth_username: "{{ rhbk_bootstrap_admin_user }}"
+        auth_password: "{{ rhbk_bootstrap_admin_password }}"
+        realm: "{{ item.realm }}"
+        client_id: "{{ item.client_id }}"
+        service_account_user_client_id: "{{ item.service_account_user_client_id }}"
+        roles: "{{ item.roles }}"
+        state: present
+      loop: "{{ rhbk_user_rolemappings }}"
+      no_log: true
+      delegate_to: localhost
+      tags: redhat.rhbk.rhbk_user_rolemapping

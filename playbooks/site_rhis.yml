@@ -27,6 +27,9 @@
 - name: Red Hat Satellite Server
   ansible.builtin.import_playbook: redhat_satellite.yml
 
+- name: Red Hat Build of Keycloak (RHBK)
+  ansible.builtin.import_playbook: redhat_keycloak.yml
+
 - name: Red Hat Ansible Automation Platform
   ansible.builtin.import_playbook: redhat_ansible_automation_platform.yml
 
