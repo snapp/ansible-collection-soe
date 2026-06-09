@@ -117,6 +117,14 @@ releases:
     fragments:
       - add-redhat-keycloak-playbook.yml
     release_date: '2026-05-30'
+  0.24.0:
+    changes:
+      minor_changes:
+        - application_server - Added playbook to install an Application Server (i.e.
+          container host)
+    fragments:
+      - add-application-server-playbook.yml
+    release_date: '2026-06-09'
   0.3.0:
     changes:
       minor_changes:

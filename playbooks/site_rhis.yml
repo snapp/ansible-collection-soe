@@ -1,13 +1,13 @@
 ---
 
-- name: Configure Local Storage
-  ansible.builtin.import_playbook: local_storage.yml
-
 - name: Configure Local Users
   ansible.builtin.import_playbook: local_users.yml
 
 - name: Register Red Hat Enterprise Linux (RHEL) Hosts
   ansible.builtin.import_playbook: redhat_register.yml
+
+- name: Configure Local Storage
+  ansible.builtin.import_playbook: local_storage.yml
 
 - name: Update Red Hat Enterprise Linux (RHEL) Hosts
   ansible.builtin.import_playbook: redhat_update.yml
@@ -35,6 +35,9 @@
 
 - name: Red Hat Image Builder
   ansible.builtin.import_playbook: redhat_image_builder.yml
+
+- name: Application Server
+  ansible.builtin.import_playbook: application_server.yml
 
 - name: Security Content Automation Protocol (SCAP) Remediation
   ansible.builtin.import_playbook: scap_remediation.yml

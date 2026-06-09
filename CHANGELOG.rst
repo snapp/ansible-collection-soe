@@ -4,6 +4,14 @@ infra.soe Release Notes
 
 .. contents:: Topics
 
+v0.24.0
+=======
+
+Minor Changes
+-------------
+
+- application_server - Added playbook to install an Application Server (i.e. container host)
+
 v0.23.0
 =======
 
