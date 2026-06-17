@@ -8,25 +8,41 @@
     - redhat
     - redhat_register
   pre_tasks:
-    # REDO| Katello RPM will be disappearing in the future; switch to pulling the CA cert directly
-    - name: Install the Red Hat Certificate Authority (CA) required for access to Red Hat repositories and Insights services
-      ansible.builtin.dnf:
-        name: "http://{{ satellite_hostname }}/pub/katello-ca-consumer-latest.noarch.rpm"
-        disable_gpg_check: true
-        state: present
-      when: rhc_server.hostname != 'subscription.rhsm.redhat.com'
-
     # REDO| Associate host with Satellite Host Group from Activation Key
     # Try setting a `foreman_hostgroup` fact to have the host automatically added to the correct Satellite Host Group at registration
+
+    - name: Setup Red Hat Subscription Manager (RHSM)
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+        seuser: system_u
+        setype: rhsmcertd_config_t
+      loop:
+        - /etc/rhsm
+        - /etc/rhsm/ca
+        - /etc/rhsm/facts
 
     - name: Configure default location of Satellite Content Hosts
       ansible.builtin.copy:
         dest: /etc/rhsm/facts/location.facts
         owner: root
         group: root
-        mode: "0644"
+        mode: '0644'
+        seuser: system_u
+        setype: rhsmcertd_config_t
         content: |
           {"foreman_location":"{{ satellite_location }}"}
+      when: rhc_server.hostname != 'subscription.rhsm.redhat.com'
+
+    # REDO| Katello RPM will be disappearing in the future; switch to pulling the CA cert directly
+    - name: Install the Red Hat Certificate Authority (CA) required for access to Red Hat repositories and Insights services
+      ansible.builtin.dnf:
+        name: "http://{{ satellite_hostname }}/pub/katello-ca-consumer-latest.noarch.rpm"
+        disable_gpg_check: true
+        state: present
       when: rhc_server.hostname != 'subscription.rhsm.redhat.com'
   roles:
     - role: redhat.rhel_system_roles.rhc

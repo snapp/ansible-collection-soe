@@ -125,6 +125,11 @@ releases:
     fragments:
       - add-application-server-playbook.yml
     release_date: '2026-06-09'
+  0.24.1:
+    changes: {}
+    fragments:
+      - update-redhat_register.yml
+    release_date: '2026-06-17'
   0.3.0:
     changes:
       minor_changes:
