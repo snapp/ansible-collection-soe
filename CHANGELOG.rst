@@ -4,6 +4,15 @@ infra.soe Release Notes
 
 .. contents:: Topics
 
+v0.25.0
+=======
+
+Minor Changes
+-------------
+
+- redhat_ansible_automation_platform - add aap_configuration dispatch
+- redhat_ansible_automation_platform - clean up become escalation chain
+
 v0.24.1
 =======
 

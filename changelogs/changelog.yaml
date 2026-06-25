@@ -126,10 +126,17 @@ releases:
       - add-application-server-playbook.yml
     release_date: '2026-06-09'
   0.24.1:
-    changes: {}
     fragments:
       - update-redhat_register.yml
     release_date: '2026-06-17'
+  0.25.0:
+    changes:
+      minor_changes:
+        - redhat_ansible_automation_platform - add aap_configuration dispatch
+        - redhat_ansible_automation_platform - clean up become escalation chain
+    fragments:
+      - update-redhat-ansible-automation-platform.yml
+    release_date: '2026-06-24'
   0.3.0:
     changes:
       minor_changes:

@@ -4,17 +4,40 @@
   hosts: aap_installer
   gather_facts: false
   become: true
-  become_user: "{{ aap_service_user }}"
+  become_user: root
   any_errors_fatal: true
   tags:
     - redhat
     - ansible_automation_platform
     - aap
     - aap_install
-    - redhat_idm_service
   vars:
     ipaadmin_password: "{{ idm_admin_password }}"
   pre_tasks:
+    - name: Enable systemd lingering for AAP service user
+      ansible.builtin.command:
+        cmd: "loginctl enable-linger {{ aap_service_user }}"
+        creates: "/var/lib/systemd/linger/{{ aap_service_user }}"
+      when: aap_service_user != 'root'
+  roles:
+    - role: redhat_idm_users
+      run_once: true
+      tags:
+        - redhat_idm_users
+        - idm_configure
+
+    - role: redhat_idm_groups
+      run_once: true
+      tags:
+        - redhat_idm_groups
+        - idm_configure
+
+    - role: redhat_idm_hbac
+      run_once: true
+      tags:
+        - redhat_idm_hbac
+        - idm_configure
+  tasks:
     - name: Configure Red Hat Ansible Automation Platform (AAP) IdM Service
       ansible.builtin.include_role:
         name: redhat_idm_service
@@ -23,23 +46,19 @@
         redhat_idm_service_user: "{{ aap_service_user }}"
         redhat_idm_service_group: "{{ aap_idm_service_group }}"
         redhat_idm_service_tls_enabled: true
-        redhat_idm_service_tls_request_id: "aap_idm_service"
+        redhat_idm_service_tls_request_id: aap_idm_service
         redhat_idm_service_tls_sans: "{{ aap_idm_service_tls_sans | default([]) }}"
       tags: redhat_idm_service
-  tasks:
+
     - name: Install Red Hat Ansible Automation Platform (AAP)
       block:
         - name: Enable systemd lingering for AAP service user
-          become: true
-          become_user: root
           ansible.builtin.command:
             cmd: "loginctl enable-linger {{ aap_service_user }}"
             creates: "/var/lib/systemd/linger/{{ aap_service_user }}"
           when: aap_service_user != 'root'
 
         - name: Grant AAP service user sudo privileges during installation
-          become: true
-          become_user: root
           ansible.builtin.copy:
             dest: "/etc/sudoers.d/{{ aap_service_user }}"
             content: "{{ aap_service_user }} ALL=(ALL) NOPASSWD: ALL"
@@ -50,8 +69,6 @@
           when: aap_service_user != 'root'
 
         - name: Create AAP install location
-          become: true
-          become_user: root
           ansible.builtin.file:
             path: "{{ aap_setup_prep_working_dir }}"
             state: directory
@@ -71,8 +88,6 @@
           tags: infra.aap_utilities.aap_setup_prepare
 
         - name: Identify AAP Installer
-          become: true
-          become_user: root
           ansible.builtin.find:
             paths: "{{ aap_setup_down_dest_dir }}"
             patterns: "ansible-automation-platform*"
@@ -81,8 +96,6 @@
           register: __aap_installer
 
         - name: Disable Preflight Checks
-          become: true
-          become_user: root
           ansible.builtin.lineinfile:
             path: "{{ item.path }}/collections/ansible_collections/ansible/containerized_installer/playbooks/install.yml"
             insertafter: '^\s+- name: Run variable preflight checks'
@@ -96,8 +109,6 @@
             label: "{{ item.path }}"
 
         - name: Ensure AAP Installer is accessible to service account
-          become: true
-          become_user: root
           ansible.builtin.file:
             path: "{{ item.path }}"
             owner: "{{ aap_service_user }}"
@@ -111,11 +122,13 @@
         - name: Run AAP Installer
           ansible.builtin.include_role:
             name: infra.aap_utilities.aap_setup_install
+          vars:
+            ansible_become: true
+            ansible_become_user: "{{ aap_service_user }}"
           tags: infra.aap_utilities.aap_setup_install
+
       always:
         - name: Revoke AAP service user sudo privileges
-          become: true
-          become_user: root
           ansible.builtin.file:
             path: "/etc/sudoers.d/{{ aap_service_user }}"
             state: absent
@@ -136,9 +149,14 @@
         name: infra.aap_configuration.controller_license
       vars:
         aap_validate_certs: true
-        aap_hostname: "{{ _vault_aap_routable_hostname }}"
+        aap_hostname: "{{ aap_routable_hostname }}"
         aap_username: admin
-        aap_password: "{{ _vault_aap_controller_admin_password }}"
+        aap_password: "{{ aap_gateway_admin_password }}"
         controller_license: "{{ aap_controller_license }}"
       tags: infra.aap_configuration.controller_license
       when: aap_manifest_import | default(false)
+
+    - name: Configure AAP
+      ansible.builtin.import_role:
+        name: infra.aap_configuration.dispatch
+      tags: infra.aap_configuration.dispatch
