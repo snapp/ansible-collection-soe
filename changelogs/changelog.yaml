@@ -137,6 +137,14 @@ releases:
     fragments:
       - update-redhat-ansible-automation-platform.yml
     release_date: '2026-06-24'
+  0.26.0:
+    changes:
+      minor_changes:
+        - firewall - Add support for quieting nftable drops
+        - firewall - Add support for setting log-denied value
+    fragments:
+      - update-firewall.yml
+    release_date: '2026-07-02'
   0.3.0:
     changes:
       minor_changes:

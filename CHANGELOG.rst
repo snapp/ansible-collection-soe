@@ -4,6 +4,15 @@ infra.soe Release Notes
 
 .. contents:: Topics
 
+v0.26.0
+=======
+
+Minor Changes
+-------------
+
+- firewall - Add support for quieting nftable drops
+- firewall - Add support for setting log-denied value
+
 v0.25.0
 =======
 
