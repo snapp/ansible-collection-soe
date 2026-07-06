@@ -4,6 +4,9 @@ infra.soe Release Notes
 
 .. contents:: Topics
 
+v0.26.1
+=======
+
 v0.26.0
 =======
 

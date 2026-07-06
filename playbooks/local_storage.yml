@@ -14,7 +14,9 @@
       failed_when: >
         growpart_result.rc != 0 and
         'NOCHANGE' not in growpart_result.stdout
-      when: local_storage_pv is defined
+      when:
+        - local_storage_pv is defined
+        - local_storage_pv.partition is defined
   roles:
     - role: redhat.rhel_system_roles.storage
       storage_pools: "{{ local_storage_lv }}"

@@ -145,6 +145,11 @@ releases:
     fragments:
       - update-firewall.yml
     release_date: '2026-07-02'
+  0.26.1:
+    changes: {}
+    fragments:
+      - update-local-storage.yml
+    release_date: '2026-07-06'
   0.3.0:
     changes:
       minor_changes:
