@@ -143,12 +143,14 @@
     - ansible_automation_platform
     - aap
     - aap_configure
+  vars:
+    gateway_hostname: "{{ aap_routable_hostname }}"
   tasks:
     - name: Configure AAP Manifest
       ansible.builtin.import_role:
         name: infra.aap_configuration.controller_license
       vars:
-        aap_validate_certs: true
+        aap_validate_certs: "{{ aap_gateway_validate_certs | default(true) | bool }}"
         aap_hostname: "{{ aap_routable_hostname }}"
         aap_username: admin
         aap_password: "{{ aap_gateway_admin_password }}"
@@ -159,4 +161,9 @@
     - name: Configure AAP
       ansible.builtin.import_role:
         name: infra.aap_configuration.dispatch
+      vars:
+        aap_validate_certs: "{{ aap_gateway_validate_certs | default(true) | bool }}"
+        aap_hostname: "{{ aap_routable_hostname }}"
+        aap_username: admin
+        aap_password: "{{ aap_gateway_admin_password }}"
       tags: infra.aap_configuration.dispatch

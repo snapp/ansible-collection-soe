@@ -59,6 +59,18 @@
     - redhat
     - keycloak
     - keycloak_configure
+  vars:
+    rhbk_realm_realm: "{{ keycloak_primary_realm }}"
+  pre_tasks:
+    # REDO| workaround redhat.rhbk.rhbk blindly evaluates a dynamic fact inside an always tag without a safety net
+    - name: Ensure ansible_facts required by redhat.rhbk.rhbk have been gathered
+      ansible.builtin.setup:
+        gather_subset:
+          - '!all'
+          - '!min'
+          - os_family
+      tags:
+        - always
   roles:
     - role: redhat.rhbk.rhbk_realm
       vars:
@@ -93,7 +105,7 @@
       loop: "{{ rhbk_clients }}"
       loop_control:
         label: "{{ item.client_id }}"
-      no_log: true
+      no_log: "{{ soe_no_log_enabled | default(true) }}"
       delegate_to: localhost
       tags: redhat.rhbk.rhbk_client
 
@@ -112,7 +124,7 @@
       loop: "{{ rhbk_client_rolemappings }}"
       loop_control:
         label: "{{ item.group_name }} -> {{ item.client_id }}"
-      no_log: true
+      no_log: "{{ soe_no_log_enabled | default(true) }}"
       delegate_to: localhost
       tags: redhat.rhbk.rhbk_client_rolemapping
 
@@ -129,6 +141,6 @@
         roles: "{{ item.roles }}"
         state: present
       loop: "{{ rhbk_user_rolemappings }}"
-      no_log: true
+      no_log: "{{ soe_no_log_enabled | default(true) }}"
       delegate_to: localhost
       tags: redhat.rhbk.rhbk_user_rolemapping

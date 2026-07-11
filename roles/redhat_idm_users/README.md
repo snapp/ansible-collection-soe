@@ -35,7 +35,7 @@ The following example shows how this role can be defined in a playbook with para
             last: User
             full: Example User
           initials: EU
-          email: user@example.com
+          email: user@example.org
       tags: infra.soe.redhat_idm_users
 ```
 
