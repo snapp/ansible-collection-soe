@@ -8,7 +8,6 @@
   any_errors_fatal: true
   tags:
     - redhat
-    - ansible_automation_platform
     - aap
     - aap_install
   vars:
@@ -140,7 +139,6 @@
   become: false
   tags:
     - redhat
-    - ansible_automation_platform
     - aap
     - aap_configure
   vars:

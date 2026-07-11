@@ -8,8 +8,7 @@
   tags:
     - redhat
     - keycloak
-    - sso
-    - sso_install
+    - keycloak_install
     - redhat_idm_service
   vars:
     ipaadmin_password: "{{ idm_admin_password }}"

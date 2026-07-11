@@ -8,7 +8,6 @@
     - redhat
     - satellite_install
     - satellite
-    - satellite_server
   pre_tasks:
     - name: Ensure Satellite Server resolves its own IPv4 Address to its FQDN
       ansible.builtin.lineinfile:
@@ -66,7 +65,6 @@
     - redhat
     - satellite_install
     - satellite
-    - satellite_server
     - satellite_configure
     - redhat_idm_service
   vars:
@@ -148,7 +146,6 @@
   tags:
     - redhat
     - satellite
-    - satellite_server
     - satellite_configure
   tasks:
     - name: Configure Satellite Manifest

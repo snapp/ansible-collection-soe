@@ -9,7 +9,6 @@
   become: true
   tags:
     - redhat
-    - identity_management
     - idm
     - idm_install
     - idm_server
@@ -41,7 +40,6 @@
   become: true
   tags:
     - redhat
-    - identity_management
     - idm
     - idm_install
     - idm_server
@@ -58,7 +56,6 @@
   become: true
   tags:
     - redhat
-    - identity_management
     - idm
     - idm_install
     - idm_replica
@@ -96,7 +93,6 @@
   hosts: "{{ groups['idm_server'][0] | default(omit) }}"
   tags:
     - redhat
-    - identity_management
     - idm
     - idm_server
     - idm_replica
