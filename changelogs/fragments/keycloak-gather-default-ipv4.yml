@@ -1,0 +1,9 @@
+---
+bugfixes:
+  - redhat_keycloak playbook - the ``always``-tagged fact-gathering pre-task now
+    gathers the ``min`` subset (which contains ``ansible_default_ipv4``) instead of
+    an invalid ``os_family`` token with ``min`` excluded. The ``redhat.rhbk.rhbk``
+    role's argument spec defaults ``rhbk_jgroups_bind_address`` to
+    ``ansible_default_ipv4.address`` and its validation task runs under the
+    ``always`` tag, so running any tag-filtered job that reached the Keycloak play
+    without gathering facts failed with ``'ansible_default_ipv4' is undefined``.
