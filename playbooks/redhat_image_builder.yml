@@ -21,4 +21,3 @@
         - idm_configure
 
     - role: redhat_image_builder
-      tags: redhat_image_builder

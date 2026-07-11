@@ -41,10 +41,8 @@
       ansible.builtin.dnf:
         name: satellite
         update_cache: true
-      tags: install_satellite
   roles:
     - role: redhat.satellite_operations.installer
-      tags: redhat.satellite_operations.installer
   handlers:
     - name: Reload sysctl
       ansible.builtin.command:
@@ -151,23 +149,19 @@
     - name: Configure Satellite Manifest
       ansible.builtin.import_role:
         name: redhat.satellite.manifest
-      tags: redhat.satellite.manifest
       when: satellite_manifest_import | default(false)
 
     - name: Configure Satellite Organization(s)
       ansible.builtin.import_role:
         name: redhat.satellite.organizations
-      tags: redhat.satellite.organizations
 
     - name: Configure Satellite Location(s)
       ansible.builtin.import_role:
         name: redhat.satellite.locations
-      tags: redhat.satellite.locations
 
     - name: Configure Satellite Content Credentials
       ansible.builtin.import_role:
         name: redhat.satellite.content_credentials
-      tags: redhat.satellite.content_credentials
 
     - name: Configure Satellite Server Repositories
       ansible.builtin.import_role:
@@ -180,34 +174,27 @@
     - name: Configure Satellite Sync Plans
       ansible.builtin.import_role:
         name: redhat.satellite.sync_plans
-      tags: redhat.satellite.sync_plans
 
     - name: Configure Satellite Host Collections
       ansible.builtin.import_role:
         name: redhat.satellite.host_collections
-      tags: redhat.satellite.host_collections
 
     - name: Configure Satellite Lifecycle Environments
       ansible.builtin.import_role:
         name: redhat.satellite.lifecycle_environments
-      tags: redhat.satellite.lifecycle_environments
 
     - name: Configure Satellite Content Views
       ansible.builtin.import_role:
         name: redhat.satellite.content_views
-      tags: redhat.satellite.content_views
 
     - name: Clean up old Content View versions
       ansible.builtin.import_role:
         name: redhat.satellite.content_view_version_cleanup
-      tags: redhat.satellite.content_view_version_cleanup
 
     - name: Configure Satellite Activation Keys
       ansible.builtin.import_role:
         name: redhat.satellite.activation_keys
-      tags: redhat.satellite.activation_keys
 
     - name: Configure Satellite Host Groups
       ansible.builtin.import_role:
         name: redhat.satellite.hostgroups
-      tags: redhat.satellite.hostgroups

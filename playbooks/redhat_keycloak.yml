@@ -48,7 +48,6 @@
         - idm_configure
 
     - role: redhat.rhbk.rhbk
-      tags: redhat.rhbk.rhbk
 
 - name: Red Hat Build of Keycloak (RHBK)
   hosts: keycloak
@@ -77,7 +76,6 @@
         rhbk_realm: "{{ keycloak_primary_realm }}"
         organizations_enabled: true
       delegate_to: localhost
-      tags: redhat.rhbk.rhbk_realm
   tasks:
     - name: Configure keycloak clients
       redhat.rhbk.rhbk_client:
@@ -106,7 +104,6 @@
         label: "{{ item.client_id }}"
       no_log: "{{ soe_no_log_enabled | default(true) }}"
       delegate_to: localhost
-      tags: redhat.rhbk.rhbk_client
 
     # REDO|2026/05/30| Replace with redhat.rhbk when available
     - name: Map keycloak client roles to groups
@@ -125,7 +122,6 @@
         label: "{{ item.group_name }} -> {{ item.client_id }}"
       no_log: "{{ soe_no_log_enabled | default(true) }}"
       delegate_to: localhost
-      tags: redhat.rhbk.rhbk_client_rolemapping
 
     # REDO|2026/05/30| Replace with redhat.rhbk when available
     - name: Map keycloak user roles to groups
@@ -142,4 +138,3 @@
       loop: "{{ rhbk_user_rolemappings }}"
       no_log: "{{ soe_no_log_enabled | default(true) }}"
       delegate_to: localhost
-      tags: redhat.rhbk.rhbk_user_rolemapping

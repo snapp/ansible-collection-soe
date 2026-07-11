@@ -48,7 +48,6 @@
     ipaadmin_password: "{{ idm_admin_password }}"
   roles:
     - role: redhat.rhel_idm.ipaserver
-      tags: redhat.rhel_idm.ipaserver
 
 - name: Install Red Hat Identity Management (IdM) Replica
   hosts: idm_replica
@@ -74,10 +73,8 @@
         - /etc/bashrc
   roles:
     - role: redhat.rhel_idm.ipaclient
-      tags: redhat.rhel_idm.ipaclient
 
     - role: redhat.rhel_idm.ipareplica
-      tags: redhat.rhel_idm.ipareplica
   post_tasks:
     # REDO|2024-05-08| Document the need for this task (CIS-L2?)
     - name: Change umask back to 077

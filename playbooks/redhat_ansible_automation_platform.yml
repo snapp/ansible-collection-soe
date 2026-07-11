@@ -78,13 +78,11 @@
         - name: Download AAP Installer
           ansible.builtin.include_role:
             name: infra.aap_utilities.aap_setup_download
-          tags: infra.aap_utilities.aap_setup_download
 
         # FIXME|2025-03-11| Add become_user: root to infra.aap_utilities.aap_setup_prepare : Install absolutely necessary packages
         - name: Configure AAP Installer
           ansible.builtin.include_role:
             name: infra.aap_utilities.aap_setup_prepare
-          tags: infra.aap_utilities.aap_setup_prepare
 
         - name: Identify AAP Installer
           ansible.builtin.find:
@@ -124,7 +122,6 @@
           vars:
             ansible_become: true
             ansible_become_user: "{{ aap_service_user }}"
-          tags: infra.aap_utilities.aap_setup_install
 
       always:
         - name: Revoke AAP service user sudo privileges
@@ -153,7 +150,6 @@
         aap_username: admin
         aap_password: "{{ aap_gateway_admin_password }}"
         controller_license: "{{ aap_controller_license }}"
-      tags: infra.aap_configuration.controller_license
       when: aap_manifest_import | default(false)
 
     - name: Configure AAP
@@ -164,4 +160,3 @@
         aap_hostname: "{{ aap_routable_hostname }}"
         aap_username: admin
         aap_password: "{{ aap_gateway_admin_password }}"
-      tags: infra.aap_configuration.dispatch

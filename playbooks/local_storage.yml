@@ -20,5 +20,4 @@
   roles:
     - role: redhat.rhel_system_roles.storage
       storage_pools: "{{ local_storage_lv }}"
-      tags: redhat.rhel_system_roles.storage
       when: local_storage_lv is defined

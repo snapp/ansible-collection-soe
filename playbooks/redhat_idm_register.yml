@@ -19,4 +19,3 @@
     ipaclient_all_ip_addresses: "{{ idm_client_all_ip_addresses | default(false) | bool }}"
   roles:
     - role: redhat.rhel_idm.ipaclient
-      tags: redhat.rhel_idm.ipaclient

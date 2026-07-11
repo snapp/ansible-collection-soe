@@ -8,7 +8,6 @@
     - firewall
     - redhat
     - redhat_firewall
-    - redhat.rhel_system_roles.firewall
   roles:
     - role: redhat.rhel_system_roles.firewall
       firewall_disable_conflicting_services: "{{ soe_firewall_disable_conflicting_services }}"

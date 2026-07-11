@@ -46,7 +46,6 @@
       when: rhc_server.hostname != 'subscription.rhsm.redhat.com'
   roles:
     - role: redhat.rhel_system_roles.rhc
-      tags: redhat.rhel_system_roles.rhc
   tasks:
     - name: Add Host to Satellite Host Group
       redhat.satellite.host:

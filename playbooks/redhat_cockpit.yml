@@ -56,7 +56,6 @@
         - (cockpit_port | default(9090)) | int == 443
   roles:
     - role: redhat.rhel_system_roles.cockpit
-      tags: redhat.rhel_system_roles.cockpit
       when: soe_redhat_cockpit_enabled | default(false)
   handlers:
     - name: Reload SELinux Policy
