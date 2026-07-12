@@ -41,6 +41,7 @@ dependencies:
   redhat.rhel_system_roles: ">=1.22.0"
   redhat.satellite: ">=4.0.0"
   redhat.satellite_operations: ">=3.0.0"
+  redhat.rhbk: ">=3.0.1"
 
 # NOTE| The URL of the originating SCM repository
 repository: "https://github.com/snapp/ansible-collection-soe"
