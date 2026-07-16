@@ -61,7 +61,6 @@
     - redhat
     - satellite
     - satellite_install
-    - satellite_configure
     - redhat_idm_service
   vars:
     ipaadmin_password: "{{ idm_admin_password }}"
