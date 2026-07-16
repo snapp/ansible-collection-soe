@@ -6,18 +6,16 @@
   become: true
   tags:
     - redhat
-    - satellite_install
     - satellite
+    - satellite_install
   pre_tasks:
     - name: Ensure Satellite Server resolves its own IPv4 Address to its FQDN
-      ansible.builtin.lineinfile:
+      ansible.builtin.blockinfile:
         path: /etc/hosts
-        regex: "^{{ ansible_default_ipv4.address }}"
-        line: "{{ ansible_default_ipv4.address }} {{ inventory_hostname }} {{ inventory_hostname_short }}"
+        marker: "# {mark} ANSIBLE SATELLITE SERVER"
+        block: |
+          {{ ansible_default_ipv4.address }} {{ inventory_hostname }} {{ inventory_hostname_short }}
         state: present
-        mode: "0644"
-        owner: root
-        group: root
 
     - name: Disable IPv6
       ansible.builtin.copy:
@@ -61,8 +59,8 @@
   any_errors_fatal: true
   tags:
     - redhat
-    - satellite_install
     - satellite
+    - satellite_install
     - satellite_configure
     - redhat_idm_service
   vars:
@@ -136,6 +134,122 @@
         success_msg: >-
           SSL certificate confirmed
       listen: Verify Satellite Server certificate
+
+# https://docs.redhat.com/en/documentation/red_hat_satellite/6.19/html/configuring_authentication_for_red_hat_satellite_users/configuring-sso-and-2fa-with-keycloak-in-project_keycloak-quarkus
+- name: Configure Red Hat Satellite Server Keycloak Single-Sign-On (SSO)
+  hosts: satellite_server
+  gather_facts: false
+  become: true
+  tags:
+    - redhat
+    - satellite
+    - satellite_install
+    - satellite_configure
+    - satellite_keycloak
+  tasks:
+    - name: Configure Keycloak SSO
+      when: satellite_keycloak_enabled | default(false) | bool
+      block:
+        - name: Install Satellite Keycloak client installer
+          ansible.builtin.command:
+            cmd: >-
+              satellite-maintain packages install -y mod_auth_openidc keycloak-httpd-client-install python3-lxml
+            creates: /usr/share/keycloak-httpd-client-install
+
+        # keycloak-httpd-client-install self-registers the keycloak clients and writes Satellite's Apache mod_auth_openidc config
+        - name: Register Satellite web UI client in Keycloak (foreman-openidc)
+          ansible.builtin.command:
+            cmd: >-
+              keycloak-httpd-client-install
+              -t openidc
+              -l /users/extlogin
+              --force
+              --app-name foreman-openidc
+              --keycloak-server-url {{ satellite_keycloak_server_url }}
+              --keycloak-realm {{ satellite_keycloak_realm }}
+              --keycloak-admin-realm {{ satellite_keycloak_admin_realm }}
+              --keycloak-auth-role {{ satellite_keycloak_auth_role }}
+              --keycloak-admin-username {{ satellite_keycloak_admin_username }}
+              -P -
+            stdin: "{{ satellite_keycloak_admin_password }}"
+            creates: "/etc/httpd/conf.d/foreman-openidc_oidc_keycloak_{{ satellite_keycloak_realm }}.conf"
+          no_log: "{{ soe_no_log_enabled | default(true) }}"
+
+        # satellite-installer --foreman-keycloak then wires Foreman's Apache to it.
+        # hammer/CLI client. Only needs to exist in Keycloak for `hammer auth login oauth`; the API validates its bearer tokens via the OIDC settings.
+        - name: Register Satellite hammer client in Keycloak (hammer-openidc)
+          ansible.builtin.command:
+            cmd: >-
+              keycloak-httpd-client-install
+              -t openidc
+              -l /users/extlogin
+              --force
+              --app-name hammer-openidc
+              --keycloak-server-url {{ satellite_keycloak_server_url }}
+              --keycloak-realm {{ satellite_keycloak_realm }}
+              --keycloak-admin-realm {{ satellite_keycloak_admin_realm }}
+              --keycloak-auth-role {{ satellite_keycloak_auth_role }}
+              --keycloak-admin-username {{ satellite_keycloak_admin_username }}
+              -P -
+            stdin: "{{ satellite_keycloak_admin_password }}"
+            creates: "/etc/httpd/conf.d/hammer-openidc_oidc_keycloak_{{ satellite_keycloak_realm }}.conf"
+          no_log: "{{ soe_no_log_enabled | default(true) }}"
+
+        - name: Enable Keycloak authentication in Satellite (web UI)
+          ansible.builtin.command:
+            cmd: >-
+              satellite-installer
+              --foreman-keycloak true
+              --foreman-keycloak-app-name foreman-openidc
+              --foreman-keycloak-realm {{ satellite_keycloak_realm }}
+          register: __satellite_keycloak_installer
+          changed_when: "'Success!' in __satellite_keycloak_installer.stdout"
+
+        - name: Configure Keycloak login delegation and group mapping
+          module_defaults:
+            group/redhat.satellite.satellite:
+              username: "{{ satellite_username }}"
+              password: "{{ satellite_password }}"
+              server_url: "{{ satellite_server_url }}"
+              validate_certs: "{{ satellite_validate_certs | default(true) }}"
+          block:
+            # --foreman-keycloak wires up Apache but leaves login delegation off, so
+            # Satellite keeps sending users to the local /users/login form. Enabling it
+            # makes unauthenticated requests default to /users/extlogin (Keycloak);
+            # local login stays reachable at /users/login?force_login=true.
+            - name: Default Satellite login to Keycloak
+              redhat.satellite.setting:
+                name: "{{ item.name }}"
+                value: "{{ item.value }}"
+              loop:
+                - name: authorize_login_delegation
+                  value: true
+                - name: authorize_login_delegation_api
+                  value: true
+                - name: authorize_login_delegation_auth_source_user_autocreate
+                  value: External
+              loop_control:
+                label: "{{ item.name }}"
+
+            - name: Ensure Satellite user groups exist with roles
+              redhat.satellite.usergroup:
+                name: "{{ item.name }}"
+                admin: "{{ item.admin | default(omit) }}"
+                roles: "{{ item.roles | default(omit) }}"
+                state: present
+              loop: "{{ satellite_external_usergroups | default([]) }}"
+              loop_control:
+                label: "{{ item.name }}"
+
+            - name: Link Keycloak external groups to Satellite user groups
+              redhat.satellite.external_usergroup:
+                name: "{{ item.1.name }}"
+                usergroup: "{{ item.0.name }}"
+                auth_source: "{{ item.1.auth_source | default('External') }}"
+                state: present
+              loop: "{{ satellite_external_usergroups | default([]) | subelements('external', skip_missing=True) }}"
+              loop_control:
+                label: "{{ item.0.name }} <- {{ item.1.name }}"
 
 - name: Configure Red Hat Satellite Server
   hosts: satellite_server
