@@ -56,8 +56,6 @@
     - redhat
     - keycloak
     - keycloak_configure
-  vars:
-    rhbk_realm_realm: "{{ keycloak_primary_realm }}"
   pre_tasks:
     # REDO| workaround redhat.rhbk.rhbk blindly evaluates a dynamic fact inside an always tag without a safety net
     - name: Ensure ansible_facts required by redhat.rhbk.rhbk have been gathered
@@ -71,6 +69,7 @@
     - role: redhat.rhbk.rhbk_realm
       vars:
         # REDO|2026/05/30| Remove rhbk_realm when redhat.rhbk no longer hardcodes rhbk_realm to null
+        rhbk_realm_realm: "{{ keycloak_primary_realm }}"
         rhbk_realm: "{{ keycloak_primary_realm }}"
         organizations_enabled: true
       delegate_to: localhost
