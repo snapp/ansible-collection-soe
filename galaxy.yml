@@ -29,7 +29,9 @@ license_file: "LICENSE"
 
 # NOTE| A list of tags you want to associate with the collection for indexing/searching.
 tags:
-  - "infrastructure"
+  - infrastructure
+  - linux
+  - rhel
 
 # NOTE| The list of collection dependencies this collection requires to be installed for it to be usable.
 dependencies:
@@ -41,7 +43,7 @@ dependencies:
   redhat.rhel_system_roles: ">=1.22.0"
   redhat.satellite: ">=4.0.0"
   redhat.satellite_operations: ">=3.0.0"
-  redhat.rhbk: ">=3.0.1"
+  redhat.rhbk: ">=3.0.2"
 
 # NOTE| The URL of the originating SCM repository
 repository: "https://github.com/snapp/ansible-collection-soe"
