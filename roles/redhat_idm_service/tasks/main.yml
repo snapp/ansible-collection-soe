@@ -8,7 +8,7 @@
       - name: "{{ item.split('.', 1)[0] }}"
         cname_hostname: "{{ inventory_hostname }}."
   loop: "{{ redhat_idm_service_tls_sans | reject('equalto', inventory_hostname) | select('search', '\\.' + idm_domain + '$') | list }}"
-  no_log: "{{ soe_no_log_enabled | default(true) }}"
+  no_log: "{{ no_log_enabled | default(true) }}"
 
 - name: Ensure IdM service principal exists
   redhat.rhel_idm.ipaservice:

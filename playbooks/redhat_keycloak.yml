@@ -2,8 +2,8 @@
 # https://console.redhat.com/ansible/automation-hub/collections/published/redhat/rhbk/documentation/role/rhbk
 
 - name: Install Red Hat Build of Keycloak (RHBK)
-  hosts: keycloak
-  gather_facts: true
+  hosts: "{{ target_hosts | default('keycloak') }}"
+  gather_facts: false
   become: true
   tags:
     - redhat
@@ -18,13 +18,14 @@
       ansible.builtin.setup:
         gather_subset:
           - '!all'
-          - 'min'
+          - '!min'
+          - network
       tags:
         - always
 
     - name: Configure Keycloak IdM Service
       ansible.builtin.include_role:
-        name: redhat_idm_service
+        name: infra.soe.redhat_idm_service
       vars:
         redhat_idm_service_principal: "{{ keycloak_idm_service_principal }}"
         redhat_idm_service_user: "{{ keycloak_idm_service_user }}"
@@ -34,13 +35,13 @@
         redhat_idm_service_tls_sans: "{{ keycloak_idm_service_tls_sans | default([]) }}"
       tags: redhat_idm_service
   roles:
-    - role: redhat_idm_users
+    - role: infra.soe.redhat_idm_users
       run_once: true
       tags:
         - redhat_idm_users
         - idm_configure
 
-    - role: redhat_idm_groups
+    - role: infra.soe.redhat_idm_groups
       run_once: true
       tags:
         - redhat_idm_groups
@@ -99,7 +100,7 @@
       loop: "{{ rhbk_clients }}"
       loop_control:
         label: "{{ item.client_id }}"
-      no_log: "{{ soe_no_log_enabled | default(true) }}"
+      no_log: "{{ no_log_enabled | default(true) }}"
       delegate_to: localhost
 
     # REDO|2026/05/30| Replace with redhat.rhbk when available
@@ -117,7 +118,7 @@
       loop: "{{ rhbk_client_rolemappings }}"
       loop_control:
         label: "{{ item.group_name }} -> {{ item.client_id }}"
-      no_log: "{{ soe_no_log_enabled | default(true) }}"
+      no_log: "{{ no_log_enabled | default(true) }}"
       delegate_to: localhost
 
     # REDO|2026/05/30| Replace with redhat.rhbk when available
@@ -133,5 +134,5 @@
         roles: "{{ item.roles }}"
         state: present
       loop: "{{ rhbk_user_rolemappings }}"
-      no_log: "{{ soe_no_log_enabled | default(true) }}"
+      no_log: "{{ no_log_enabled | default(true) }}"
       delegate_to: localhost

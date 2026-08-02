@@ -1,7 +1,7 @@
 ---
 
 - name: Red Hat Identity Management (IdM) Client Registration
-  hosts: redhat:!identity_management
+  hosts: "{{ target_hosts | default('redhat:!identity_management') }}"
   gather_facts: false
   become: true
   tags:

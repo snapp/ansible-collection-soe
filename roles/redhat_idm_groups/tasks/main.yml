@@ -10,4 +10,4 @@
     group: "{{ item.groups | default(omit) }}"
     state: present
   loop: "{{ redhat_idm_groups | default([]) }}"
-  no_log: "{{ soe_no_log_enabled | default(true) }}"
+  no_log: "{{ no_log_enabled | default(true) }}"

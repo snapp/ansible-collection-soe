@@ -20,7 +20,7 @@
     uid: "{{ item.uid | default(omit) }}"
     update_password: on_create
   loop: "{{ redhat_idm_users | default([]) }}"
-  no_log: "{{ item.password is defined and soe_no_log_enabled | default(true) }}"
+  no_log: "{{ item.password is defined and no_log_enabled | default(true) }}"
 
 # TODO| Avoid shell commands and hardcoded delegation to idm_server group
 - name: Kerberos init as IdM admin for IPA CLI
@@ -31,7 +31,7 @@
   args:
     executable: /bin/bash
   changed_when: false
-  no_log: "{{ soe_no_log_enabled | default(true) }}"
+  no_log: "{{ no_log_enabled | default(true) }}"
   tags:
     - redhat_idm_users
 
@@ -45,4 +45,4 @@
   failed_when: __redhat_idm_users_subid_gen.rc != 0 and ('already' not in (__redhat_idm_users_subid_gen.stderr | lower))
   when: item.enable_subid | default(false)
   loop: "{{ redhat_idm_users | default([]) }}"
-  no_log: "{{ item.password is defined and soe_no_log_enabled | default(true) }}"
+  no_log: "{{ item.password is defined and no_log_enabled | default(true) }}"

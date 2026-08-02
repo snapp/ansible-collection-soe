@@ -1,0 +1,74 @@
+---
+
+- name: configure | Satellite Manifest
+  ansible.builtin.include_role:
+    name: redhat.satellite.manifest
+    apply:
+      tags: satellite_manifest
+  when: satellite_manifest_import | default(false)
+  tags: satellite_manifest
+
+- name: configure | Satellite Organization(s)
+  ansible.builtin.import_role:
+    name: redhat.satellite.organizations
+  tags: satellite_organizations
+
+- name: configure | Satellite Location(s)
+  ansible.builtin.import_role:
+    name: redhat.satellite.locations
+  tags: satellite_locations
+
+- name: configure | Satellite Content Credentials
+  ansible.builtin.import_role:
+    name: redhat.satellite.content_credentials
+  tags: satellite_content_credentials
+
+- name: configure | Satellite Server Repositories
+  ansible.builtin.import_role:
+    name: redhat.satellite.repositories
+  tags: satellite_repositories
+
+# TODO|redhat.satellite.sync_plans| role is not idempotent
+- name: configure | Satellite Sync Plans
+  ansible.builtin.import_role:
+    name: redhat.satellite.sync_plans
+  tags: satellite_sync_plans
+
+- name: configure | Satellite Host Collections
+  redhat.satellite.host_collection:
+    username: "{{ satellite_username | default(omit) }}"
+    password: "{{ satellite_password | default(omit) }}"
+    server_url: "{{ satellite_server_url | default(omit) }}"
+    validate_certs: "{{ satellite_validate_certs | default(omit) }}"
+    organization: "{{ satellite_organization }}"
+    name: "{{ item.name }}"
+    description: "{{ item.description | default(omit) }}"
+    state: "{{ item.state | default(omit) }}"
+  loop: "{{ satellite_host_collections | default([]) }}"
+  tags: satellite_host_collections
+  no_log: "{{ no_log_enabled | default(true) }}"
+
+- name: configure | Satellite Lifecycle Environments
+  ansible.builtin.import_role:
+    name: redhat.satellite.lifecycle_environments
+  tags: satellite_lifecycle_environments
+
+- name: configure | Satellite Content Views
+  ansible.builtin.import_role:
+    name: redhat.satellite.content_views
+  tags: satellite_content_views
+
+- name: configure | Clean up old Content View versions
+  ansible.builtin.import_role:
+    name: redhat.satellite.content_view_version_cleanup
+  tags: satellite_content_view_version_cleanup
+
+- name: configure | Satellite Activation Keys
+  ansible.builtin.import_role:
+    name: redhat.satellite.activation_keys
+  tags: satellite_activation_keys
+
+- name: configure | Satellite Host Groups
+  ansible.builtin.import_role:
+    name: redhat.satellite.hostgroups
+  tags: satellite_hostgroups

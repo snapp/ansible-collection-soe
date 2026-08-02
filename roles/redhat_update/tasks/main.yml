@@ -1,0 +1,13 @@
+---
+
+- name: Update Red Hat packages to latest version
+  ansible.builtin.dnf:
+    name: '*'
+    state: latest
+    bugfix: "{{ redhat_update_bugfix | default(false) }}"
+    update_only: "{{ redhat_update_update_only | default(true) }}"
+    update_cache: "{{ redhat_update_update_cache | default(false) }}"
+  register: __redhat_update_patch_update_result
+  changed_when: __redhat_update_patch_update_result.changed
+  notify: Reboot host following patch update
+  when: redhat_update_enabled | default(false)

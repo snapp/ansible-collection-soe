@@ -1,9 +1,9 @@
 ---
 
 - name: Configure Red Hat Identity Management (IdM) service integration
-  hosts: "{{ target | default('all') }}"
+  hosts: "{{ target_hosts | default('redhat') }}"
   gather_facts: false
   tags:
     - redhat_idm_service
   roles:
-    - redhat_idm_service
+    - infra.soe.redhat_idm_service

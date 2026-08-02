@@ -1,0 +1,27 @@
+---
+
+- name: configure | Application Server IdM Users
+  ansible.builtin.import_role:
+    name: redhat_idm_users
+  vars:
+    ipaadmin_password: "{{ idm_admin_password | default(omit) }}"
+  run_once: true
+  when:
+    - redhat_idm_users is defined and redhat_idm_users | length > 0
+    - idm_admin_password is defined
+  tags:
+    - redhat_idm_users
+    - idm_configure
+
+- name: configure | Application Server IdM Groups
+  ansible.builtin.import_role:
+    name: redhat_idm_groups
+  vars:
+    ipaadmin_password: "{{ idm_admin_password | default(omit) }}"
+  run_once: true
+  when:
+    - redhat_idm_groups is defined and redhat_idm_groups | length > 0
+    - idm_admin_password is defined
+  tags:
+    - redhat_idm_groups
+    - idm_configure

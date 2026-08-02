@@ -3,9 +3,9 @@
 # Install and configure IdM fully
 # Later re-register IdM to Satellite once Satellite exists
 
-- name: Red Hat Identity Management (IdM) Bootstrap configuration
-  hosts: identity_management
-  gather_facts: true
+- name: Red Hat Identity Management (IdM)
+  hosts: "{{ target_hosts | default('identity_management') }}"
+  gather_facts: false
   become: true
   tags:
     - redhat
@@ -13,26 +13,11 @@
     - idm_install
     - idm_server
     - idm_replica
-  pre_tasks:
-    - name: Gather facts for all IdM peers to identify default_ipv4
-      ansible.builtin.setup:
-      delegate_to: "{{ item }}"
-      delegate_facts: true
-      loop: "{{ ((groups['idm_server'] | default([])) + (groups['idm_replica'] | default([]))) | unique | sort }}"
   tasks:
-    - name: Ensure canonical hostname is statically set
-      ansible.builtin.hostname:
-        name: "{{ inventory_hostname }}"
-
-    - name: Ensure IdM peers resolve locally via /etc/hosts
-      ansible.builtin.blockinfile:
-        path: /etc/hosts
-        marker: "# {mark} ANSIBLE IDM HOSTS"
-        block: |
-          {% for h in ((groups['idm_server'] | default([])) + (groups['idm_replica'] | default([]))) | unique | sort %}
-          {{ hostvars[h].ansible_default_ipv4.address }} {{ h }} {{ h.split('.')[0] }}
-          {% endfor %}
-        state: present
+    - name: Gather facts for all IdM peers to identify default_ipv4
+      ansible.builtin.import_role:
+        name: infra.soe.redhat_identity_management
+        tasks_from: network
 
 - name: Install Red Hat Identity Management (IdM) Server
   hosts: idm_server
@@ -107,7 +92,7 @@
       args:
         executable: /bin/bash
       changed_when: false
-      no_log: "{{ soe_no_log_enabled | default(true) }}"
+      no_log: "{{ no_log_enabled | default(true) }}"
       tags:
         - redhat_idm_users
 
@@ -121,19 +106,19 @@
         enable_sid: "{{ idm_enable_sid | default(omit) }}"
         add_sids: "{{ idm_add_sids | default(omit) }}"
   roles:
-    - role: redhat_idm_acme
+    - role: infra.soe.redhat_idm_acme
       tags: redhat_idm_acme
 
-    - role: redhat_idm_users
+    - role: infra.soe.redhat_idm_users
       tags: redhat_idm_users
 
-    - role: redhat_idm_groups
+    - role: infra.soe.redhat_idm_groups
       tags: redhat_idm_groups
 
-    - role: redhat_idm_sudo
+    - role: infra.soe.redhat_idm_sudo
       tags: redhat_idm_sudo
 
-    - role: redhat_idm_hbac
+    - role: infra.soe.redhat_idm_hbac
       tags: redhat_idm_hbac
   tasks:
     - name: Set password policy for service accounts

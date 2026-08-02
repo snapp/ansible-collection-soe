@@ -9,7 +9,7 @@
 - name: Configure Local Storage
   ansible.builtin.import_playbook: local_storage.yml
 
-- name: Update Red Hat Enterprise Linux (RHEL) Hosts
+- name: Red Hat Enterprise Linux (RHEL) Update
   ansible.builtin.import_playbook: redhat_update.yml
 
 - name: Host Firewall
@@ -18,7 +18,7 @@
 - name: Red Hat Identity Management (IdM)
   ansible.builtin.import_playbook: redhat_identity_management.yml
 
-- name: Register Red Hat Enterprise Linux (RHEL) Hosts with Identity Management (IdM)
+- name: Red Hat Enterprise Linux (RHEL) Identity Management (IdM) Registration
   ansible.builtin.import_playbook: redhat_idm_register.yml
 
 - name: Red Hat Enterprise Linux (RHEL) Cockpit Web Console
@@ -30,7 +30,13 @@
 - name: Red Hat Build of Keycloak (RHBK)
   ansible.builtin.import_playbook: redhat_keycloak.yml
 
-- name: Red Hat Ansible Automation Platform
+- name: Caddy Transport Layer Security (TLS) Reverse Proxy
+  ansible.builtin.import_playbook: caddy.yml
+
+- name: NetBird WireGuard Mesh Virtual Private Network (VPN)
+  ansible.builtin.import_playbook: netbird.yml
+
+- name: Red Hat Ansible Automation Platform (AAP)
   ansible.builtin.import_playbook: redhat_ansible_automation_platform.yml
 
 - name: Red Hat Image Builder
@@ -40,4 +46,4 @@
   ansible.builtin.import_playbook: application_server.yml
 
 - name: Security Content Automation Protocol (SCAP) Remediation
-  ansible.builtin.import_playbook: scap_remediation.yml
+  ansible.builtin.import_playbook: redhat_scap.yml

@@ -1,10 +1,10 @@
 ---
 
 - name: Reboot Managed Hosts
-  hosts: "{{ target | default('all') }}"
+  hosts: "{{ target_hosts | default('all') }}"
   gather_facts: false
   become: true
   tags:
     - reboot
   roles:
-    - reboot
+    - infra.soe.reboot

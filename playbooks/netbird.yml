@@ -1,0 +1,11 @@
+---
+
+- name: NetBird WireGuard Mesh Virtual Private Network (VPN) Control Plane
+  hosts: "{{ target_hosts | default('netbird') }}"
+  gather_facts: false
+  become: true
+  tags:
+    - apps
+    - netbird
+  roles:
+    - infra.soe.netbird

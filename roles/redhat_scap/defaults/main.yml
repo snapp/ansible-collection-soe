@@ -1,0 +1,47 @@
+---
+# Profile ID passed to oscap.
+#
+# Discover available profiles for a given datastream:
+#   oscap info --profiles <scap_datastream>
+#
+# Common RHEL profile IDs:
+#   CIS L1 Server:  xccdf_org.ssgproject.content_profile_cis_server_l1
+#   CIS L2 Server:  xccdf_org.ssgproject.content_profile_cis
+#   DISA STIG:      xccdf_org.ssgproject.content_profile_stig
+#   FIPS 140:       xccdf_org.ssgproject.content_profile_fips
+#   PCI-DSS:        xccdf_org.ssgproject.content_profile_pci-dss
+#
+# Example CIS L2 Server
+# scap_profile: xccdf_org.ssgproject.content_profile_cis
+
+# List of XCCDF rule exceptions for the tailoring profile.
+# Leave empty ([]) to run the upstream profile unmodified.
+#
+# Each entry documents why a rule is modified alongside the rule ID.
+# status: "deselected" skips the rule entirely; "selected" re-enables a rule
+# that the base profile has turned off.
+#
+# Required fields : name, status, justification
+# Optional fields : owner, change_control, review_date
+#
+# Example (IdM host — CIS L2 removes packages that are hard deps of ipa-server):
+#   scap_tailoring_exceptions:
+#     - name: xccdf_org.ssgproject.content_rule_package_bind_removed
+#       status: deselected
+#       justification: bind is a hard dependency of ipa-server-dns
+#       owner: security-team
+#       change_control: CC-2024-0001
+#       review_date: 2026-01-01
+
+redhat_scap_results_dir: /var/log/scap
+
+redhat_scap_report_prefix: scap-remediation
+
+redhat_scap_timestamp: "{{ ansible_date_time.iso8601_basic_short }}"
+
+redhat_scap_datastream: "/usr/share/xml/scap/ssg/content/ssg-rhel{{ ansible_distribution_major_version }}-ds.xml"
+
+redhat_scap_log_file: "{{ redhat_scap_results_dir }}/{{ redhat_scap_report_prefix }}-{{ redhat_scap_timestamp }}.log"
+redhat_scap_report_file: "{{ redhat_scap_results_dir }}/{{ redhat_scap_report_prefix }}-report-{{ redhat_scap_timestamp }}.html"
+redhat_scap_results_file: "{{ redhat_scap_results_dir }}/{{ redhat_scap_report_prefix }}-results-{{ redhat_scap_timestamp }}.xml"
+redhat_scap_tailoring_file: "{{ redhat_scap_results_dir }}/{{ redhat_scap_report_prefix }}-tailoring-{{ redhat_scap_timestamp }}.xml"

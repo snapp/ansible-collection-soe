@@ -1,99 +1,12 @@
 ---
 
-- name: Configure Red Hat Enterprise Linux (RHEL) Firewall
-  hosts: redhat:fedora
-  gather_facts: true
+- name: Firewall
+  hosts: "{{ target_hosts | default('redhat:fedora') }}"
+  gather_facts: false
   become: true
   tags:
-    - firewall
     - redhat
-    - redhat_firewall
+    - fedora
+    - firewall
   roles:
-    - role: redhat.rhel_system_roles.firewall
-      firewall_disable_conflicting_services: "{{ soe_firewall_disable_conflicting_services }}"
-      firewall: "{{ soe_firewall }}"
-      when: soe_firewall_enabled | default(false)
-  tasks:
-    - name: Validate firewall log-denied value
-      ansible.builtin.assert:
-        that:
-          - soe_firewall_log_denied | default('off') | string in
-            ['off', 'all', 'unicast', 'broadcast', 'multicast']
-        fail_msg: >-
-          soe_firewall_log_denied must be one of:
-          off, all, unicast, broadcast, multicast
-      when: soe_firewall_enabled | default(false)
-
-    # TODO|2024-02-18| Add firewalld_conf.LogDenied parameter support to redhat.rhel_system_roles.firewall_lib module
-    - name: Configure firewall logging of denied packets
-      ansible.builtin.lineinfile:
-        path: /etc/firewalld/firewalld.conf
-        regexp: '^LogDenied\s*=.*'
-        line: "LogDenied={{ soe_firewall_log_denied | default('off') }}"
-        backrefs: false
-      notify: Reload firewalld
-      when: soe_firewall_enabled | default(false)
-
-    - name: Deploy quiet-drops nftables table
-      ansible.builtin.copy:
-        dest: /etc/nftables/quiet-drops.nft
-        owner: root
-        group: root
-        mode: '0600'
-        content: |
-          # Silently drops known-benign invalid-state flows before firewalld's
-          # LogDenied rule (this table hooks at priority "filter"; firewalld
-          # hooks at "filter + 10", so we evaluate first).
-          table inet quiet_drops {
-              chain input {
-                  type filter hook input priority filter; policy accept;
-          {% for d in soe_firewall_quiet_drops %}
-                  # {{ d.comment }}
-                  iifname "{{ d.iifname }}" ip saddr {{ d.saddr }} tcp dport {{ d.dport }} ct state invalid counter drop
-          {% endfor %}
-              }
-          }
-      notify: Reload nftables
-      when: soe_firewall_quiet_drops | default([]) | length > 0
-
-    - name: Include quiet-drops in nftables main config
-      ansible.builtin.lineinfile:
-        path: /etc/sysconfig/nftables.conf
-        line: 'include "/etc/nftables/quiet-drops.nft"'
-        state: present
-      notify: Reload nftables
-      when: soe_firewall_quiet_drops | default([]) | length > 0
-
-    - name: Ensure flush ruleset is not enabled in nftables.conf
-      ansible.builtin.lineinfile:
-        path: /etc/sysconfig/nftables.conf
-        regexp: '^\s*flush ruleset'
-        state: absent
-
-    - name: Enable and start nftables service
-      ansible.builtin.systemd_service:
-        name: nftables
-        enabled: true
-        state: started
-      when: soe_firewall_quiet_drops | default([]) | length > 0
-  handlers:
-    - name: Reload firewalld
-      ansible.builtin.service:
-        name: firewalld
-        state: reloaded
-
-    - name: Reload nftables
-      ansible.builtin.systemd_service:
-        name: nftables
-        state: restarted
-
-# TODO| Add Microsoft Windows Firewall support
-# - name: Configure Microsoft Windows Firewall
-#   hosts: microsoft
-#   gather_facts: false
-#   become: true
-#   tags:
-#     - firewall
-#     - microsoft
-#     - microsoft_firewall
-#   tasks:
+    - infra.soe.firewall

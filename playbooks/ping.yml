@@ -1,9 +1,13 @@
 ---
 
 - name: Verify Ansible Connectivity
-  hosts: "{{ target | default('all') }}"
+  hosts: "{{ target_hosts | default('all') }}"
   gather_facts: false
+  become: false
   tags:
+    - redhat
+    - fedora
+    - microsoft
     - ping
   roles:
-    - ping
+    - infra.soe.ping

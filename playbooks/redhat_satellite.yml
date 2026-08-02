@@ -1,313 +1,52 @@
 ---
 
-- name: Install Red Hat Satellite Server
-  hosts: satellite_server
-  gather_facts: true
-  become: true
-  tags:
-    - redhat
-    - satellite
-    - satellite_install
-  pre_tasks:
-    - name: Ensure Satellite Server resolves its own IPv4 Address to its FQDN
-      ansible.builtin.blockinfile:
-        path: /etc/hosts
-        marker: "# {mark} ANSIBLE SATELLITE SERVER"
-        block: |
-          {{ ansible_default_ipv4.address }} {{ inventory_hostname }} {{ inventory_hostname_short }}
-        state: present
-
-    - name: Disable IPv6
-      ansible.builtin.copy:
-        dest: /etc/sysctl.d/ipv6.conf
-        owner: root
-        group: root
-        mode: "0644"
-        content: |
-          # For the internal working of Red Hat Satellite services, it is required to have IPv6 address on the loopback interface.
-          # https://access.redhat.com/solutions/5045841
-          net.ipv6.conf.all.disable_ipv6 = 1
-          net.ipv6.conf.lo.disable_ipv6 = 0
-      notify:
-        - Reload sysctl
-        - Rebuild Initial RAM Disk Image
-
-    - name: Reinitialize network if necessary
-      ansible.builtin.meta: flush_handlers
-
-    - name: Install Satellite Server package
-      ansible.builtin.dnf:
-        name: satellite
-        update_cache: true
-  roles:
-    - role: redhat.satellite_operations.installer
-  handlers:
-    - name: Reload sysctl
-      ansible.builtin.command:
-        cmd: 'sysctl -p /etc/sysctl.d/ipv6.conf'
-      changed_when: true
-
-    - name: Rebuild Initial RAM Disk Image
-      ansible.builtin.command:
-        cmd: 'dracut -f'
-      changed_when: true
-
-- name: Configure Red Hat Satellite Server Certificate
-  hosts: satellite_server
-  gather_facts: false
-  become: true
-  any_errors_fatal: true
-  tags:
-    - redhat
-    - satellite
-    - satellite_install
-    - redhat_idm_service
-  vars:
-    ipaadmin_password: "{{ idm_admin_password }}"
-  pre_tasks:
-    - name: Configure Red Hat Satellite Server IdM Service
-      ansible.builtin.include_role:
-        name: redhat_idm_service
-      vars:
-        redhat_idm_service_principal: "{{ satellite_idm_service_principal }}"
-        redhat_idm_service_tls_enabled: true
-        redhat_idm_service_tls_request_id: "satellite_idm_service"
-        redhat_idm_service_tls_sans: "{{ satellite_idm_service_tls_sans | default([]) }}"
-      tags: redhat_idm_service
-  tasks:
-    - name: Checksum Satellite Server IdM service certificate
-      ansible.builtin.stat:
-        path: /etc/pki/satellite_idm_service/service.crt
-        checksum_algorithm: sha256
-        get_checksum: true
-      register: _satellite_idm_service_certificate
-
-    - name: Checksum Satellite Server certificate
-      ansible.builtin.stat:
-        path: "/root/ssl-build/{{ satellite_hostname }}/{{ satellite_hostname }}-apache.crt"
-        checksum_algorithm: sha256
-        get_checksum: true
-      register: _satellite_server_certificate
-
-    - name: Run satellite-installer to configure SSL certificates
-      ansible.builtin.command:
-        cmd: >-
-          satellite-installer
-          --certs-server-cert /etc/pki/satellite_idm_service/service.crt
-          --certs-server-key /etc/pki/satellite_idm_service/private/service.key
-          --certs-server-ca-cert /etc/pki/satellite_idm_service/ipa-ca.crt
-          --certs-update-server
-          --certs-update-server-ca
-      register: __satellite_installer_result
-      changed_when: >-
-        'Success!' in __satellite_installer_result.stdout
-      notify: Verify Satellite Server certificate
-      when: >-
-        not _satellite_server_certificate.stat.exists or
-        _satellite_idm_service_certificate.stat.checksum != _satellite_server_certificate.stat.checksum
-  handlers:
-    - name: Wait for HTTPS to become available
-      ansible.builtin.wait_for:
-        host: 127.0.0.1
-        port: 443
-        timeout: 120
-      listen: Verify Satellite Server certificate
-
-    - name: Retrieve HTTPS certificate from Satellite Server
-      ansible.builtin.shell:
-        cmd: >-
-          openssl s_client
-          -connect 127.0.0.1:443
-          -showcerts
-          </dev/null
-      register: _satellite_ssl_result
-      changed_when: false
-      listen: Verify Satellite Server certificate
-
-    - name: Verify Satellite Server HTTPS certificate
-      ansible.builtin.assert:
-        that:
-          - satellite_hostname in _satellite_ssl_result.stdout
-        fail_msg: >-
-          SSL certificate does not contain the expected hostname
-        success_msg: >-
-          SSL certificate confirmed
-      listen: Verify Satellite Server certificate
-
-# https://docs.redhat.com/en/documentation/red_hat_satellite/6.19/html/configuring_authentication_for_red_hat_satellite_users/configuring-sso-and-2fa-with-keycloak-in-project_keycloak-quarkus
-- name: Configure Red Hat Satellite Server Keycloak Single-Sign-On (SSO)
-  hosts: satellite_server
+- name: Red Hat Satellite Server
+  hosts: "{{ target_hosts | default('satellite_server') }}"
   gather_facts: false
   become: true
   tags:
     - redhat
     - satellite
-    - satellite_install
-    - satellite_configure
-    - satellite_keycloak
-  tasks:
-    - name: Configure Keycloak SSO
-      when: satellite_keycloak_enabled | default(false) | bool
+  pre_tasks:
+    - name: Install Red Hat Satellite Server
+      tags: satellite_install
       block:
-        - name: Install Satellite Keycloak client installer
-          ansible.builtin.command:
-            cmd: >-
-              satellite-maintain packages install -y mod_auth_openidc keycloak-httpd-client-install python3-lxml
-            creates: /usr/share/keycloak-httpd-client-install
+        - name: Ensure host network is prepared for Satellite Server Installer
+          ansible.builtin.import_role:
+            name: infra.soe.redhat_satellite
+            tasks_from: network
 
-        # keycloak-httpd-client-install self-registers the keycloak clients and writes Satellite's Apache mod_auth_openidc config
-        - name: Register Satellite web UI client in Keycloak (foreman-openidc)
-          ansible.builtin.command:
-            cmd: >-
-              keycloak-httpd-client-install
-              -t openidc
-              -l /users/extlogin
-              --force
-              --app-name foreman-openidc
-              --keycloak-server-url {{ satellite_keycloak_server_url }}
-              --keycloak-realm {{ satellite_keycloak_realm }}
-              --keycloak-admin-realm {{ satellite_keycloak_admin_realm }}
-              --keycloak-auth-role {{ satellite_keycloak_auth_role }}
-              --keycloak-admin-username {{ satellite_keycloak_admin_username }}
-              -P -
-            stdin: "{{ satellite_keycloak_admin_password }}"
-            creates: "/etc/httpd/conf.d/foreman-openidc_oidc_keycloak_{{ satellite_keycloak_realm }}.conf"
-          no_log: "{{ soe_no_log_enabled | default(true) }}"
+        - name: Run Satellite Server Installer
+          ansible.builtin.import_role:
+            name: infra.soe.redhat_satellite
+            tasks_from: install
 
-        # satellite-installer --foreman-keycloak then wires Foreman's Apache to it.
-        # hammer/CLI client. Only needs to exist in Keycloak for `hammer auth login oauth`; the API validates its bearer tokens via the OIDC settings.
-        - name: Register Satellite hammer client in Keycloak (hammer-openidc)
-          ansible.builtin.command:
-            cmd: >-
-              keycloak-httpd-client-install
-              -t openidc
-              -l /users/extlogin
-              --force
-              --app-name hammer-openidc
-              --keycloak-server-url {{ satellite_keycloak_server_url }}
-              --keycloak-realm {{ satellite_keycloak_realm }}
-              --keycloak-admin-realm {{ satellite_keycloak_admin_realm }}
-              --keycloak-auth-role {{ satellite_keycloak_auth_role }}
-              --keycloak-admin-username {{ satellite_keycloak_admin_username }}
-              -P -
-            stdin: "{{ satellite_keycloak_admin_password }}"
-            creates: "/etc/httpd/conf.d/hammer-openidc_oidc_keycloak_{{ satellite_keycloak_realm }}.conf"
-          no_log: "{{ soe_no_log_enabled | default(true) }}"
-
-        - name: Enable Keycloak authentication in Satellite (web UI)
-          ansible.builtin.command:
-            cmd: >-
-              satellite-installer
-              --foreman-keycloak true
-              --foreman-keycloak-app-name foreman-openidc
-              --foreman-keycloak-realm {{ satellite_keycloak_realm }}
-          register: __satellite_keycloak_installer
-          changed_when: "'Success!' in __satellite_keycloak_installer.stdout"
-
-        - name: Configure Keycloak login delegation and group mapping
-          module_defaults:
-            group/redhat.satellite.satellite:
-              username: "{{ satellite_username }}"
-              password: "{{ satellite_password }}"
-              server_url: "{{ satellite_server_url }}"
-              validate_certs: "{{ satellite_validate_certs | default(true) }}"
-          block:
-            # --foreman-keycloak wires up Apache but leaves login delegation off, so
-            # Satellite keeps sending users to the local /users/login form. Enabling it
-            # makes unauthenticated requests default to /users/extlogin (Keycloak);
-            # local login stays reachable at /users/login?force_login=true.
-            - name: Default Satellite login to Keycloak
-              redhat.satellite.setting:
-                name: "{{ item.name }}"
-                value: "{{ item.value }}"
-              loop:
-                - name: authorize_login_delegation
-                  value: true
-                - name: authorize_login_delegation_api
-                  value: true
-                - name: authorize_login_delegation_auth_source_user_autocreate
-                  value: External
-              loop_control:
-                label: "{{ item.name }}"
-
-            - name: Ensure Satellite user groups exist with roles
-              redhat.satellite.usergroup:
-                name: "{{ item.name }}"
-                admin: "{{ item.admin | default(omit) }}"
-                roles: "{{ item.roles | default(omit) }}"
-                state: present
-              loop: "{{ satellite_external_usergroups | default([]) }}"
-              loop_control:
-                label: "{{ item.name }}"
-
-            - name: Link Keycloak external groups to Satellite user groups
-              redhat.satellite.external_usergroup:
-                name: "{{ item.1.name }}"
-                usergroup: "{{ item.0.name }}"
-                auth_source: "{{ item.1.auth_source | default('External') }}"
-                state: present
-              loop: "{{ satellite_external_usergroups | default([]) | subelements('external', skip_missing=True) }}"
-              loop_control:
-                label: "{{ item.0.name }} <- {{ item.1.name }}"
-
-- name: Configure Red Hat Satellite Server
-  hosts: satellite_server
-  gather_facts: true
-  become: true
-  tags:
-    - redhat
-    - satellite
-    - satellite_configure
+        - name: Configure Satellite Server Certificate
+          ansible.builtin.include_role:
+            name: infra.soe.redhat_satellite
+            tasks_from: certificate
+            apply:
+              tags: redhat_idm_service
+          tags: redhat_idm_service
+          when: satellite_idm_service_principal is defined
+          vars:
+            ipaadmin_password: "{{ idm_admin_password }}"
   tasks:
-    - name: Configure Satellite Manifest
-      ansible.builtin.import_role:
-        name: redhat.satellite.manifest
-      when: satellite_manifest_import | default(false)
+    - name: Configure Red Hat Satellite Server
+      tags: satellite_configure
+      block:
+        # FIXME Finish Satellite Keycloak
+        - name: Configure Satellite Server Keycloak Single-Sign-On (SSO)
+          ansible.builtin.include_role:
+            name: infra.soe.redhat_satellite
+            tasks_from: keycloak
+            apply:
+              tags: satellite_keycloak
+          tags: satellite_keycloak
+          when: satellite_idm_service_principal | default(false)
 
-    - name: Configure Satellite Organization(s)
-      ansible.builtin.import_role:
-        name: redhat.satellite.organizations
-
-    - name: Configure Satellite Location(s)
-      ansible.builtin.import_role:
-        name: redhat.satellite.locations
-
-    - name: Configure Satellite Content Credentials
-      ansible.builtin.import_role:
-        name: redhat.satellite.content_credentials
-
-    - name: Configure Satellite Server Repositories
-      ansible.builtin.import_role:
-        name: redhat.satellite.repositories
-      tags:
-        - satellite_configure
-        - redhat.satellite.repositories
-
-    # TODO|redhat.satellite.sync_plans| role is not idempotent
-    - name: Configure Satellite Sync Plans
-      ansible.builtin.import_role:
-        name: redhat.satellite.sync_plans
-
-    - name: Configure Satellite Host Collections
-      ansible.builtin.import_role:
-        name: redhat.satellite.host_collections
-
-    - name: Configure Satellite Lifecycle Environments
-      ansible.builtin.import_role:
-        name: redhat.satellite.lifecycle_environments
-
-    - name: Configure Satellite Content Views
-      ansible.builtin.import_role:
-        name: redhat.satellite.content_views
-
-    - name: Clean up old Content View versions
-      ansible.builtin.import_role:
-        name: redhat.satellite.content_view_version_cleanup
-
-    - name: Configure Satellite Activation Keys
-      ansible.builtin.import_role:
-        name: redhat.satellite.activation_keys
-
-    - name: Configure Satellite Host Groups
-      ansible.builtin.import_role:
-        name: redhat.satellite.hostgroups
+        - name: Configure Satellite Server Components
+          ansible.builtin.import_role:
+            name: infra.soe.redhat_satellite
+            tasks_from: configure
+          when: satellite_idm_service_principal | default(false)

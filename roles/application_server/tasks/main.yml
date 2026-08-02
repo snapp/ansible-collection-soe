@@ -1,0 +1,9 @@
+---
+
+- name: Install Application Server
+  tags: app_server_install
+  ansible.builtin.import_tasks: install.yml
+
+- name: Configure Application Server
+  tags: app_server_configure
+  ansible.builtin.import_tasks: configure.yml

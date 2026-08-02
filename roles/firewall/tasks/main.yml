@@ -1,0 +1,69 @@
+---
+
+- name: Setup Firewall
+  ansible.builtin.import_role:
+    name: redhat.rhel_system_roles.firewall
+  when: firewall_enabled | default(false)
+
+- name: Validate firewall log-denied value
+  ansible.builtin.assert:
+    that:
+      - firewall_log_denied | default('off') | string in
+        ['off', 'all', 'unicast', 'broadcast', 'multicast']
+    fail_msg: >-
+      firewall_log_denied must be one of:
+      off, all, unicast, broadcast, multicast
+  when: firewall_enabled | default(false)
+
+# TODO|2024-02-18| Add firewalld_conf.LogDenied parameter support to redhat.rhel_system_roles.firewall_lib module
+- name: Configure firewall logging of denied packets
+  ansible.builtin.lineinfile:
+    path: /etc/firewalld/firewalld.conf
+    regexp: '^LogDenied\s*=.*'
+    line: "LogDenied={{ firewall_log_denied | default('off') }}"
+    backrefs: false
+  notify: Reload firewalld
+  when: firewall_enabled | default(false)
+
+- name: Deploy quiet-drops nftables table
+  ansible.builtin.copy:
+    dest: /etc/nftables/quiet-drops.nft
+    owner: root
+    group: root
+    mode: '0600'
+    content: |
+      # Silently drops known-benign invalid-state flows before firewalld's
+      # LogDenied rule (this table hooks at priority "filter"; firewalld
+      # hooks at "filter + 10", so we evaluate first).
+      table inet quiet_drops {
+          chain input {
+              type filter hook input priority filter; policy accept;
+      {% for d in firewall_quiet_drops %}
+              # {{ d.comment }}
+              iifname "{{ d.iifname }}" ip saddr {{ d.saddr }} tcp dport {{ d.dport }} ct state invalid counter drop
+      {% endfor %}
+          }
+      }
+  notify: Reload nftables
+  when: firewall_quiet_drops | default([]) | length > 0
+
+- name: Include quiet-drops in nftables main config
+  ansible.builtin.lineinfile:
+    path: /etc/sysconfig/nftables.conf
+    line: 'include "/etc/nftables/quiet-drops.nft"'
+    state: present
+  notify: Reload nftables
+  when: firewall_quiet_drops | default([]) | length > 0
+
+- name: Ensure flush ruleset is not enabled in nftables.conf
+  ansible.builtin.lineinfile:
+    path: /etc/sysconfig/nftables.conf
+    regexp: '^\s*flush ruleset'
+    state: absent
+
+- name: Enable and start nftables service
+  ansible.builtin.systemd_service:
+    name: nftables
+    enabled: true
+    state: started
+  when: firewall_quiet_drops | default([]) | length > 0

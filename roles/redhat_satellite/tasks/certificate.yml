@@ -1,0 +1,42 @@
+---
+
+- name: certificate | Configure Red Hat Satellite Server IdM Service
+  ansible.builtin.include_role:
+    name: redhat_idm_service
+  vars:
+    redhat_idm_service_principal: "{{ satellite_idm_service_principal }}"
+    redhat_idm_service_tls_enabled: true
+    redhat_idm_service_tls_request_id: "satellite_idm_service"
+    redhat_idm_service_tls_sans: "{{ satellite_idm_service_tls_sans | default([]) }}"
+  tags: redhat_idm_service
+
+- name: certificate | Checksum Satellite Server IdM service certificate
+  ansible.builtin.stat:
+    path: /etc/pki/satellite_idm_service/service.crt
+    checksum_algorithm: sha256
+    get_checksum: true
+  register: _redhat_satellite_idm_service_certificate
+
+- name: certificate | Checksum Satellite Server certificate
+  ansible.builtin.stat:
+    path: "/root/ssl-build/{{ satellite_hostname }}/{{ satellite_hostname }}-apache.crt"
+    checksum_algorithm: sha256
+    get_checksum: true
+  register: _redhat_satellite_server_certificate
+
+- name: certificate | Run satellite-installer to configure SSL certificates
+  ansible.builtin.command:
+    cmd: >-
+      satellite-installer
+      --certs-server-cert /etc/pki/satellite_idm_service/service.crt
+      --certs-server-key /etc/pki/satellite_idm_service/private/service.key
+      --certs-server-ca-cert /etc/pki/satellite_idm_service/ipa-ca.crt
+      --certs-update-server
+      --certs-update-server-ca
+  register: __redhat_satellite_installer_result
+  changed_when: >-
+    'Success!' in __redhat_satellite_installer_result.stdout
+  notify: Verify Satellite Server certificate
+  when: >-
+    not _redhat_satellite_server_certificate.stat.exists or
+    _redhat_satellite_idm_service_certificate.stat.checksum != _redhat_satellite_server_certificate.stat.checksum

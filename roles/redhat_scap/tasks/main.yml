@@ -1,0 +1,129 @@
+---
+
+- name: SCAP Profile
+  ansible.builtin.debug:
+    msg: "{{ redhat_scap_profile | default('undefined') }}"
+
+- name: Setup SCAP results directory
+  ansible.builtin.file:
+    path: "{{ redhat_scap_results_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+  when: redhat_scap_profile is defined and redhat_scap_profile | length > 0
+
+- name: Generate SCAP tailoring file
+  ansible.builtin.copy:
+    dest: "{{ redhat_scap_tailoring_file }}"
+    owner: root
+    group: root
+    mode: "0640"
+    content: |
+      <?xml version="1.0" encoding="UTF-8"?>
+
+      <xccdf:Tailoring xmlns:xccdf="http://checklists.nist.gov/xccdf/1.2" id="xccdf_redhat_scap_tailoring_{{ inventory_hostname | regex_replace('[^a-zA-Z0-9]', '_') }}">
+
+        <xccdf:benchmark href="{{ redhat_scap_datastream }}"/>
+
+        <xccdf:version time="{{ ansible_date_time.iso8601 }}">1</xccdf:version>
+
+        <xccdf:Profile id="{{ redhat_scap_profile }}_tailored" extends="{{ redhat_scap_profile }}">
+
+          <xccdf:title>{{ redhat_scap_tailoring_title | default(redhat_scap_profile | regex_replace('xccdf_org.*.content_profile_', '') | upper + ' tailored for ' + inventory_hostname) }}</xccdf:title>
+
+          <xccdf:description>{{ redhat_scap_tailoring_description | default(redhat_scap_profile | regex_replace('xccdf_org.*.content_profile_', '') | upper + ' profile tailored with ' + (redhat_scap_tailoring_exceptions | length | string) + ' exceptions for ' + inventory_hostname) }}</xccdf:description>
+      {% for exception in redhat_scap_tailoring_exceptions %}
+
+      {% if exception.owner is defined or exception.change_control is defined or exception.review_date is defined or exception.justification is defined %}
+          <!--
+      {% if exception.owner is defined %}
+            owner          : {{ exception.owner | replace('--', '- -') }}
+      {% endif %}
+      {% if exception.change_control is defined %}
+            change_control : {{ exception.change_control | replace('--', '- -') }}
+      {% endif %}
+      {% if exception.review_date is defined %}
+            review_date    : {{ exception.review_date | replace('--', '- -') }}
+      {% endif %}
+      {% if exception.justification is defined %}
+            justification  : {{ exception.justification | replace('--', '- -') }}
+      {% endif %}
+          -->
+      {% endif %}
+          <xccdf:select idref="{{ exception.name }}" selected="{{ 'false' if exception.status == 'deselected' else 'true' }}"/>
+      {% endfor %}
+        </xccdf:Profile>
+      </xccdf:Tailoring>
+  when:
+    - redhat_scap_profile is defined and redhat_scap_profile | length > 0
+    - redhat_scap_tailoring_exceptions is defined and redhat_scap_tailoring_exceptions | length > 0
+
+- name: Run SCAP remediation
+  ansible.builtin.command:
+    cmd: >-
+      oscap xccdf eval
+      --remediate
+      --profile {{ (redhat_scap_profile ~ '_tailored') if redhat_scap_tailoring_exceptions is defined and redhat_scap_tailoring_exceptions | length > 0 else redhat_scap_profile }}
+      --results {{ redhat_scap_results_file }}
+      {{ ('--tailoring-file ' ~ redhat_scap_tailoring_file) if redhat_scap_tailoring_exceptions is defined and redhat_scap_tailoring_exceptions | length > 0 else '' }}
+      {{ redhat_scap_datastream }}
+  register: __redhat_scap_result
+  # oscap exits 2 when rule failures remain after remediation, 0 when all pass
+  failed_when: __redhat_scap_result.rc not in [0, 2]
+  changed_when: __redhat_scap_result.rc == 2
+  when: redhat_scap_profile is defined and redhat_scap_profile | length > 0
+
+- name: Write SCAP remediation log file
+  ansible.builtin.copy:
+    content: "{{ __redhat_scap_result.stdout }}\n\n{{ __redhat_scap_result.stderr }}"
+    dest: "{{ redhat_scap_log_file }}"
+    owner: root
+    group: root
+    mode: "0640"
+  when: redhat_scap_profile is defined and redhat_scap_profile | length > 0
+
+- name: Print SCAP summary
+  ansible.builtin.debug:
+    msg: "{{ __redhat_scap_result.stdout_lines }}"
+  when:
+    - redhat_scap_profile is defined and redhat_scap_profile | length > 0
+    - redhat_scap_report_dir is not defined or redhat_scap_report_dir | length == 0
+
+- name: Stat the SCAP results
+  ansible.builtin.stat:
+    path: "{{ redhat_scap_results_file }}"
+  register: redhat_scap_results_stat
+  when: redhat_scap_profile is defined and redhat_scap_profile | length > 0
+
+- name: Confirm results were written
+  ansible.builtin.assert:
+    that: redhat_scap_results_stat.stat.exists
+    fail_msg: "SCAP XML results were not written — check {{ redhat_scap_log_file }}."
+    success_msg: "SCAP results: {{ redhat_scap_results_file }}"
+  when: redhat_scap_profile is defined and redhat_scap_profile | length > 0
+
+- name: Generate SCAP HTML report
+  ansible.builtin.command:
+    cmd: >
+      oscap xccdf generate report
+      --output {{ redhat_scap_report_file }}
+      {{ redhat_scap_results_file }}
+  register: __redhat_scap_report_result
+  failed_when: __redhat_scap_report_result.rc > 0
+  changed_when: __redhat_scap_report_result.rc == 0
+  when: redhat_scap_profile is defined and redhat_scap_profile | length > 0
+
+- name: Fetch SCAP report and results
+  ansible.builtin.fetch:
+    src: "{{ item }}"
+    dest: "{{ redhat_scap_report_dir }}"
+    flat: false
+  loop: >-
+    {{
+      [redhat_scap_log_file, redhat_scap_report_file, redhat_scap_results_file] +
+      ([redhat_scap_tailoring_file] if redhat_scap_tailoring_exceptions is defined and redhat_scap_tailoring_exceptions | length > 0 else [])
+    }}
+  when:
+    - redhat_scap_profile is defined and redhat_scap_profile | length > 0
+    - redhat_scap_report_dir is defined and redhat_scap_report_dir | length > 0

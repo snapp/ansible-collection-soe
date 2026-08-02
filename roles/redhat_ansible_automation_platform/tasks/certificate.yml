@@ -1,0 +1,13 @@
+---
+
+- name: certificate | Configure Red Hat AAP IdM Service
+  ansible.builtin.include_role:
+    name: redhat_idm_service
+  vars:
+    redhat_idm_service_principal: "{{ aap_idm_service_principal }}"
+    redhat_idm_service_user: "{{ aap_service_user }}"
+    redhat_idm_service_group: "{{ aap_idm_service_group }}"
+    redhat_idm_service_tls_enabled: true
+    redhat_idm_service_tls_request_id: aap_idm_service
+    redhat_idm_service_tls_sans: "{{ aap_idm_service_tls_sans | default([]) }}"
+  tags: redhat_idm_service

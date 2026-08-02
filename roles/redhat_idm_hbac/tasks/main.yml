@@ -13,4 +13,4 @@
     hbacsvc: "{{ item.services | default(omit) }}"
     servicecategory: "{{ item.servicecategory | default('') }}"
   loop: "{{ redhat_idm_hbac_rules | default([]) }}"
-  no_log: "{{ soe_no_log_enabled | default(true) }}"
+  no_log: "{{ no_log_enabled | default(true) }}"

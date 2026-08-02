@@ -13,4 +13,4 @@
     runasgroupcategory: "{{ item.runasgroupcategory | default(omit) }}"
     sudooption: "{{ item.options | default(omit) }}"
   loop: "{{ redhat_idm_sudo_rules | default([]) }}"
-  no_log: "{{ soe_no_log_enabled | default(true) }}"
+  no_log: "{{ no_log_enabled | default(true) }}"
