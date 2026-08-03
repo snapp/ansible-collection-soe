@@ -1,0 +1,22 @@
+---
+
+dependencies:
+  - name: Red Hat Image Builder IdM Groups
+    role: infra.soe.redhat_idm_groups
+    vars:
+      redhat_idm_groups_admin_password: "{{ redhat_image_builder_idm_admin_password }}"
+      redhat_idm_groups: "{{ redhat_image_builder_idm_groups }}"
+    tags:
+      - image_builder_identity_management
+      - idm_configure
+      - redhat_idm_groups
+
+  - name: Red Hat Image Builder IdM HBAC rules
+    role: infra.soe.redhat_idm_hbac
+    vars:
+      redhat_idm_hbac_admin_password: "{{ redhat_image_builder_idm_admin_password }}"
+      redhat_idm_hbac_rules: "{{ redhat_image_builder_idm_hbac_rules }}"
+    tags:
+      - image_builder_identity_management
+      - idm_configure
+      - redhat_idm_hbac

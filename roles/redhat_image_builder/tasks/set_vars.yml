@@ -1,0 +1,16 @@
+---
+# https://redhat-cop.github.io/automation-good-practices/#_platform_specific_variables
+
+- name: set_vars | Ensure ansible_facts required by role have been gathered
+  ansible.builtin.setup:
+    gather_subset: "{{ __redhat_image_builder_required_facts_subsets }}"
+  when: not ansible_facts.keys() | list | intersect(__redhat_image_builder_required_facts) == __redhat_image_builder_required_facts
+
+- name: set_vars | Set platform/version specific variables
+  ansible.builtin.include_vars: "{{ __redhat_image_builder_vars_file }}"
+  loop:
+    - "{{ ansible_facts['distribution'] }}.yml"
+    - "{{ ansible_facts['distribution'] }}_{{ ansible_facts['distribution_major_version'] }}.yml"
+  vars:
+    __redhat_image_builder_vars_file: "{{ role_path }}/vars/{{ item }}"
+  when: __redhat_image_builder_vars_file is file

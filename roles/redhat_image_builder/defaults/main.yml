@@ -1,0 +1,21 @@
+---
+
+redhat_image_builder_satellite:
+  baseurl: "{{ satellite_baseurl | default(omit) }}"
+  organization: "{{ satellite_organization | default(omit) }}"
+  lifecycle_environment: test
+
+redhat_image_builder_repositories: "{{ (satellite_baseurl is defined and satellite_baseurl != '') | ternary(_redhat_image_builder_repositories_default, omit) }}"
+
+_redhat_image_builder_repositories_default:
+  - name: rhel-10
+    baseos_repo_url: "{{ redhat_image_builder_satellite.baseurl }}/{{ redhat_image_builder_satellite.organization }}/{{ redhat_image_builder_satellite.lifecycle_environment }}/rhel/content/dist/rhel/10/x86_64/baseos/os"
+    appstream_repo_url: "{{ redhat_image_builder_satellite.baseurl }}/{{ redhat_image_builder_satellite.organization }}/{{ redhat_image_builder_satellite.lifecycle_environment }}/rhel/content/dist/rhel/10/x86_64/appstream/os"
+
+  - name: rhel-9
+    baseos_repo_url: "{{ redhat_image_builder_satellite.baseurl }}/{{ redhat_image_builder_satellite.organization }}/{{ redhat_image_builder_satellite.lifecycle_environment }}/rhel/content/dist/rhel/9/x86_64/baseos/os"
+    appstream_repo_url: "{{ redhat_image_builder_satellite.baseurl }}/{{ redhat_image_builder_satellite.organization }}/{{ redhat_image_builder_satellite.lifecycle_environment }}/rhel/content/dist/rhel/9/x86_64/appstream/os"
+
+  - name: rhel-8
+    baseos_repo_url: "{{ redhat_image_builder_satellite.baseurl }}/{{ redhat_image_builder_satellite.organization }}/{{ redhat_image_builder_satellite.lifecycle_environment }}/rhel/content/dist/rhel/8/x86_64/baseos/os"
+    appstream_repo_url: "{{ redhat_image_builder_satellite.baseurl }}/{{ redhat_image_builder_satellite.organization }}/{{ redhat_image_builder_satellite.lifecycle_environment }}/rhel/content/dist/rhel/8/x86_64/appstream/os"

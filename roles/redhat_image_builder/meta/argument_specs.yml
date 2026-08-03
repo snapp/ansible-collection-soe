@@ -1,0 +1,96 @@
+---
+
+argument_specs:
+  main:
+    short_description: Red Hat Image Builder
+    description: Install Red Hat Image Builder and configure local users, IdM integration, and osbuild-composer repositories.
+    options:
+      redhat_image_builder_users:
+        type: list
+        elements: str
+        required: false
+        default: []
+        description:
+          - Local users to add to the weldr group, granting access to Image Builder.
+
+      redhat_image_builder_idm_groups:
+        type: list
+        elements: dict
+        required: false
+        description:
+          - IdM groups to create via the infra.soe.redhat_idm_groups role.
+          - Defaults to the redhat_idm_groups variable, if defined.
+
+      redhat_image_builder_idm_hbac_rules:
+        type: list
+        elements: dict
+        required: false
+        description:
+          - IdM Host-Based Access Control rules to create via the
+            infra.soe.redhat_idm_hbac role.
+          - Defaults to the redhat_idm_hbac_rules variable, if defined.
+
+      redhat_image_builder_satellite:
+        type: dict
+        required: false
+        description:
+          - Satellite content source used to build osbuild-composer repositories.
+        options:
+          baseurl:
+            type: str
+            required: false
+            default: "{{ satellite_baseurl | default(omit) }}"
+            description:
+              - Base URL of the Satellite server.
+              - Defaults to the satellite_baseurl variable, if defined.
+
+          organization:
+            type: str
+            required: false
+            default: "{{ satellite_organization | default(omit) }}"
+            description:
+              - Satellite organization label.
+              - Defaults to the satellite_organization variable, if defined.
+
+          lifecycle_environment:
+            type: str
+            required: false
+            default: test
+            description:
+              - Satellite lifecycle environment label used in the content view path.
+
+      redhat_image_builder_repositories:
+        type: list
+        elements: dict
+        required: false
+        description:
+          - Osbuild-composer repository definitions rendered to
+            /etc/osbuild-composer/repositories/.
+          - Defaults to RHEL 8, 9, and 10 repositories built from
+            redhat_image_builder_satellite when satellite_baseurl is defined;
+            otherwise omitted so upstream defaults are used.
+        options:
+          name:
+            type: str
+            required: true
+            description:
+              - Repository file name, written as <name>.json.
+
+          baseos_repo_url:
+            type: str
+            required: true
+            description:
+              - URL of the BaseOS repository.
+
+          appstream_repo_url:
+            type: str
+            required: true
+            description:
+              - URL of the AppStream repository.
+
+          rhsm:
+            type: bool
+            required: false
+            default: true
+            description:
+              - Whether the repository requires RHSM entitlement.

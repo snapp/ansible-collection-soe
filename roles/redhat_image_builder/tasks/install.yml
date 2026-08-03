@@ -1,0 +1,17 @@
+---
+
+- name: install | Install Image Builder Packages
+  ansible.builtin.dnf:
+    state: present
+    name: "{{ redhat_image_builder_packages }}"
+
+- name: install | Enable Image Builder Services
+  ansible.builtin.systemd:
+    state: started
+    enabled: true
+    name: "{{ item }}"
+  loop:
+    - osbuild-composer.socket
+    - cockpit.socket
+    - httpd.service
+    - firewalld

@@ -7,17 +7,5 @@
   tags:
     - redhat
     - image_builder
-  vars:
-    ipaadmin_password: "{{ idm_admin_password }}"
   roles:
-    - role: infra.soe.redhat_idm_groups
-      tags:
-        - redhat_idm_groups
-        - idm_configure
-
-    - role: infra.soe.redhat_idm_hbac
-      tags:
-        - redhat_idm_hbac
-        - idm_configure
-
     - role: infra.soe.redhat_image_builder

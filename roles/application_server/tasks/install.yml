@@ -17,8 +17,7 @@
     name:
       - podman
       - python3-rpm  # required for redhat.rhel_system_roles.podman package_facts
-      # https://docs.ansible.com/projects/ansible-core/2.16/playbook_guide/playbooks_privilege_escalation.html#risks-of-becoming-an-unprivileged-user
-      - acl          # required for ansible unprivileged user management
+      - acl          # https://docs.ansible.com/projects/ansible-core/2.16/playbook_guide/playbooks_privilege_escalation.html#risks-of-becoming-an-unprivileged-user
     state: present
   register: __application_server_ostree_package_install
   when: __application_server_ostree_booted_stat.stat.exists

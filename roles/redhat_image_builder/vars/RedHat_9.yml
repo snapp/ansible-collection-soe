@@ -1,0 +1,15 @@
+---
+
+redhat_image_builder_packages:
+  - bash-completion
+  - cockpit
+  - composer-cli
+  - firewalld
+  - httpd
+  - lorax
+  - osbuild-composer
+  - pykickstart
+  - python3
+  - rsync
+  - syslinux
+  - weldr-client
