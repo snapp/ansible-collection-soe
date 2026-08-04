@@ -78,22 +78,48 @@
     name: redhat.satellite.hostgroups
   tags: satellite_hostgroups
 
+- name: configure | Satellite Domains
+  ansible.builtin.import_role:
+    name: redhat.satellite.domains
+  tags: satellite_domains
+
+- name: configure | Satellite Realms
+  redhat.satellite.realm:
+    username: "{{ satellite_username | default(omit) }}"
+    password: "{{ satellite_password | default(omit) }}"
+    server_url: "{{ satellite_server_url | default(omit) }}"
+    validate_certs: "{{ satellite_validate_certs | default(omit) }}"
+    organizations: "{{ item.organizations }}"
+    locations: "{{ item.locations }}"
+    name: "{{ item.name }}"
+    realm_proxy: "{{ item.realm_proxy }}"
+    realm_type: "{{ item.realm_type }}"
+    state: "{{ item.state | default(omit) }}"
+  loop: "{{ satellite_realms | default([]) }}"
+  tags: satellite_realms
+  no_log: "{{ no_log_enabled | default(true) }}"
+
+- name: configure | Satellite Subnets
+  ansible.builtin.import_role:
+    name: redhat.satellite.subnets
+  tags: satellite_subnets
+
 - name: configure | Satellite Operating Systems
   ansible.builtin.import_role:
     name: redhat.satellite.operatingsystems
   tags: satellite_operatingsystems
+
+- name: configure | Satellite Provisioning Templates
+  ansible.builtin.import_role:
+    name: redhat.satellite.provisioning_templates
+  tags: satellite_provisioning_templates
 
 - name: configure | Satellite Compute Resources
   ansible.builtin.import_role:
     name: redhat.satellite.compute_resources
   tags: satellite_compute_resources
 
-- name: configure | Satellite Domains
+- name: configure | Satellite Compute Profiles
   ansible.builtin.import_role:
-    name: redhat.satellite.domains
-  tags: satellite_domains
-
-- name: configure | Satellite Subnets
-  ansible.builtin.import_role:
-    name: redhat.satellite.subnets
-  tags: satellite_subnets
+    name: redhat.satellite.compute_profiles
+  tags: satellite_compute_profiles

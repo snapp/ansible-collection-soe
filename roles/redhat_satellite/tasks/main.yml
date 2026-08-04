@@ -15,7 +15,7 @@
   tags:
     - satellite_identity_management
     - idm_configure
-    - redhat_idm_service
+    - idm_service
   when: redhat_satellite_idm_admin_password is defined
 
 - name: Red Hat Satellite Configuration

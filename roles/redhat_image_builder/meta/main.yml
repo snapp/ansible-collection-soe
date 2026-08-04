@@ -9,7 +9,8 @@ dependencies:
     tags:
       - image_builder_identity_management
       - idm_configure
-      - redhat_idm_groups
+      - idm_groups
+    when: redhat_image_builder_idm_admin_password is defined
 
   - name: Red Hat Image Builder IdM HBAC rules
     role: infra.soe.redhat_idm_hbac
@@ -19,4 +20,5 @@ dependencies:
     tags:
       - image_builder_identity_management
       - idm_configure
-      - redhat_idm_hbac
+      - idm_hbac
+    when: redhat_image_builder_idm_admin_password is defined

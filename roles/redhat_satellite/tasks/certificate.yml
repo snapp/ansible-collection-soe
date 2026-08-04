@@ -2,7 +2,7 @@
 
 - name: certificate | Checksum Satellite Server IdM service certificate
   ansible.builtin.stat:
-    path: /etc/pki/satellite_idm_service/service.crt
+    path: "/etc/pki/{{ redhat_satellite_idm_request_id }}/service.crt"
     checksum_algorithm: sha256
     get_checksum: true
   register: _redhat_satellite_idm_service_certificate
@@ -18,9 +18,9 @@
   ansible.builtin.command:
     cmd: >-
       satellite-installer
-      --certs-server-cert /etc/pki/satellite_idm_service/service.crt
-      --certs-server-key /etc/pki/satellite_idm_service/private/service.key
-      --certs-server-ca-cert /etc/pki/satellite_idm_service/ipa-ca.crt
+      --certs-server-cert /etc/pki/{{ redhat_satellite_idm_request_id }}/service.crt
+      --certs-server-key /etc/pki/{{ redhat_satellite_idm_request_id }}/private/service.key
+      --certs-server-ca-cert /etc/pki/{{ redhat_satellite_idm_request_id }}/ipa-ca.crt
       --certs-update-server
       --certs-update-server-ca
   register: __redhat_satellite_installer_result

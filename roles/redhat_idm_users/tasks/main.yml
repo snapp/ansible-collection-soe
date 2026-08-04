@@ -33,7 +33,7 @@
   changed_when: false
   no_log: "{{ no_log_enabled | default(true) }}"
   tags:
-    - redhat_idm_users
+    - idm_users
 
 # TODO| Avoid shell commands and hardcoded delegation to idm_server group
 - name: Enable subid range for Identity Management users

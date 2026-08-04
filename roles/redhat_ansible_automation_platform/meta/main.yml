@@ -9,7 +9,7 @@ dependencies:
     tags:
       - aap_identity_management
       - idm_configure
-      - redhat_idm_users
+      - idm_users
     when: redhat_ansible_automation_platform_idm_admin_password is defined
 
   - name: Red Hat Ansible Automation Platform (AAP) IdM Groups
@@ -20,7 +20,7 @@ dependencies:
     tags:
       - aap_identity_management
       - idm_configure
-      - redhat_idm_groups
+      - idm_groups
     when: redhat_ansible_automation_platform_idm_admin_password is defined
 
   - name: Red Hat Ansible Automation Platform (AAP) IdM HBAC rules
@@ -31,7 +31,7 @@ dependencies:
     tags:
       - aap_identity_management
       - idm_configure
-      - redhat_idm_hbac
+      - idm_hbac
     when: redhat_ansible_automation_platform_idm_admin_password is defined
 
   - name: Red Hat Ansible Automation Platform (AAP) IdM Service Certificate
@@ -47,5 +47,5 @@ dependencies:
     tags:
       - aap_identity_management
       - idm_configure
-      - redhat_idm_service
+      - idm_service
     when: redhat_ansible_automation_platform_idm_admin_password is defined
