@@ -2,7 +2,7 @@
 
 - name: Configure Red Hat Identity Management Host Based Access Control Rules
   redhat.rhel_idm.ipahbacrule:
-    ipaadmin_password: "{{ ipaadmin_password }}"
+    ipaadmin_password: "{{ redhat_idm_hbac_admin_password }}"
     name: "{{ item.name }}"
     description: "{{ item.description }}"
     group: "{{ item.groups | default(omit) }}"

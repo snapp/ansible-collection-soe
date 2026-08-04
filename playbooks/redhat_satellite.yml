@@ -16,6 +16,9 @@
             name: infra.soe.redhat_satellite
             tasks_from: network
 
+        - name: Flush handlers
+          ansible.builtin.meta: flush_handlers
+
         - name: Run Satellite Server Installer
           ansible.builtin.import_role:
             name: infra.soe.redhat_satellite
@@ -31,6 +34,9 @@
           when: satellite_idm_service_principal is defined
           vars:
             ipaadmin_password: "{{ idm_admin_password }}"
+
+        - name: Flush handlers
+          ansible.builtin.meta: flush_handlers
   tasks:
     - name: Configure Red Hat Satellite Server
       tags: satellite_configure

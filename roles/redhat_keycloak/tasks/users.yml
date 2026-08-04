@@ -1,6 +1,6 @@
 ---
 
-- name: configure | Application Server IdM Users
+- name: users | Keycloak IdM Users
   ansible.builtin.import_role:
     name: redhat_idm_users
   vars:
@@ -13,7 +13,7 @@
     - redhat_idm_users
     - idm_configure
 
-- name: configure | Application Server IdM Groups
+- name: users | Keycloak IdM Groups
   ansible.builtin.import_role:
     name: redhat_idm_groups
   vars:

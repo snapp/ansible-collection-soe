@@ -1,0 +1,26 @@
+---
+
+redhat_ansible_automation_platform_idm_service_principal: "HTTP/{{ inventory_hostname }}"
+
+redhat_ansible_automation_platform_idm_request_id: aap_idm_service
+
+redhat_ansible_automation_platform_idm_tls_enabled: true
+
+redhat_ansible_automation_platform_idm_service_tls_sans: []
+
+
+redhat_ansible_automation_platform_service_user: aap
+
+redhat_ansible_automation_platform_service_group: "{{ redhat_ansible_automation_platform_service_user | default('aap') }}"
+
+redhat_ansible_automation_platform_idm_users:
+  - description: AAP Service Account
+    name:
+      username: "{{ redhat_ansible_automation_platform_service_user }}"
+      first: AAP
+      last: Service Account
+      full: Ansible Automation Platform Service Account
+    initials: AAP
+    home: /var/lib/aap
+    shell: /sbin/nologin
+    enable_subid: true

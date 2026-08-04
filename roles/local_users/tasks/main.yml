@@ -1,5 +1,4 @@
 ---
-# NOTE|local_users| Tasks
 # https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#role-directory-structure
 
 # https://redhat-cop.github.io/automation-good-practices/#_platform_specific_variables

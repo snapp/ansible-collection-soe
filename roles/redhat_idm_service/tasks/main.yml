@@ -2,7 +2,7 @@
 
 - name: Ensure IdM Service CNAME exists
   redhat.rhel_idm.ipadnsrecord:
-    ipaadmin_password: "{{ ipaadmin_password }}"
+    ipaadmin_password: "{{ redhat_idm_service_admin_password }}"
     zone_name: "{{ item.split('.', 1)[1] }}"
     records:
       - name: "{{ item.split('.', 1)[0] }}"
@@ -12,7 +12,7 @@
 
 - name: Ensure IdM service principal exists
   redhat.rhel_idm.ipaservice:
-    ipaadmin_password: "{{ ipaadmin_password }}"
+    ipaadmin_password: "{{ redhat_idm_service_admin_password }}"
     name: "{{ redhat_idm_service_principal }}"
     host: "{{ redhat_idm_service_fqdn }}"
     principal: >-

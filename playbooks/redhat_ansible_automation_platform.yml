@@ -9,35 +9,5 @@
   tags:
     - redhat
     - aap
-  pre_tasks:
-    - name: Install Red Hat Ansible Automation Platform (AAP)
-      tags: aap_install
-      block:
-        - name: Ensure AAP service account is available for AAP Installer
-          ansible.builtin.import_role:
-            name: infra.soe.redhat_ansible_automation_platform
-            tasks_from: users
-
-        - name: Configure AAP Certificate
-          ansible.builtin.include_role:
-            name: infra.soe.redhat_ansible_automation_platform
-            tasks_from: certificate
-            apply:
-              tags: redhat_idm_service
-          tags: redhat_idm_service
-          when: aap_idm_service_principal is defined
-          vars:
-            ipaadmin_password: "{{ idm_admin_password }}"
-
-        - name: Run AAP Installer
-          ansible.builtin.import_role:
-            name: infra.soe.redhat_ansible_automation_platform
-            tasks_from: install
-  tasks:
-    - name: Configure Red Hat Ansible Automation Platform (AAP)
-      ansible.builtin.import_role:
-        name: infra.soe.redhat_ansible_automation_platform
-        tasks_from: configure
-      vars:
-        gateway_hostname: "{{ aap_routable_hostname }}"
-      tags: aap_configure
+  roles:
+    - infra.soe.redhat_ansible_automation_platform

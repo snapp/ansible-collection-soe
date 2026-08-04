@@ -8,6 +8,11 @@
   when: satellite_manifest_import | default(false)
   tags: satellite_manifest
 
+- name: configure | Satellite Settings
+  ansible.builtin.import_role:
+    name: redhat.satellite.settings
+  tags: satellite_settings
+
 - name: configure | Satellite Organization(s)
   ansible.builtin.import_role:
     name: redhat.satellite.organizations
@@ -72,3 +77,23 @@
   ansible.builtin.import_role:
     name: redhat.satellite.hostgroups
   tags: satellite_hostgroups
+
+- name: configure | Satellite Operating Systems
+  ansible.builtin.import_role:
+    name: redhat.satellite.operatingsystems
+  tags: satellite_operatingsystems
+
+- name: configure | Satellite Compute Resources
+  ansible.builtin.import_role:
+    name: redhat.satellite.compute_resources
+  tags: satellite_compute_resources
+
+- name: configure | Satellite Domains
+  ansible.builtin.import_role:
+    name: redhat.satellite.domains
+  tags: satellite_domains
+
+- name: configure | Satellite Subnets
+  ansible.builtin.import_role:
+    name: redhat.satellite.subnets
+  tags: satellite_subnets

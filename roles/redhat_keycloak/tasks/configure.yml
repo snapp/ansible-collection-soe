@@ -1,0 +1,87 @@
+---
+
+- name: configure | Keycloak Realm
+  tags: keycloak_realm
+  delegate_to: localhost
+  block:
+    - name: configure | Keycloak Realm
+      ansible.builtin.include_role:
+        name: redhat.rhbk.rhbk_realm
+        apply:
+          tags: keycloak_realm
+      vars:
+        # REDO|2026/05/30| Remove rhbk_realm when redhat.rhbk no longer hardcodes rhbk_realm to null
+        rhbk_realm_realm: "{{ keycloak_primary_realm }}"
+        rhbk_realm: "{{ keycloak_primary_realm }}"
+        organizations_enabled: true
+
+- name: configure | Dispatch AAP Configuration
+  ansible.builtin.import_role:
+    name: infra.aap_configuration.dispatch
+  vars:
+    aap_validate_certs: "{{ aap_gateway_validate_certs | default(true) | bool }}"
+    aap_hostname: "{{ aap_routable_hostname }}"
+    aap_username: admin
+    aap_password: "{{ aap_gateway_admin_password }}"
+
+- name: configure | Keycloak clients
+  redhat.rhbk.rhbk_client:
+    auth_rhbk_url: "{{ rhbk_url }}"
+    auth_realm: master
+    auth_username: "{{ rhbk_bootstrap_admin_user }}"
+    auth_password: "{{ rhbk_bootstrap_admin_password }}"
+    realm: "{{ item.realm }}"
+    client_id: "{{ item.client_id }}"
+    name: "{{ item.name | default(omit) }}"
+    description: "{{ item.description | default(omit) }}"
+    public_client: "{{ item.public_client | default(omit) }}"
+    client_authenticator_type: "{{ item.client_authenticator_type | default(omit) }}"
+    service_accounts_enabled: "{{ item.service_accounts_enabled | default(omit) }}"
+    direct_access_grants_enabled: "{{ item.direct_access_grants_enabled | default(omit) }}"
+    standard_flow_enabled: "{{ item.standard_flow_enabled | default(omit) }}"
+    redirect_uris: "{{ item.redirect_uris | default(omit) }}"
+    web_origins: "{{ item.web_origins | default(omit) }}"
+    optional_client_scopes: "{{ item.optional_client_scopes | default(omit) }}"
+    attributes: "{{ item.attributes | default(omit) }}"
+    secret: "{{ item.secret | default(omit) }}"
+    protocol_mappers: "{{ item.protocol_mappers | default(omit) }}"
+    state: "{{ item.state | default('present') }}"
+  loop: "{{ rhbk_clients }}"
+  loop_control:
+    label: "{{ item.client_id }}"
+  no_log: "{{ no_log_enabled | default(true) }}"
+  delegate_to: localhost
+
+# REDO|2026/05/30| Replace with redhat.rhbk when available
+- name: configure | Map keycloak client roles to groups
+  community.general.keycloak_client_rolemapping:
+    auth_keycloak_url: "{{ rhbk_url }}"
+    auth_realm: master
+    auth_username: "{{ rhbk_bootstrap_admin_user }}"
+    auth_password: "{{ rhbk_bootstrap_admin_password }}"
+    realm: "{{ item.realm }}"
+    client_id: "{{ item.client_id }}"
+    group_name: "{{ item.group_name }}"
+    roles: "{{ item.roles }}"
+    state: present
+  loop: "{{ rhbk_client_rolemappings }}"
+  loop_control:
+    label: "{{ item.group_name }} -> {{ item.client_id }}"
+  no_log: "{{ no_log_enabled | default(true) }}"
+  delegate_to: localhost
+
+# REDO|2026/05/30| Replace with redhat.rhbk when available
+- name: configure | Map keycloak user roles to groups
+  community.general.keycloak_user_rolemapping:
+    auth_keycloak_url: "{{ rhbk_url }}"
+    auth_realm: master
+    auth_username: "{{ rhbk_bootstrap_admin_user }}"
+    auth_password: "{{ rhbk_bootstrap_admin_password }}"
+    realm: "{{ item.realm }}"
+    client_id: "{{ item.client_id }}"
+    service_account_user_client_id: "{{ item.service_account_user_client_id }}"
+    roles: "{{ item.roles }}"
+    state: present
+  loop: "{{ rhbk_user_rolemappings }}"
+  no_log: "{{ no_log_enabled | default(true) }}"
+  delegate_to: localhost

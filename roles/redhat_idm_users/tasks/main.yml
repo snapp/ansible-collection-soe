@@ -2,7 +2,7 @@
 
 - name: Create Red Hat Identity Management user accounts
   redhat.rhel_idm.ipauser:
-    ipaadmin_password: "{{ ipaadmin_password }}"
+    ipaadmin_password: "{{ redhat_idm_users_admin_password }}"
     gecos: "{{ item.description | default(item.name.full, true) | default(item.name.first ~ ' ' ~ item.name.last) }}"
     displayname: "{{ item.name.display | default(item.name.full, true) | default(item.name.first ~ ' ' ~ item.name.last) }}"
     email: "{{ item.email | default(omit) }}"

@@ -31,7 +31,7 @@
   when: caddy_min_host_port | int < 1024
   notify: Apply sysctl settings
 
-- name: Flush handlers before starting roles
+- name: Flush handlers
   ansible.builtin.meta: flush_handlers
 
 - name: Ensure Caddy config directory exists

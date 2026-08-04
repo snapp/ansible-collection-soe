@@ -1,5 +1,11 @@
 ---
 
+- name: install | Enable systemd lingering for AAP service user
+  ansible.builtin.command:
+    cmd: "loginctl enable-linger {{ aap_service_user }}"
+    creates: "/var/lib/systemd/linger/{{ aap_service_user }}"
+  when: aap_service_user != 'root'
+
 - name: install | AAP Installation
   block:
     - name: install | Grant AAP service user sudo privileges during installation

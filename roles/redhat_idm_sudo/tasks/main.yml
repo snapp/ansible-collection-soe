@@ -2,7 +2,7 @@
 
 - name: Configure Red Hat Identity Management Sudo Rules
   redhat.rhel_idm.ipasudorule:
-    ipaadmin_password: "{{ ipaadmin_password }}"
+    ipaadmin_password: "{{ redhat_idm_sudo_admin_password }}"
     name: "{{ item.name }}"
     description: "{{ item.description }}"
     user: "{{ item.users | default(omit) }}"

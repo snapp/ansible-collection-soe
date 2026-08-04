@@ -1,0 +1,51 @@
+---
+
+dependencies:
+  - name: Red Hat Ansible Automation Platform (AAP) IdM Users
+    role: infra.soe.redhat_idm_users
+    vars:
+      redhat_idm_users_admin_password: "{{ redhat_ansible_automation_platform_idm_admin_password }}"
+      redhat_idm_users: "{{ redhat_ansible_automation_platform_idm_users }}"
+    tags:
+      - aap_identity_management
+      - idm_configure
+      - redhat_idm_users
+    when: redhat_ansible_automation_platform_idm_admin_password is defined
+
+  - name: Red Hat Ansible Automation Platform (AAP) IdM Groups
+    role: infra.soe.redhat_idm_groups
+    vars:
+      redhat_idm_groups_admin_password: "{{ redhat_ansible_automation_platform_idm_admin_password }}"
+      redhat_idm_groups: "{{ redhat_ansible_automation_platform_idm_groups }}"
+    tags:
+      - aap_identity_management
+      - idm_configure
+      - redhat_idm_groups
+    when: redhat_ansible_automation_platform_idm_admin_password is defined
+
+  - name: Red Hat Ansible Automation Platform (AAP) IdM HBAC rules
+    role: infra.soe.redhat_idm_hbac
+    vars:
+      redhat_idm_hbac_admin_password: "{{ redhat_ansible_automation_platform_idm_admin_password }}"
+      redhat_idm_hbac_rules: "{{ redhat_ansible_automation_platform_idm_hbac_rules }}"
+    tags:
+      - aap_identity_management
+      - idm_configure
+      - redhat_idm_hbac
+    when: redhat_ansible_automation_platform_idm_admin_password is defined
+
+  - name: Red Hat Ansible Automation Platform (AAP) IdM Service Certificate
+    role: infra.soe.redhat_idm_service
+    vars:
+      redhat_idm_service_admin_password: "{{ redhat_ansible_automation_platform_idm_admin_password }}"
+      redhat_idm_service_principal: "{{ redhat_ansible_automation_platform_idm_service_principal }}"
+      redhat_idm_service_user: "{{ redhat_ansible_automation_platform_service_user }}"
+      redhat_idm_service_group: "{{ redhat_ansible_automation_platform_service_group }}"
+      redhat_idm_service_tls_enabled: "{{ redhat_ansible_automation_platform_idm_tls_enabled | default(true) }}"
+      redhat_idm_service_tls_request_id: "{{ redhat_ansible_automation_platform_idm_request_id }}"
+      redhat_idm_service_tls_sans: "{{ redhat_ansible_automation_platform_idm_service_tls_sans | default([]) }}"
+    tags:
+      - aap_identity_management
+      - idm_configure
+      - redhat_idm_service
+    when: redhat_ansible_automation_platform_idm_admin_password is defined
