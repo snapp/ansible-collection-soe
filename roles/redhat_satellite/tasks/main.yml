@@ -1,0 +1,23 @@
+---
+
+- name: Red Hat Satellite Network
+  ansible.builtin.import_tasks: network.yml
+  tags:
+    - satellite_network
+    - satellite_install
+
+- name: Red Hat Satellite Installation
+  ansible.builtin.import_tasks: install.yml
+  tags: satellite_install
+
+- name: Red Hat Satellite Certificate
+  ansible.builtin.import_tasks: certificate.yml
+  tags:
+    - satellite_identity_management
+    - idm_configure
+    - redhat_idm_service
+  when: redhat_satellite_idm_admin_password is defined
+
+- name: Red Hat Satellite Configuration
+  ansible.builtin.import_tasks: configure.yml
+  tags: satellite_configure

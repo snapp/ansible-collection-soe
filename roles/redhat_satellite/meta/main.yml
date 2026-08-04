@@ -1,0 +1,49 @@
+---
+
+dependencies:
+  - name: Red Hat Satellite Server IdM Users
+    role: infra.soe.redhat_idm_users
+    vars:
+      redhat_idm_users_admin_password: "{{ redhat_satellite_idm_admin_password }}"
+      redhat_idm_users: "{{ redhat_satellite_idm_users }}"
+    tags:
+      - satellite_identity_management
+      - idm_configure
+      - redhat_idm_users
+    when: redhat_satellite_idm_admin_password is defined
+
+  - name: Red Hat Satellite Server IdM Groups
+    role: infra.soe.redhat_idm_groups
+    vars:
+      redhat_idm_groups_admin_password: "{{ redhat_satellite_idm_admin_password }}"
+      redhat_idm_groups: "{{ redhat_satellite_idm_groups }}"
+    tags:
+      - satellite_identity_management
+      - idm_configure
+      - redhat_idm_groups
+    when: redhat_satellite_idm_admin_password is defined
+
+  - name: Red Hat Satellite Server IdM HBAC rules
+    role: infra.soe.redhat_idm_hbac
+    vars:
+      redhat_idm_hbac_admin_password: "{{ redhat_satellite_idm_admin_password }}"
+      redhat_idm_hbac_rules: "{{ redhat_satellite_idm_hbac_rules }}"
+    tags:
+      - satellite_identity_management
+      - idm_configure
+      - redhat_idm_hbac
+    when: redhat_satellite_idm_admin_password is defined
+
+  - name: Red Hat Satellite Server IdM Service Certificate
+    role: infra.soe.redhat_idm_service
+    vars:
+      redhat_idm_service_admin_password: "{{ redhat_satellite_idm_admin_password }}"
+      redhat_idm_service_principal: "{{ redhat_satellite_idm_service_principal }}"
+      redhat_idm_service_tls_enabled: "{{ redhat_satellite_idm_tls_enabled }}"
+      redhat_idm_service_tls_request_id: "{{ redhat_satellite_idm_request_id }}"
+      redhat_idm_service_tls_sans: "{{ redhat_satellite_idm_service_tls_sans }}"
+    tags:
+      - satellite_identity_management
+      - idm_configure
+      - redhat_idm_service
+    when: redhat_satellite_idm_admin_password is defined

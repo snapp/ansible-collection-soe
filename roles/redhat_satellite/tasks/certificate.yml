@@ -1,15 +1,5 @@
 ---
 
-- name: certificate | Configure Red Hat Satellite Server IdM Service
-  ansible.builtin.include_role:
-    name: redhat_idm_service
-  vars:
-    redhat_idm_service_principal: "{{ satellite_idm_service_principal }}"
-    redhat_idm_service_tls_enabled: true
-    redhat_idm_service_tls_request_id: "satellite_idm_service"
-    redhat_idm_service_tls_sans: "{{ satellite_idm_service_tls_sans | default([]) }}"
-  tags: redhat_idm_service
-
 - name: certificate | Checksum Satellite Server IdM service certificate
   ansible.builtin.stat:
     path: /etc/pki/satellite_idm_service/service.crt
@@ -40,3 +30,6 @@
   when: >-
     not _redhat_satellite_server_certificate.stat.exists or
     _redhat_satellite_idm_service_certificate.stat.checksum != _redhat_satellite_server_certificate.stat.checksum
+
+- name: certificate | Flush handlers
+  ansible.builtin.meta: flush_handlers

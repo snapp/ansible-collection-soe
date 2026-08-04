@@ -30,3 +30,6 @@
   notify:
     - Reload sysctl
     - Rebuild Initial RAM Disk Image
+
+- name: network | Flush handlers
+  ansible.builtin.meta: flush_handlers
