@@ -7,3 +7,7 @@
 - name: Red Hat Ansible Automation Platform (AAP) Configuration
   ansible.builtin.import_tasks: configure.yml
   tags: aap_configure
+
+- name: Red Hat Ansible Automation Platform (AAP) SCAP Remediation
+  ansible.builtin.import_tasks: scap.yml
+  tags: aap_scap

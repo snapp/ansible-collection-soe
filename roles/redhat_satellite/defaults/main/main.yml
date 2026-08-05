@@ -1,13 +1,9 @@
 ---
 
 redhat_satellite_idm_service_principal: "HTTP/{{ inventory_hostname }}"
-
-redhat_satellite_idm_request_id: satellite_idm_service
-
-redhat_satellite_idm_tls_enabled: true
-
+redhat_satellite_idm_service_request_id: satellite_idm_service
+redhat_satellite_idm_service_tls_enabled: true
 redhat_satellite_idm_service_tls_sans: []
-
 
 redhat_satellite_idm_users:
   - description: Satellite Automation Account

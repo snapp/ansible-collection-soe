@@ -21,3 +21,7 @@
 - name: Red Hat Satellite Configuration
   ansible.builtin.import_tasks: configure.yml
   tags: satellite_configure
+
+- name: Red Hat Satellite SCAP Remediation
+  ansible.builtin.import_tasks: scap.yml
+  tags: satellite_scap

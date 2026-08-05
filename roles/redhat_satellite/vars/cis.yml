@@ -1,0 +1,271 @@
+---
+# ansible-playbook playbooks/site.yml -l satellite_server -t scap
+
+scap_tailoring_title: CIS L2 Server tailored for Red Hat Satellite Server
+
+scap_tailoring_description: >-
+  These exceptions were derived from a post-install CIS L2 remediation run against
+  a RHEL 9 Satellite Server. Two package-removal rules errored because Satellite holds
+  hard RPM dependencies on httpd and tftp-server.
+  Two mount-option rules were remediated but break the foreman-installer by enforcing
+  noexec on /tmp and /var/tmp. The CIS crypto policy was remediated but restricts TLS
+  to a cipher suite that RHEL 7 content clients cannot negotiate. Additional rules for
+  file ownership, SSH access control, and — where the Satellite host is IdM-enrolled —
+  GSSAPI and authselect are excepted for the reasons documented below.
+
+scap_tailoring_exceptions:
+  # ---------------------------------------------------------------------------
+  # Package preservation — CIS L2 removes packages that are hard RPM
+  # dependencies of the Satellite Server stack. Both rules errored during the
+  # remediation run because dnf refused to remove the packages.
+  # ---------------------------------------------------------------------------
+
+  - name: xccdf_org.ssgproject.content_rule_package_httpd_removed
+    status: deselected
+    justification: >-
+      httpd (Apache) is a hard dependency of foreman, katello, candlepin-tomcat,
+      and pulpcore-selinux. Satellite uses Apache as its TLS-terminating reverse
+      proxy for all web UI and API traffic (port 443), the smart-proxy API
+      (port 9090 via mod_proxy), the Pulp content endpoint (port 8000), and the
+      Katello agent subscription endpoint. Removing httpd cascades to the entire
+      Satellite application stack and renders the server inoperable.
+      Confirmed: dnf returned exit code 1 during the remediation run.
+    review_date: 2026-04-21
+
+  - name: xccdf_org.ssgproject.content_rule_package_tftp-server_removed
+    status: deselected
+    justification: >-
+      tftp-server provides TFTP service required for PXE-based bare-metal and
+      virtual machine provisioning through Satellite. The foreman-proxy TFTP
+      smart-proxy feature writes PXELinux, GRUB2, and iPXE boot configurations
+      to the TFTP root directory and serves them to provisioned hosts. Removing
+      tftp-server disables all network-boot provisioning workflows.
+      Confirmed: dnf returned exit code 1 during the remediation run.
+    review_date: 2026-04-21
+
+  # ---------------------------------------------------------------------------
+  # Installer compatibility — CIS L2 sets noexec on /tmp and /var/tmp.
+  # foreman-installer (a Puppet-based Ruby application) extracts and executes
+  # temporary binaries from both paths during installation and upgrades. These
+  # rules were auto-remediated during the scan; they must be deselected so
+  # future satellite-installer runs and package upgrades do not fail.
+  # ---------------------------------------------------------------------------
+
+  - name: xccdf_org.ssgproject.content_rule_mount_option_tmp_noexec
+    status: deselected
+    justification: >-
+      foreman-installer extracts and executes Ruby gem native extensions and
+      temporary shell scripts under /tmp during initial installation and every
+      subsequent satellite-installer run (upgrades, feature enablement, re-runs).
+      The noexec mount flag causes these executions to fail with EACCES, aborting
+      the installer mid-run and leaving Satellite in a partially configured state.
+      This rule was auto-remediated during the scan and must be deselected to
+      preserve installer and upgrade operability.
+    review_date: 2026-04-21
+
+  - name: xccdf_org.ssgproject.content_rule_mount_option_var_tmp_noexec
+    status: deselected
+    justification: >-
+      Like /tmp, /var/tmp is used by the RPM scriptlets of Satellite-related
+      packages (foreman, katello, candlepin, pulpcore) and by foreman-installer
+      for temporary executable artifacts that persist across reboots. The noexec
+      flag on /var/tmp causes RPM %post scriptlets and installer post-configuration
+      steps to fail. Excepted in conjunction with mount_option_tmp_noexec.
+    review_date: 2026-04-21
+
+  # ---------------------------------------------------------------------------
+  # TLS / crypto policy — CIS L2 enforces a FUTURE-equivalent crypto policy
+  # that restricts TLS to 1.2+ with modern cipher suites. Satellite Server must
+  # communicate with registered content hosts that may run RHEL 7 (OpenSSL 1.0)
+  # or older subscription-manager clients that cannot negotiate the restricted
+  # cipher suite. This rule was auto-remediated during the scan.
+  # ---------------------------------------------------------------------------
+
+  - name: xccdf_org.ssgproject.content_rule_configure_custom_crypto_policy_cis
+    status: deselected
+    justification: >-
+      The CIS crypto policy (equivalent to FUTURE) disables TLS 1.0/1.1 and
+      removes cipher suites required by OpenSSL 1.0 (RHEL 7) and older
+      subscription-manager clients. Satellite Server must maintain TLS connectivity
+      to all registered content hosts including RHEL 7 hosts that use OpenSSL 1.0
+      and cannot negotiate TLS 1.2 with modern ECDHE+AES-GCM cipher suites.
+      Applying this policy severs content delivery and subscription reporting for
+      the RHEL 7 fleet. The DEFAULT or LEGACY system-wide crypto policy should be
+      used instead, with Apache configured to enforce TLS 1.2+ for the Satellite
+      web UI independently via SSLProtocol in /etc/httpd/conf.d/foreman-ssl.conf.
+    review_date: 2026-04-21
+
+  # ---------------------------------------------------------------------------
+  # Administrative SSH access — The sshd_limit_user_access rule requires
+  # AllowUsers or AllowGroups to be present in sshd_config. This rule has no
+  # automatic fix (the scan reported "No suitable fix found") because the
+  # allowed user set is site-specific. It is deselected here to prevent the
+  # SCAP remediation from entering an error state; the access control must be
+  # configured manually and verified independently.
+  # ---------------------------------------------------------------------------
+
+  - name: xccdf_org.ssgproject.content_rule_sshd_limit_user_access
+    status: deselected
+    justification: >-
+      The CIS rule requires AllowUsers or AllowGroups in sshd_config to restrict
+      SSH to an explicit allowlist. The SCAP remediation has no automatic fix for
+      this rule. For Satellite, the allowlist must include the OS administrator
+      accounts used to run satellite-installer, apply errata, and access the
+      foreman-proxy CLI. Because the allowed set is site-specific, this control
+      is implemented via the site's SSH baseline playbook rather than the SCAP
+      remediation, and is deselected here to prevent remediation failures.
+    review_date: 2026-04-21
+
+  # ---------------------------------------------------------------------------
+  # File ownership — Satellite installation creates files owned by service
+  # accounts (foreman, tomcat, puppet, pulp, candlepin, qdrouterd) whose UIDs
+  # and GIDs are allocated by RPM post-install scriptlets. The CIS rules for
+  # unowned files have no automatic fix; they fail against a Satellite host
+  # because the service accounts exist but are not enumerable by the SCAP
+  # engine in the same pass. These rules are deselected to prevent false-fail
+  # remediation errors; file ownership should be verified post-install with
+  # `rpm -Va` to distinguish Satellite-owned files from genuinely unowned ones.
+  # ---------------------------------------------------------------------------
+
+  - name: xccdf_org.ssgproject.content_rule_no_files_unowned_by_user
+    status: deselected
+    justification: >-
+      Satellite installs files owned by service accounts (foreman, tomcat, puppet,
+      pulp, candlepin, qdrouterd, apache) created by RPM post-install scriptlets.
+      The SCAP engine reports these as unowned when it scans in a context where
+      the accounts exist in /etc/passwd but the files were written before the
+      accounts were created or in a chroot-like evaluation pass. The rule has no
+      automatic remediation ("No suitable fix found"). Post-install ownership
+      should be verified with `rpm -Va --nomd5 --nosize` to identify genuinely
+      unowned files versus expected Satellite service account files.
+    review_date: 2026-04-21
+
+  - name: xccdf_org.ssgproject.content_rule_file_permissions_ungroupowned
+    status: deselected
+    justification: >-
+      Satellite creates group-owned files under /var/lib/foreman, /var/lib/pulp,
+      /etc/foreman, /etc/puppet, and /usr/share/katello using service groups
+      (foreman, apache, puppet, pulp) allocated during RPM installation. The
+      SCAP engine reports these as ungrouped-owned in the same pass as the
+      service group creation, producing false positives. The rule has no
+      automatic remediation. Ownership should be audited with
+      `find / -nogroup -ls` after Satellite installation is complete and all
+      service groups are registered in /etc/group.
+    review_date: 2026-04-21
+
+  # ---------------------------------------------------------------------------
+  # SSH — Kerberos GSSAPI authentication (conditional: IdM-enrolled hosts)
+  #
+  # Applies when the Satellite host OS is enrolled in Red Hat Identity Management
+  # (IdM) for OS-level authentication. Satellite itself uses IdM as an external
+  # authentication provider for web UI users via mod_auth_gssapi; that is a
+  # separate concern. The rules below apply to the host OS SSH configuration.
+  # ---------------------------------------------------------------------------
+
+  - name: xccdf_org.ssgproject.content_rule_sshd_disable_gssapi_auth
+    status: deselected
+    justification: >-
+      GSSAPIAuthentication is required for Kerberos-based SSH single sign-on
+      when the Satellite host is enrolled in IdM. This rule was auto-remediated
+      during the scan, disabling GSSAPI. If the host is IdM-enrolled, re-enabling
+      GSSAPI is required for administrator SSH access via Kerberos TGT (kinit
+      workflow) and for Ansible automation using GSSAPI delegation. Additionally,
+      Satellite's mod_auth_gssapi Apache module performs Kerberos negotiate
+      authentication for web UI users and requires GSSAPI to be functional at
+      the host level. Deselect only if the host is IdM-enrolled.
+    review_date: 2026-04-21
+
+  # ---------------------------------------------------------------------------
+  # PAM / authselect — applies only when the Satellite host OS is IdM-enrolled.
+  # IdM installs and manages the sssd authselect profile. The nine CIS L2 rules
+  # below create a competing custom/hardening authselect profile that overwrites
+  # the IdM-managed profile, breaking SSSD-based user resolution and Kerberos
+  # ticket validation for OS logins. All nine rules must be excepted together.
+  # ---------------------------------------------------------------------------
+
+  - name: xccdf_org.ssgproject.content_rule_accounts_password_pam_modules_in_authselect_profile
+    status: deselected
+    justification: >-
+      When the Satellite host is IdM-enrolled, ipa-client installs and manages
+      the sssd authselect profile configured for SSSD, Kerberos, and pam_faillock.
+      This rule creates a custom/hardening authselect profile that replaces the
+      IdM-managed profile, breaking SSSD user resolution and all subsequent
+      Kerberos authentication for OS logins. This is the root rule of the
+      authselect cascade; the eight rules below also operate on the same profile
+      and must be co-excepted. Deselect only if the host is IdM-enrolled.
+    review_date: 2026-04-21
+
+  - name: xccdf_org.ssgproject.content_rule_account_password_pam_faillock_password_auth
+    status: deselected
+    justification: >-
+      IdM's sssd authselect profile already configures pam_faillock for
+      password-auth with settings tuned for Kerberos pre-authentication.
+      Applying this rule against the SCAP custom/hardening profile corrupts the
+      IdM PAM stack. Excepted in conjunction with
+      accounts_password_pam_modules_in_authselect_profile.
+    review_date: 2026-04-21
+
+  - name: xccdf_org.ssgproject.content_rule_account_password_pam_faillock_system_auth
+    status: deselected
+    justification: >-
+      IdM's sssd authselect profile already configures pam_faillock for
+      system-auth. Applying this rule against the SCAP custom/hardening profile
+      corrupts the IdM PAM stack. Excepted in conjunction with
+      accounts_password_pam_modules_in_authselect_profile.
+    review_date: 2026-04-21
+
+  - name: xccdf_org.ssgproject.content_rule_accounts_password_pam_pwhistory_enforce_for_root
+    status: deselected
+    justification: >-
+      IdM enforces password history centrally via the IdM password policy.
+      Applying pam_pwhistory enforce_for_root via the SCAP custom/hardening
+      profile creates a conflicting local policy and corrupts the IdM-managed
+      authselect profile. Excepted in conjunction with
+      accounts_password_pam_modules_in_authselect_profile.
+    review_date: 2026-04-21
+
+  - name: xccdf_org.ssgproject.content_rule_accounts_password_pam_pwhistory_remember_password_auth
+    status: deselected
+    justification: >-
+      IdM enforces password history centrally via the IdM password policy.
+      Applying pam_pwhistory via the SCAP custom/hardening profile creates a
+      conflicting local policy and corrupts the IdM-managed authselect profile.
+      Excepted in conjunction with accounts_password_pam_modules_in_authselect_profile.
+    review_date: 2026-04-21
+
+  - name: xccdf_org.ssgproject.content_rule_accounts_password_pam_pwhistory_remember_system_auth
+    status: deselected
+    justification: >-
+      IdM enforces password history centrally via the IdM password policy.
+      Applying pam_pwhistory via the SCAP custom/hardening profile creates a
+      conflicting local policy and corrupts the IdM-managed authselect profile.
+      Excepted in conjunction with accounts_password_pam_modules_in_authselect_profile.
+    review_date: 2026-04-21
+
+  - name: xccdf_org.ssgproject.content_rule_accounts_passwords_pam_faillock_deny
+    status: deselected
+    justification: >-
+      IdM enforces account lockout centrally via the IdM password policy.
+      Applying pam_faillock deny= via the SCAP custom/hardening profile creates
+      a conflicting local lockout threshold and corrupts the IdM-managed
+      authselect profile. Excepted in conjunction with
+      accounts_password_pam_modules_in_authselect_profile.
+    review_date: 2026-04-21
+
+  - name: xccdf_org.ssgproject.content_rule_accounts_passwords_pam_faillock_deny_root
+    status: deselected
+    justification: >-
+      The even_deny_root option for pam_faillock is already present in the IdM
+      sssd authselect profile. Applying it via the SCAP custom/hardening profile
+      corrupts the IdM-managed PAM stack. Excepted in conjunction with
+      accounts_password_pam_modules_in_authselect_profile.
+    review_date: 2026-04-21
+
+  - name: xccdf_org.ssgproject.content_rule_accounts_passwords_pam_faillock_unlock_time
+    status: deselected
+    justification: >-
+      IdM enforces permanent lockout via the IdM password policy. Applying
+      unlock_time via the SCAP custom/hardening profile creates a conflicting
+      local policy and corrupts the IdM-managed authselect profile. Excepted
+      in conjunction with accounts_password_pam_modules_in_authselect_profile.
+    review_date: 2026-04-21

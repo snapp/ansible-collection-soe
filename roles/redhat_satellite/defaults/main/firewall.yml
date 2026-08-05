@@ -1,0 +1,41 @@
+---
+
+redhat_satellite_firewall_enabled: true
+redhat_satellite_firewall_log_denied: all
+redhat_satellite_firewall_disable_conflicting_services: false
+
+# https://console.redhat.com/ansible/automation-hub/repo/published/redhat/rhel_system_roles/content/role/firewall/
+redhat_satellite_firewall:
+  - zone: redhat_sat
+    state: present
+    permanent: true
+
+  - service: redhat_satellite
+    short: Red Hat Satellite
+    description: |-
+      Red Hat Satellite
+    port:
+      - 53/tcp           # Domain Name System (DNS)
+      - 53/udp           # Domain Name System (DNS)
+      - 67/udp           # Dynamic Host Configuration Protocol (DHCP)
+      - 69/udp           # Trivial File Transfer Protocol (TFTP)
+      - 80/tcp           # Hypertext Transfer Protocol (HTTP)
+      - 443/tcp          # Hypertext Transfer Protocol Secure (HTTPS)
+      - 5646-5647/tcp    # Katello Agent Advanced Message Queuing Protocol (AMQP)
+      - 5910-5930/tcp    # Browser access to virtual consoles
+      - 8000/tcp         # Template retrieval for client installers, iPXE or UEFI HTTP Boot during provisioning
+      - 9090/tcp         # Capsule Smart Proxy, OpenSCAP, and Host Discovery
+    state: present
+    permanent: true
+
+  - zone: redhat_sat
+    service:
+      - dhcpv6-client
+      - redhat_satellite
+      - ssh
+    state: enabled
+    permanent: true
+
+  - set_default_zone: redhat_sat
+    state: enabled
+    permanent: true

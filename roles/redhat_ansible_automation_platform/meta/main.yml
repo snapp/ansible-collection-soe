@@ -41,11 +41,24 @@ dependencies:
       redhat_idm_service_principal: "{{ redhat_ansible_automation_platform_idm_service_principal }}"
       redhat_idm_service_user: "{{ redhat_ansible_automation_platform_service_user }}"
       redhat_idm_service_group: "{{ redhat_ansible_automation_platform_service_group }}"
-      redhat_idm_service_tls_enabled: "{{ redhat_ansible_automation_platform_idm_tls_enabled }}"
-      redhat_idm_service_tls_request_id: "{{ redhat_ansible_automation_platform_idm_request_id }}"
+      redhat_idm_service_tls_enabled: "{{ redhat_ansible_automation_platform_idm_service_tls_enabled }}"
+      redhat_idm_service_tls_request_id: "{{ redhat_ansible_automation_platform_idm_service_request_id }}"
       redhat_idm_service_tls_sans: "{{ redhat_ansible_automation_platform_idm_service_tls_sans }}"
     tags:
       - aap_identity_management
       - idm_configure
       - idm_service
     when: redhat_ansible_automation_platform_idm_admin_password is defined
+
+  - name: Red Hat Ansible Automation Platform (AAP) Firewall
+    role: infra.soe.firewall
+    vars:
+      firewall_enabled: "{{ redhat_ansible_automation_platform_firewall_enabled }}"
+      firewall: "{{ redhat_ansible_automation_platform_firewall }}"
+      firewall_log_denied: "{{ redhat_ansible_automation_platform_firewall_log_denied }}"
+      firewall_disable_conflicting_services: "{{ redhat_ansible_automation_platform_firewall_disable_conflicting_services }}"
+    tags:
+      - aap_identity_management
+      - idm_configure
+      - idm_users
+    when: redhat_ansible_automation_platform_firewall_enabled

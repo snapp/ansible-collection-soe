@@ -1,0 +1,5 @@
+---
+
+redhat_ansible_automation_platform_service_user: aap
+
+redhat_ansible_automation_platform_service_group: "{{ redhat_ansible_automation_platform_service_user }}"

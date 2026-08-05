@@ -1,0 +1,39 @@
+---
+
+redhat_ansible_automation_platform_firewall_enabled: true
+redhat_ansible_automation_platform_firewall_log_denied: all
+redhat_ansible_automation_platform_firewall_disable_conflicting_services: false
+
+# https://console.redhat.com/ansible/automation-hub/repo/published/redhat/rhel_system_roles/content/role/firewall/
+redhat_ansible_automation_platform_firewall:
+  - zone: redhat_aap
+    state: present
+    permanent: true
+
+  - service: redhat_ansible_automation_platform
+    short: Red Hat AAP
+    description: |-
+      Red Hat Ansible Automation Platform (AAP)
+    port:
+      - 443/tcp          # Hypertext Transfer Protocol Secure (HTTPS)
+      - 5432/tcp         # PostgreSQL Database
+      - 6379/tcp         # Redis
+      - 8443/tcp         # Automation Controller (HTTPS)
+      - 8444/tcp         # Automation Hub (HTTPS)
+      - 8445/tcp         # Event-Driven Ansible (HTTPS)
+      - 8446/tcp         # Platform Gateway (HTTPS)
+      - 27199/tcp        # Ansible Automation Platform (AAP) Receptor for mesh network control plane clustering
+    state: present
+    permanent: true
+
+  - zone: redhat_aap
+    service:
+      - dhcpv6-client
+      - redhat_ansible_automation_platform
+      - ssh
+    state: enabled
+    permanent: true
+
+  - set_default_zone: redhat_aap
+    state: enabled
+    permanent: true

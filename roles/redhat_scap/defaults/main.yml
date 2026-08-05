@@ -12,7 +12,7 @@
 #   PCI-DSS:        xccdf_org.ssgproject.content_profile_pci-dss
 #
 # Example CIS L2 Server
-# scap_profile: xccdf_org.ssgproject.content_profile_cis
+# redhat_scap_profile: xccdf_org.ssgproject.content_profile_cis
 
 # List of XCCDF rule exceptions for the tailoring profile.
 # Leave empty ([]) to run the upstream profile unmodified.
@@ -25,7 +25,7 @@
 # Optional fields : owner, change_control, review_date
 #
 # Example (IdM host — CIS L2 removes packages that are hard deps of ipa-server):
-#   scap_tailoring_exceptions:
+#   redhat_scap_tailoring_exceptions:
 #     - name: xccdf_org.ssgproject.content_rule_package_bind_removed
 #       status: deselected
 #       justification: bind is a hard dependency of ipa-server-dns

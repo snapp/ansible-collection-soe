@@ -1,7 +1,7 @@
 ---
 
 dependencies:
-  - name: Red Hat Satellite Server IdM Users
+  - name: Red Hat Satellite IdM Users
     role: infra.soe.redhat_idm_users
     vars:
       redhat_idm_users_admin_password: "{{ redhat_satellite_idm_admin_password }}"
@@ -12,7 +12,7 @@ dependencies:
       - idm_users
     when: redhat_satellite_idm_admin_password is defined
 
-  - name: Red Hat Satellite Server IdM Groups
+  - name: Red Hat Satellite IdM Groups
     role: infra.soe.redhat_idm_groups
     vars:
       redhat_idm_groups_admin_password: "{{ redhat_satellite_idm_admin_password }}"
@@ -23,7 +23,7 @@ dependencies:
       - idm_groups
     when: redhat_satellite_idm_admin_password is defined
 
-  - name: Red Hat Satellite Server IdM HBAC rules
+  - name: Red Hat Satellite IdM HBAC rules
     role: infra.soe.redhat_idm_hbac
     vars:
       redhat_idm_hbac_admin_password: "{{ redhat_satellite_idm_admin_password }}"
@@ -34,16 +34,29 @@ dependencies:
       - idm_hbac
     when: redhat_satellite_idm_admin_password is defined
 
-  - name: Red Hat Satellite Server IdM Service Certificate
+  - name: Red Hat Satellite IdM Service Certificate
     role: infra.soe.redhat_idm_service
     vars:
       redhat_idm_service_admin_password: "{{ redhat_satellite_idm_admin_password }}"
       redhat_idm_service_principal: "{{ redhat_satellite_idm_service_principal }}"
-      redhat_idm_service_tls_enabled: "{{ redhat_satellite_idm_tls_enabled }}"
-      redhat_idm_service_tls_request_id: "{{ redhat_satellite_idm_request_id }}"
+      redhat_idm_service_tls_enabled: "{{ redhat_satellite_idm_service_tls_enabled }}"
+      redhat_idm_service_tls_request_id: "{{ redhat_satellite_idm_service_request_id }}"
       redhat_idm_service_tls_sans: "{{ redhat_satellite_idm_service_tls_sans }}"
     tags:
       - satellite_identity_management
       - idm_configure
       - idm_service
     when: redhat_satellite_idm_admin_password is defined
+
+  - name: Red Hat Satellite Firewall
+    role: infra.soe.firewall
+    vars:
+      firewall_enabled: "{{ redhat_satellite_firewall_enabled }}"
+      firewall: "{{ redhat_satellite_firewall }}"
+      firewall_log_denied: "{{ redhat_satellite_firewall_log_denied }}"
+      firewall_disable_conflicting_services: "{{ redhat_satellite_firewall_disable_conflicting_services }}"
+    tags:
+      - aap_identity_management
+      - idm_configure
+      - idm_users
+    when: redhat_satellite_firewall_enabled
