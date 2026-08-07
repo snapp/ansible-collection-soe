@@ -10,12 +10,12 @@
 
 - name: scap | Security Content Automation Protocol (SCAP) Remediation
   ansible.builtin.include_role:
-    name: infra.soe.scap
+    name: infra.soe.redhat_scap
     apply:
       tags: image_builder_scap
   vars:
     scap_tailoring_title: "{{ redhat_image_builder_scap_tailoring_title }}"
     scap_tailoring_description: "{{ redhat_image_builder_scap_tailoring_description }}"
-    scap_tailoring_exceptions: "{{ redhat_image_builder_scap_tailoring_title }}"
+    scap_tailoring_exceptions: "{{ redhat_image_builder_scap_tailoring_exceptions }}"
   tags: image_builder_scap
   when: redhat_image_builder_scap_profile is defined

@@ -26,8 +26,7 @@ redhat_keycloak_idm_groups:
 
 redhat_keycloak_idm_hbac_rules:
   - name: allow_keycloak
-    description: Allow users to access Ansible Automation Platform
+    description: Allow administrators to access Keycloak
     servicecategory: all
     groups:
-      - aap-admins
-      - aap-users
+      - keycloak-admins

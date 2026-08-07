@@ -10,12 +10,12 @@
 
 - name: scap | Security Content Automation Protocol (SCAP) Remediation
   ansible.builtin.include_role:
-    name: infra.soe.scap
+    name: infra.soe.redhat_scap
     apply:
       tags: keycloak_scap
   vars:
     scap_tailoring_title: "{{ redhat_keycloak_scap_tailoring_title }}"
     scap_tailoring_description: "{{ redhat_keycloak_scap_tailoring_description }}"
-    scap_tailoring_exceptions: "{{ redhat_keycloak_scap_tailoring_title }}"
+    scap_tailoring_exceptions: "{{ redhat_keycloak_scap_tailoring_exceptions }}"
   tags: keycloak_scap
   when: redhat_keycloak_scap_profile is defined
