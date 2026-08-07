@@ -1,5 +1,9 @@
 ---
 
+caddy_keycloak_base_url: "{{ keycloak_base_url | default(omit) }}"
+
+caddy_keycloak_primary_realm: "{{ keycloak_primary_realm | default(omit) }}"
+
 caddy_service_user: caddy
 
 caddy_service_group: caddy

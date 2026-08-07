@@ -1,0 +1,40 @@
+---
+
+# TODO| bootstrap user delete causes next play to fail with permissions on /home/ansible/.ansible/tmp
+- name: cleanup | Remove local bootstrap user after IdM initialization
+  become: true
+  become_user: root
+  ansible.builtin.shell: |
+    set -o pipefail
+
+    # Scrub the local bootstrap user from all relevant files
+    find "/var/db/sudo/lectured/$(id -u {{ bootstrap_user }} 2>/dev/null || echo _missing_)" -exec rm -f {} \; 2>/dev/null || true
+    sed -i "/^{{ bootstrap_user }}:/d;" /etc/{group,gshadow,passwd,shadow,subgid,subuid}{,-}
+    rm -rf "/home/{{ bootstrap_user }}"
+    find /etc/sudoers.d/ -type f -exec grep -l "{{ bootstrap_user }}" {} \; | xargs -r rm -f
+
+    sss_cache -E
+    # Flush SSSD caches so IdM user resolution is clean
+    systemctl stop sssd
+    kdestroy -A 2>/dev/null
+    rm -rf /var/lib/sss/{db,mc}/*
+    systemctl start sssd
+
+    # Wait until the IdM service account resolves to IdM UID (i.e. >=1100)
+    for i in $(seq 1 30); do
+      uid=$(id -u "{{ bootstrap_user }}" 2>/dev/null) || { sleep 2; continue; }
+
+      [ "$uid" -ge 1100 ] || { sleep 2; continue; }
+
+      sudo -l -U "{{ bootstrap_user }}" 2>/dev/null | grep -q '(ALL' || { sleep 2; continue; }
+
+      break
+    done
+
+    if ! [ -d "/home/{{ bootstrap_user }}" ]; then
+      cp -r /etc/skel "/home/{{ bootstrap_user }}"
+      mkdir -p "/home/{{ bootstrap_user }}/.ansible/tmp"
+      chown -R {{ bootstrap_user }}:{{ bootstrap_user }} "/home/{{ bootstrap_user }}"
+    fi
+  changed_when: true
+  when: bootstrap_user is defined and bootstrap_user | length > 0

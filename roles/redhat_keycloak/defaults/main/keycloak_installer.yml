@@ -1,0 +1,11 @@
+---
+
+redhat_keycloak_service_user: rhbk
+redhat_keycloak_service_user_id: 900
+
+redhat_keycloak_service_group: "{{ redhat_keycloak_service_user }}"
+redhat_keycloak_service_group_id: "{{ redhat_keycloak_service_user_id }}"
+
+redhat_keycloak_base_url: "{{ keycloak_base_url | default(omit) }}"
+
+redhat_keycloak_primary_realm: "{{ keycloak_primary_realm | default(omit) }}"

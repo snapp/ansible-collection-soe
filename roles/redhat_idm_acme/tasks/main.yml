@@ -18,7 +18,7 @@
     - /usr/sbin/ipa-acme-manage "{{ service_enabled }}"
     - /usr/sbin/ipa-acme-manage pruning "--{{ service_enabled }}"
   vars:
-    service_enabled: "{{ (redhat_idm_acme_enabled | default(false) | bool) | ternary('enable', 'disable') }}"
+    service_enabled: "{{ (redhat_idm_acme_enabled | bool) | ternary('enable', 'disable') }}"
   when: >-
     (service_enabled == 'enable') and ((_redhat_idm_acme_check.status | default(0) | int) != 200)
     or

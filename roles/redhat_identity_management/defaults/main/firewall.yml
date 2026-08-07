@@ -1,0 +1,51 @@
+---
+
+redhat_identity_management_firewall_enabled: true
+redhat_identity_management_firewall_log_denied: all
+redhat_identity_management_firewall_disable_conflicting_services: false
+
+# https://console.redhat.com/ansible/automation-hub/repo/published/redhat/rhel_system_roles/content/role/firewall/
+redhat_identity_management_firewall:
+  - zone: redhat_idm
+    state: present
+    permanent: true
+
+  - service: redhat_identity_management
+    short: Red Hat IdM
+    description: |-
+      Red Hat Identity Management (IdM)
+    port:
+      - 53/tcp           # Domain Name System (DNS)
+      - 53/udp           # Domain Name System (DNS)
+      - 80/tcp           # Hypertext Transfer Protocol (HTTP)
+      - 88/tcp           # Kerberos Key Distribution Center (KDC)
+      - 88/udp           # Kerberos Key Distribution Center (KDC)
+      - 123/udp          # Network Time Protocol (NTP)
+      - 135/tcp          # Distributed Computing Environment (DCE) Remote Procedure Call (RPC)
+      - 138/tcp          # Network Basic Input/Output System (NetBIOS) Datagram Service
+      - 139/tcp          # Network Basic Input/Output System (NetBIOS) Session Service
+      - 138/udp          # Network Basic Input/Output System (NetBIOS) Datagram Service
+      - 139/udp          # Network Basic Input/Output System (NetBIOS) Session Service
+      - 389/tcp          # Lightweight Directory Access Protocol (LDAP)
+      - 389/udp          # Lightweight Directory Access Protocol (LDAP)
+      - 443/tcp          # Hypertext Transfer Protocol Secure (HTTPS)
+      - 445/tcp          # Server Message Block (SMB)
+      - 445/udp          # Server Message Block (SMB)
+      - 464/tcp          # Kerberos Password Change & Set
+      - 464/udp          # Kerberos Password Change & Set
+      - 636/tcp          # Lightweight Directory Access Protocol Secure (LDAPS)
+      - 1024-1300/tcp    # Distributed Computing Environment (DCE) Remote Procedure Call (RPC)
+    state: present
+    permanent: true
+
+  - zone: redhat_idm
+    service:
+      - dhcpv6-client
+      - redhat_identity_management
+      - ssh
+    state: enabled
+    permanent: true
+
+  - set_default_zone: redhat_idm
+    state: enabled
+    permanent: true

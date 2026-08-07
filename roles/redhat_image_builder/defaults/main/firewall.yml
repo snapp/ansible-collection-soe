@@ -1,0 +1,23 @@
+---
+
+redhat_image_builder_firewall_enabled: true
+redhat_image_builder_firewall_log_denied: all
+redhat_image_builder_firewall_disable_conflicting_services: false
+
+# https://console.redhat.com/ansible/automation-hub/repo/published/redhat/rhel_system_roles/content/role/firewall/
+redhat_image_builder_firewall:
+  - zone: redhat_ib
+    state: present
+    permanent: true
+
+  - zone: redhat_ib
+    service:
+      - dhcpv6-client
+      - https
+      - ssh
+    state: enabled
+    permanent: true
+
+  - set_default_zone: redhat_ib
+    state: enabled
+    permanent: true

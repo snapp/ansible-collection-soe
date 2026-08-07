@@ -1,0 +1,34 @@
+---
+
+redhat_keycloak_firewall_enabled: true
+redhat_keycloak_firewall_log_denied: all
+redhat_keycloak_firewall_disable_conflicting_services: false
+
+# https://console.redhat.com/ansible/automation-hub/repo/published/redhat/rhel_system_roles/content/role/firewall/
+redhat_keycloak_firewall:
+  - zone: redhat_keycloak
+    state: present
+    permanent: true
+
+  - service: redhat_keycloak
+    short: Red Hat Keycloak
+    description: |-
+      Red Hat Build of Keycloak (RHBK)
+    port:
+      - 443/tcp          # Hypertext Transfer Protocol Secure (HTTPS)
+      - 7800/tcp         # jgroups cluster Unicast data transmission
+      - 57800/tcp        # Failure detection by protocol FD_SOCK2
+    state: present
+    permanent: true
+
+  - zone: redhat_keycloak
+    service:
+      - dhcpv6-client
+      - redhat_keycloak
+      - ssh
+    state: enabled
+    permanent: true
+
+  - set_default_zone: redhat_keycloak
+    state: enabled
+    permanent: true

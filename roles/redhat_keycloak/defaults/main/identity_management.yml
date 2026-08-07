@@ -1,0 +1,33 @@
+---
+
+redhat_keycloak_idm_service_principal: "HTTP/{{ inventory_hostname }}"
+redhat_keycloak_idm_service_request_id: keycloak_idm_service
+redhat_keycloak_idm_service_user: "{{ redhat_keycloak_service_user }}"
+redhat_keycloak_idm_service_group: "{{ redhat_keycloak_service_group }}"
+redhat_keycloak_idm_service_tls_enabled: true
+redhat_keycloak_idm_service_tls_sans: []
+
+# REDO|2026/05/31| In a strict production environment, you would use a dedicated LDAP bind account with a non-expiring password policy
+# `ipa sysaccount-add` creates a system account under cn=sysaccounts,cn=etc rather than use the Directory Manager for remote services
+redhat_keycloak_idm_users:
+  - description: Keycloak Automation Account
+    name:
+      username: keycloak
+      first: Keycloak
+      last: Automation
+      full: Keycloak Automation Account
+    initials: KAA
+    home: /var/lib/keycloak
+    shell: /sbin/nologin
+
+redhat_keycloak_idm_groups:
+  - name: keycloak-admins
+    description: Keycloak Administrators
+
+redhat_keycloak_idm_hbac_rules:
+  - name: allow_keycloak
+    description: Allow users to access Ansible Automation Platform
+    servicecategory: all
+    groups:
+      - aap-admins
+      - aap-users

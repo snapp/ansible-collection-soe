@@ -3,12 +3,5 @@
 - name: Install Red Hat Cockpit
   tags: cockpit_install
   block:
-    - name: Configure Cockpit Certificate
-      ansible.builtin.include_tasks: certificate.yml
-      tags: redhat_idm_service
-      when: redhat_cockpit_idm_service_principal is defined
-      vars:
-        ipaadmin_password: "{{ idm_admin_password }}"
-
     - name: Run Cockpit Installer
       ansible.builtin.import_tasks: install.yml

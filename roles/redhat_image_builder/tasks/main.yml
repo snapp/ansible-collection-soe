@@ -13,3 +13,7 @@
 - name: Red Hat Image Builder Configuration
   ansible.builtin.import_tasks: configure.yml
   tags: image_builder_configure
+
+- name: Red Hat Image Builder SCAP Remediation
+  ansible.builtin.import_tasks: scap.yml
+  tags: image_builder_scap

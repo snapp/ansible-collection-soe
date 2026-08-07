@@ -71,7 +71,7 @@
           # keycloak-oidc (not the legacy `keycloak` provider) requires an audience mapper
           # on the Keycloak client, otherwise every token is rejected as wrong-audience.
           Environment=OAUTH2_PROXY_PROVIDER=keycloak-oidc
-          Environment=OAUTH2_PROXY_OIDC_ISSUER_URL={{ keycloak_base_url }}/realms/{{ keycloak_primary_realm }}
+          Environment=OAUTH2_PROXY_OIDC_ISSUER_URL={{ caddy_keycloak_base_url }}/realms/{{ caddy_keycloak_primary_realm }}
           Environment=OAUTH2_PROXY_REDIRECT_URL=https://{{ proxy.domain }}/oauth2/callback
 
           # --- Forward-auth mode ------------------------------------------------------

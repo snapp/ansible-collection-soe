@@ -1,0 +1,151 @@
+---
+
+redhat_identity_management_scap_tailoring_title: CIS L2 Server tailored for Red Hat Identity Management (IdM)
+
+redhat_identity_management_scap_tailoring_description: >-
+  These exceptions were derived from a post-install CIS L2 remediation run against
+  a RHEL 10 Identity Management (IdM) server. The remediation destroyed the IdM
+  installation by removing hard dependencies via three package-removal rules and
+  corrupted SSSD authentication by replacing the IdM-managed authselect profile.
+
+redhat_identity_management_scap_tailoring_exceptions:
+  # ---------------------------------------------------------------------------
+  # Package preservation — CIS L2 removes packages that are hard dependencies
+  # of ipa-server. Each removal cascades through the IdM stack.
+  # ---------------------------------------------------------------------------
+
+  - name: xccdf_org.ssgproject.content_rule_package_bind_removed
+    status: deselected
+    justification: >-
+      bind (named) is a hard dependency of ipa-server-dns and bind-dyndb-ldap,
+      which provide the IdM integrated DNS service and LDAP back-end for BIND.
+      Removing bind cascades to ipa-server-dns and ipa-server-encrypted-dns.
+      IdM integrated DNS cannot function without named; the DNS service is
+      required for Kerberos SRV record discovery by all enrolled clients.
+    review_date: 2026-04-16
+
+  - name: xccdf_org.ssgproject.content_rule_package_httpd_removed
+    status: deselected
+    justification: >-
+      httpd (Apache) is a hard dependency of ipa-server. Removing it cascades
+      to ipa-server, ipa-server-common, and python3-ipaserver, uninstalling the
+      entire IdM server stack including the ipactl management command. The
+      ipa-server package uses Apache to host the XML-RPC API endpoint consumed
+      by all ipa CLI commands and the web UI.
+    review_date: 2026-04-16
+
+  - name: xccdf_org.ssgproject.content_rule_package_openldap-clients_removed
+    status: deselected
+    justification: >-
+      openldap-clients is a hard dependency of 389-ds-base, idm-pki-server,
+      idm-pki-ca, idm-pki-kra, idm-pki-acme, idm-pki-tools, python3-lib389,
+      and slapi-nis. Removing it destroys the IdM LDAP directory (389-DS) and
+      the Dogtag certificate authority. All IdM operations — user management,
+      Kerberos ticket issuance, HBAC, sudo rules — depend on 389-DS and Dogtag.
+    review_date: 2026-04-16
+
+  # ---------------------------------------------------------------------------
+  # SSH — Kerberos GSSAPI authentication
+  # ---------------------------------------------------------------------------
+
+  - name: xccdf_org.ssgproject.content_rule_sshd_disable_gssapi_auth
+    status: deselected
+    justification: >-
+      GSSAPIAuthentication is required for Kerberos-based SSH single sign-on
+      with IdM. After a user runs kinit, SSH uses GSSAPI to present the TGT
+      without a password prompt. Disabling GSSAPI breaks this workflow for all
+      IdM-enrolled users and forces password fallback, defeating a primary IdM
+      security benefit. Kerberos GSSAPI is cryptographically strong and does
+      not introduce the credential exposure risks the CIS rule targets.
+    review_date: 2026-04-16
+
+  # ---------------------------------------------------------------------------
+  # PAM / authselect — IdM installs and owns the sssd authselect profile.
+  # The CIS L2 rules create a competing custom/hardening profile that overwrites
+  # it, breaking SSSD-based user resolution and Kerberos ticket validation.
+  # All nine rules below operate on that profile and must be excepted together.
+  # ---------------------------------------------------------------------------
+
+  - name: xccdf_org.ssgproject.content_rule_accounts_password_pam_modules_in_authselect_profile
+    status: deselected
+    justification: >-
+      ipa-server installs and manages the sssd authselect profile, which is
+      configured specifically for SSSD, Kerberos, and pam_faillock integration.
+      This rule creates a custom/hardening authselect profile that replaces the
+      IdM-managed profile, breaking SSSD user resolution and all subsequent
+      Kerberos authentication. This is the root cause of the authselect cascade;
+      the eight rules below also touch the same profile and must be co-excepted.
+    review_date: 2026-04-16
+
+  - name: xccdf_org.ssgproject.content_rule_account_password_pam_faillock_password_auth
+    status: deselected
+    justification: >-
+      IdM's sssd authselect profile already configures pam_faillock for
+      password-auth with settings tuned for Kerberos pre-authentication.
+      Applying this rule against the SCAP custom/hardening profile corrupts the
+      IdM PAM stack. Excepted in conjunction with
+      accounts_password_pam_modules_in_authselect_profile.
+    review_date: 2026-04-16
+
+  - name: xccdf_org.ssgproject.content_rule_account_password_pam_faillock_system_auth
+    status: deselected
+    justification: >-
+      IdM's sssd authselect profile already configures pam_faillock for
+      system-auth. Applying this rule against the SCAP custom/hardening profile
+      corrupts the IdM PAM stack. Excepted in conjunction with
+      accounts_password_pam_modules_in_authselect_profile.
+    review_date: 2026-04-16
+
+  - name: xccdf_org.ssgproject.content_rule_accounts_password_pam_pwhistory_remember_password_auth
+    status: deselected
+    justification: >-
+      IdM enforces password history centrally via the IdM password policy.
+      Applying pam_pwhistory via the SCAP custom/hardening profile creates a
+      conflicting local policy and corrupts the IdM-managed authselect profile.
+      Excepted in conjunction with accounts_password_pam_modules_in_authselect_profile.
+    review_date: 2026-04-16
+
+  - name: xccdf_org.ssgproject.content_rule_accounts_password_pam_pwhistory_remember_system_auth
+    status: deselected
+    justification: >-
+      IdM enforces password history centrally via the IdM password policy.
+      Applying pam_pwhistory via the SCAP custom/hardening profile creates a
+      conflicting local policy and corrupts the IdM-managed authselect profile.
+      Excepted in conjunction with accounts_password_pam_modules_in_authselect_profile.
+    review_date: 2026-04-16
+
+  - name: xccdf_org.ssgproject.content_rule_accounts_password_pam_pwhistory_use_authtok
+    status: deselected
+    justification: >-
+      The use_authtok option for pam_pwhistory is already set correctly in the
+      IdM sssd authselect profile. Applying it via the SCAP custom/hardening
+      profile corrupts the IdM-managed PAM stack. Excepted in conjunction with
+      accounts_password_pam_modules_in_authselect_profile.
+    review_date: 2026-04-16
+
+  - name: xccdf_org.ssgproject.content_rule_accounts_passwords_pam_faillock_deny
+    status: deselected
+    justification: >-
+      IdM enforces account lockout centrally via the IdM password policy.
+      Applying pam_faillock deny= via the SCAP custom/hardening profile creates a
+      conflicting local lockout threshold and corrupts the IdM-managed authselect profile.
+      Excepted in conjunction with accounts_password_pam_modules_in_authselect_profile.
+    review_date: 2026-04-16
+
+  - name: xccdf_org.ssgproject.content_rule_accounts_passwords_pam_faillock_deny_root
+    status: deselected
+    justification: >-
+      The even_deny_root option for pam_faillock is already present in the
+      IdM sssd authselect profile. Applying it via the SCAP custom/hardening
+      profile corrupts the IdM-managed PAM stack. Excepted in conjunction with
+      accounts_password_pam_modules_in_authselect_profile.
+    review_date: 2026-04-16
+
+  - name: xccdf_org.ssgproject.content_rule_accounts_passwords_pam_faillock_unlock_time_with_zero
+    status: deselected
+    justification: >-
+      IdM enforces permanent lockout (unlock_time=0) via the IdM password policy. Applying this via the SCAP
+      custom/hardening profile creates a conflicting local policy and corrupts
+      the IdM-managed authselect profile. Excepted in conjunction with
+      accounts_password_pam_modules_in_authselect_profile.
+    review_date: 2026-04-16

@@ -1,0 +1,12 @@
+---
+
+redhat_image_builder_idm_groups:
+  - name: imagebuilder-users
+    description: Image Builder Users
+
+redhat_image_builder_idm_hbac_rules:
+  - name: allow_image_builder
+    description: Allow users to access Image Builder
+    servicecategory: all
+    groups:
+      - imagebuilder-users

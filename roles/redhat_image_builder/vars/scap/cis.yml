@@ -1,0 +1,21 @@
+---
+
+redhat_image_builder_scap_tailoring_title: CIS L2 Server tailored for Red Hat Image Builder
+
+redhat_image_builder_scap_tailoring_description: >-
+  Exceptions derived from a post-install CIS L2 Server remediation run on RHEL 10 running
+  Red Hat Image Builder with Cockpit.
+  All deselected rules are CIS L2-only unless noted. Each exception documents the
+  compensating control or the planned remediation path.
+
+redhat_image_builder_scap_tailoring_exceptions:
+
+  - name: xccdf_org.ssgproject.content_rule_service_cockpit_disabled
+    status: deselected
+    justification: >-
+      CIS 2.1.3 targets servers where Cockpit is an unnecessary management surface.
+      On a Red Hat Image Builder host, Cockpit is an optional management interface:
+      cockpit-image-builder delivers the Image Builder web UI exclusively through the
+      Cockpit framework.
+      This rule is deselected because Cockpit is optional on this host.
+    review_date: 2026-04-25

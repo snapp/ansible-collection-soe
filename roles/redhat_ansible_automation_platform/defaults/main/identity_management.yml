@@ -16,3 +16,18 @@ redhat_ansible_automation_platform_idm_users:
     home: /var/lib/aap
     shell: /sbin/nologin
     enable_subid: true
+
+redhat_ansible_automation_platform_idm_groups:
+  - name: aap-admins
+    description: Ansible Automation Platform (AAP) Super Users
+
+  - name: aap-users
+    description: Ansible Automation Platform (AAP) Users
+
+redhat_ansible_automation_platform_idm_hbac_rules:
+  - name: allow_ansible_automation_platform
+    description: Allow users to access Ansible Automation Platform
+    servicecategory: all
+    groups:
+      - aap-admins
+      - aap-users

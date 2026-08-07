@@ -1,0 +1,15 @@
+---
+
+- name: Red Hat Identity Management (IdM) Client Registration
+  ansible.builtin.import_role:
+    name: redhat.rhel_idm.ipaclient
+  vars:
+    ipaadmin_principal: "{{ redhat_idm_register_admin_user }}"
+    ipaadmin_password: "{{ redhat_idm_register_admin_password }}"
+    ipaclient_domain: "{{ redhat_idm_register_domain }}"
+    ipaclient_subid: "{{ redhat_idm_register_subid }}"
+    ipaclient_mkhomedir: "{{ redhat_idm_register_mkhomedir }}"
+    ipaclient_allow_repair: "{{ redhat_idm_register_allow_repair }}"
+    ipaclient_force: "{{ redhat_idm_register_force }}"
+    ipaclient_force_join: "{{ redhat_idm_register_force_join }}"
+    ipaclient_all_ip_addresses: "{{ redhat_idm_register_all_ip_addresses }}"

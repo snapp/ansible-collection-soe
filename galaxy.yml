@@ -1,63 +1,83 @@
 ---
 # https://docs.ansible.com/ansible/latest/dev_guide/collections_galaxy_meta.html
 
-# NOTE| The namespace of the collection.
+# The namespace of the collection.
 namespace: "infra"
 
-# NOTE| The name of the collection.
+# The name of the collection.
 name: "soe"
 
-# NOTE| The version of the collection.
+# The version of the collection.
 version: "0.26.1"
 
 # The path to the Markdown (.md) readme file.
 readme: README.md
 
-# NOTE| A list of the collection's content authors.
+# A list of the collection's content authors.
 authors:
   - "snapp@redhat.com"
 
-# NOTE| A short summary description of the collection.
+# A short summary description of the collection.
 description: "Standard Operating Environments (SOE)"
 
-# NOTE| Either a single license or a list of licenses for content inside of a collection.
+# Either a single license or a list of licenses for content inside of a collection.
 # license:
 #   - "GPL-3.0-or-later"
 
-# NOTE| The path to the license file for the collection.
+# The path to the license file for the collection.
 license_file: "LICENSE"
 
-# NOTE| A list of tags you want to associate with the collection for indexing/searching.
+# A list of tags you want to associate with the collection for indexing/searching.
 tags:
   - infrastructure
   - linux
   - rhel
 
-# NOTE| The list of collection dependencies this collection requires to be installed for it to be usable.
+# The list of collection dependencies this collection requires to be installed for it to be usable.
 dependencies:
-  ansible.windows: ">=2.3.0"
-  community.windows: ">=2.2.0"
-  infra.aap_configuration: ">=3.1.0"
-  infra.aap_utilities: ">=2.5.1"
-  redhat.rhel_idm: ">=1.12.1"
-  redhat.rhel_system_roles: ">=1.22.0"
-  redhat.satellite: ">=4.0.0"
-  redhat.satellite_operations: ">=3.0.0"
+  # https://console.redhat.com/ansible/automation-hub/collections/published/ansible/windows
+  ansible.windows: ">=3.7.0"
+
+  # https://docs.ansible.com/ansible/latest/collections/community/general/#plugin-index
+  community.general: ">=13.2.0"
+
+  # https://docs.ansible.com/ansible/latest/collections/community/windows/index.html#plugins-in-community-windows
+  community.windows: ">=3.3.0"
+
+  # https://console.redhat.com/ansible/automation-hub/collections/validated/infra/aap_configuration
+  infra.aap_configuration: ">=4.7.0"
+
+  # https://console.redhat.com/ansible/automation-hub/collections/validated/infra/aap_utilities/
+  infra.aap_utilities: ">=3.5.0"
+
+  # https://console.redhat.com/ansible/automation-hub/collections/published/redhat/rhel_idm/
+  redhat.rhel_idm: ">=1.16.0"
+
+  # https://console.redhat.com/ansible/automation-hub/collections/published/redhat/rhel_system_roles/
+  redhat.rhel_system_roles: ">=1.120.5"
+
+  # https://console.redhat.com/ansible/automation-hub/collections/published/redhat/satellite/
+  redhat.satellite: ">=5.11.0"
+
+  # https://console.redhat.com/ansible/automation-hub/collections/published/redhat/satellite_operations/
+  redhat.satellite_operations: ">=4.0.0"
+
+  # https://console.redhat.com/ansible/automation-hub/collections/published/redhat/rhbk/
   redhat.rhbk: ">=3.0.2"
 
-# NOTE| The URL of the originating SCM repository
+# The URL of the originating SCM repository
 repository: "https://github.com/snapp/ansible-collection-soe"
 
-# NOTE| The URL to any online docs
+# The URL to any online docs
 # documentation: "https://github.com/snapp/ansible-collection-soe/wiki"
 
-# NOTE| The URL to the homepage of the collection/project
+# The URL to the homepage of the collection/project
 # homepage: "https://github.com/snapp/ansible-collection-soe"
 
-# NOTE| The URL to the collection issue tracker
+# The URL to the collection issue tracker
 issues: "https://github.com/snapp/ansible-collection-soe/issues"
 
-# NOTE| The build ignore list that should not be included in the build artifact.
+# The build ignore list that should not be included in the build artifact.
 build_ignore:
   - .gitignore
   - .github

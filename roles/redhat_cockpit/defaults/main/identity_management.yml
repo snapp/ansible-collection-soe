@@ -1,0 +1,6 @@
+---
+
+redhat_cockpit_idm_service_principal: "HTTP/{{ inventory_hostname }}"
+redhat_cockpit_idm_service_request_id: cockpit_idm_service
+redhat_cockpit_idm_service_tls_enabled: true
+redhat_cockpit_idm_service_tls_sans: []

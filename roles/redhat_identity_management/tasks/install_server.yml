@@ -1,0 +1,8 @@
+---
+
+- name: install_server | Red Hat Identity Management (IdM) Server Installation
+  ansible.builtin.import_role:
+    name: redhat.rhel_idm.ipaserver
+  vars:
+    ipadm_password: "{{ redhat_identity_management_admin_password }}"
+    ipaadmin_password: "{{ redhat_identity_management_admin_password }}"

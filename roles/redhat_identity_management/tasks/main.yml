@@ -1,0 +1,34 @@
+---
+
+- name: Red Hat Identity Management (IdM) /etc/hosts
+  ansible.builtin.import_tasks: network.yml
+  tags:
+    - idm_install
+    - idm_network
+
+- name: Red Hat Identity Management (IdM) Server Installation
+  ansible.builtin.import_tasks: install_server.yml
+  tags:
+    - idm_install
+    - idm_server
+  when: "'idm_server' in group_names"
+
+- name: Red Hat Identity Management (IdM) Replica Installation
+  ansible.builtin.import_tasks: install_replica.yml
+  tags:
+    - idm_install
+    - idm_replica
+  when: "'idm_replica' in group_names"
+
+- name: Red Hat Identity Management (IdM) Configuration
+  ansible.builtin.import_tasks: configure.yml
+  tags: idm_configure
+  when: "'idm_server' in group_names"
+
+- name: Red Hat Identity Management (IdM) Cleanup
+  ansible.builtin.import_tasks: cleanup.yml
+  tags: idm_cleanup
+
+- name: Red Hat Identity Management (IdM) SCAP Remediation
+  ansible.builtin.import_tasks: scap.yml
+  tags: idm_scap

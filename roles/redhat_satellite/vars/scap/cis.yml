@@ -1,9 +1,9 @@
 ---
 # ansible-playbook playbooks/site.yml -l satellite_server -t scap
 
-scap_tailoring_title: CIS L2 Server tailored for Red Hat Satellite Server
+redhat_satellite_scap_tailoring_title: CIS L2 Server tailored for Red Hat Satellite Server
 
-scap_tailoring_description: >-
+redhat_satellite_scap_tailoring_description: >-
   These exceptions were derived from a post-install CIS L2 remediation run against
   a RHEL 9 Satellite Server. Two package-removal rules errored because Satellite holds
   hard RPM dependencies on httpd and tftp-server.
@@ -13,7 +13,7 @@ scap_tailoring_description: >-
   file ownership, SSH access control, and — where the Satellite host is IdM-enrolled —
   GSSAPI and authselect are excepted for the reasons documented below.
 
-scap_tailoring_exceptions:
+redhat_satellite_scap_tailoring_exceptions:
   # ---------------------------------------------------------------------------
   # Package preservation — CIS L2 removes packages that are hard RPM
   # dependencies of the Satellite Server stack. Both rules errored during the

@@ -1,0 +1,61 @@
+---
+
+dependencies:
+  - name: Red Hat Keycloak Local Users
+    role: infra.soe.local_users
+    vars:
+      local_users: "{{ redhat_keycloak_local_users }}"
+    tags:
+      - keycloak_local_users
+      - local_users
+    when: redhat_keycloak_local_users is defined
+
+  - name: Red Hat Keycloak IdM Users
+    role: infra.soe.redhat_idm_users
+    vars:
+      redhat_idm_users_admin_password: "{{ redhat_keycloak_idm_admin_password }}"
+      redhat_idm_users: "{{ redhat_keycloak_idm_users }}"
+    tags:
+      - keycloak_identity_management
+      - idm_configure
+      - idm_users
+    when: redhat_keycloak_idm_admin_password is defined
+
+  - name: Red Hat Keycloak IdM Groups
+    role: infra.soe.redhat_idm_groups
+    vars:
+      redhat_idm_groups_admin_password: "{{ redhat_keycloak_idm_admin_password }}"
+      redhat_idm_groups: "{{ redhat_keycloak_idm_groups }}"
+    tags:
+      - keycloak_identity_management
+      - idm_configure
+      - idm_groups
+    when: redhat_keycloak_idm_admin_password is defined
+
+  - name: Red Hat Keycloak IdM Service Certificate
+    role: infra.soe.redhat_idm_service
+    vars:
+      redhat_idm_service_admin_password: "{{ redhat_keycloak_idm_admin_password }}"
+      redhat_idm_service_principal: "{{ redhat_keycloak_idm_service_principal }}"
+      redhat_idm_service_user: "{{ redhat_keycloak_idm_service_user }}"
+      redhat_idm_service_group: "{{ redhat_keycloak_idm_service_group }}"
+      redhat_idm_service_tls_enabled: true
+      redhat_idm_service_tls_request_id: "{{ redhat_keycloak_idm_service_request_id }}"
+      redhat_idm_service_tls_sans: "{{ keycloak_idm_service_tls_sans | default([]) }}"
+    tags:
+      - keycloak_identity_management
+      - idm_configure
+      - idm_service
+    when: redhat_keycloak_idm_admin_password is defined
+
+  - name: Red Hat Keycloak Firewall
+    role: infra.soe.firewall
+    vars:
+      firewall_enabled: "{{ redhat_keycloak_firewall_enabled }}"
+      firewall: "{{ redhat_keycloak_firewall }}"
+      firewall_log_denied: "{{ redhat_keycloak_firewall_log_denied }}"
+      firewall_disable_conflicting_services: "{{ redhat_keycloak_firewall_disable_conflicting_services }}"
+    tags:
+      - keycloak_firewall
+      - firewall
+    when: redhat_keycloak_firewall_enabled

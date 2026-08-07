@@ -56,16 +56,10 @@
           --foreman-keycloak true
           --foreman-keycloak-app-name foreman-openidc
           --foreman-keycloak-realm {{ satellite_keycloak_realm }}
-      register: __satellite_keycloak_installer
-      changed_when: "'Success!' in __satellite_keycloak_installer.stdout"
+      register: __redhat_satellite_keycloak_installer
+      changed_when: "'Success!' in __redhat_satellite_keycloak_installer.stdout"
 
     - name: keycloak | Configure Keycloak login delegation and group mapping
-      module_defaults:
-        group/redhat.satellite.satellite:
-          username: "{{ satellite_username }}"
-          password: "{{ satellite_password }}"
-          server_url: "{{ satellite_server_url }}"
-          validate_certs: "{{ satellite_validate_certs | default(true) }}"
       block:
         # --foreman-keycloak wires up Apache but leaves login delegation off, so
         # Satellite keeps sending users to the local /users/login form. Enabling it
@@ -73,6 +67,9 @@
         # local login stays reachable at /users/login?force_login=true.
         - name: keycloak | Default Satellite login to Keycloak
           redhat.satellite.setting:
+            username: "{{ satellite_username | default(omit) }}"
+            password: "{{ satellite_password | default(omit) }}"
+            server_url: "{{ satellite_server_url | default(omit) }}"
             name: "{{ item.name }}"
             value: "{{ item.value }}"
           loop:
@@ -84,9 +81,13 @@
               value: External
           loop_control:
             label: "{{ item.name }}"
+          no_log: "{{ no_log_enabled | default(true) }}"
 
         - name: keycloak | Ensure Satellite user groups exist with roles
           redhat.satellite.usergroup:
+            username: "{{ satellite_username | default(omit) }}"
+            password: "{{ satellite_password | default(omit) }}"
+            server_url: "{{ satellite_server_url | default(omit) }}"
             name: "{{ item.name }}"
             admin: "{{ item.admin | default(omit) }}"
             roles: "{{ item.roles | default(omit) }}"
@@ -94,9 +95,13 @@
           loop: "{{ satellite_external_usergroups | default([]) }}"
           loop_control:
             label: "{{ item.name }}"
+          no_log: "{{ no_log_enabled | default(true) }}"
 
         - name: keycloak | Link Keycloak external groups to Satellite user groups
           redhat.satellite.external_usergroup:
+            username: "{{ satellite_username | default(omit) }}"
+            password: "{{ satellite_password | default(omit) }}"
+            server_url: "{{ satellite_server_url | default(omit) }}"
             name: "{{ item.1.name }}"
             usergroup: "{{ item.0.name }}"
             auth_source: "{{ item.1.auth_source | default('External') }}"
@@ -104,3 +109,4 @@
           loop: "{{ satellite_external_usergroups | default([]) | subelements('external', skip_missing=True) }}"
           loop_control:
             label: "{{ item.0.name }} <- {{ item.1.name }}"
+          no_log: "{{ no_log_enabled | default(true) }}"

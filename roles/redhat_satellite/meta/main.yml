@@ -56,7 +56,6 @@ dependencies:
       firewall_log_denied: "{{ redhat_satellite_firewall_log_denied }}"
       firewall_disable_conflicting_services: "{{ redhat_satellite_firewall_disable_conflicting_services }}"
     tags:
-      - aap_identity_management
-      - idm_configure
-      - idm_users
+      - satellite_firewall
+      - firewall
     when: redhat_satellite_firewall_enabled

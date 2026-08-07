@@ -47,3 +47,6 @@
 
 - name: Security Content Automation Protocol (SCAP) Remediation
   ansible.builtin.import_playbook: redhat_scap.yml
+
+- name: Reboot
+  ansible.builtin.import_playbook: reboot.yml

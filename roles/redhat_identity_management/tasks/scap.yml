@@ -1,0 +1,21 @@
+---
+
+- name: scap | Load SCAP profile specific variables
+  ansible.builtin.include_vars: "{{ __redhat_identity_management_scap_vars_file }}"
+  vars:
+    __redhat_identity_management_scap_vars_file: "{{ role_path }}/vars/scap/{{ redhat_identity_management_scap_profile | regex_replace('xccdf_org.*.content_profile_', '') }}"
+  when:
+    - redhat_identity_management_scap_profile is defined
+    - __redhat_identity_management_scap_vars_file is file
+
+- name: scap | Security Content Automation Protocol (SCAP) Remediation
+  ansible.builtin.include_role:
+    name: infra.soe.scap
+    apply:
+      tags: idm_scap
+  vars:
+    scap_tailoring_title: "{{ redhat_identity_management_scap_tailoring_title }}"
+    scap_tailoring_description: "{{ redhat_identity_management_scap_tailoring_description }}"
+    scap_tailoring_exceptions: "{{ redhat_identity_management_scap_tailoring_title }}"
+  tags: idm_scap
+  when: redhat_identity_management_scap_profile is defined

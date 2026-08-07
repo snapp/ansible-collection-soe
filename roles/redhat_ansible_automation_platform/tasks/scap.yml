@@ -3,7 +3,7 @@
 - name: scap | Load SCAP profile specific variables
   ansible.builtin.include_vars: "{{ __redhat_ansible_automation_platform_scap_vars_file }}"
   vars:
-    __redhat_ansible_automation_platform_scap_vars_file: "{{ role_path }}/vars/{{ redhat_ansible_automation_platform_scap_profile | regex_replace('xccdf_org.*.content_profile_', '') }}"
+    __redhat_ansible_automation_platform_scap_vars_file: "{{ role_path }}/vars/scap/{{ redhat_ansible_automation_platform_scap_profile | regex_replace('xccdf_org.*.content_profile_', '') }}"
   when:
     - redhat_ansible_automation_platform_scap_profile is defined
     - __redhat_ansible_automation_platform_scap_vars_file is file

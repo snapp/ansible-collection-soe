@@ -1,0 +1,113 @@
+---
+
+- name: configure | Configure Red Hat Identity Management
+  run_once: true
+  vars:
+    ipaadmin_password: "{{ redhat_identity_management_admin_password }}"
+  module_defaults:
+    group/redhat.rhel_idm.modules:
+      ipaadmin_password: "{{ redhat_identity_management_admin_password }}"
+  block:
+    - name: configure | Kerberos init as IdM admin for IPA CLI
+      ansible.builtin.shell: |
+        set -euo pipefail
+        echo '{{ redhat_identity_management_admin_password }}' | kinit admin
+      args:
+        executable: /bin/bash
+      changed_when: false
+      no_log: "{{ no_log_enabled | default(true) }}"
+      tags:
+        - idm_users
+
+    - name: configure | Set IdM global defaults
+      redhat.rhel_idm.ipaconfig:
+        defaultgroup: "{{ idm_default_group }}"
+        defaultshell: "{{ idm_default_shell }}"
+        emaildomain: "{{ idm_default_email_domain }}"
+        homedirectory: "{{ idm_default_home_directory }}"
+        searchrecordslimit: "{{ idm_default_search_size_limit }}"
+        enable_sid: "{{ idm_enable_sid | default(omit) }}"
+        add_sids: "{{ idm_add_sids | default(omit) }}"
+
+    - name: configure | Configure Red Hat Identity Management IdM Automatic Certificate Management Environment (ACME)
+      ansible.builtin.import_role:
+        name: infra.soe.redhat_idm_acme
+      tags: idm_acme
+
+    - name: configure | Configure Red Hat Identity Management Users
+      ansible.builtin.import_role:
+        name: infra.soe.redhat_idm_users
+      vars:
+        redhat_idm_users_admin_password: "{{ redhat_identity_management_admin_password }}"
+      tags: idm_users
+
+    - name: configure | Configure Red Hat Identity Management Groups
+      ansible.builtin.import_role:
+        name: infra.soe.redhat_idm_groups
+      vars:
+        redhat_idm_groups_admin_password: "{{ redhat_identity_management_admin_password }}"
+      tags: idm_groups
+
+    - name: configure | Configure Red Hat Identity Management Sudo Rules
+      ansible.builtin.import_role:
+        name: infra.soe.redhat_idm_sudo
+      vars:
+        redhat_idm_sudo_admin_password: "{{ redhat_identity_management_admin_password }}"
+      tags: idm_sudo
+
+    - name: configure | Configure Red Hat Identity Management HBAC Rules
+      ansible.builtin.import_role:
+        name: infra.soe.redhat_idm_hbac
+      vars:
+        redhat_idm_hbac_admin_password: "{{ redhat_identity_management_admin_password }}"
+      tags: idm_hbac
+
+    - name: configure | Set password policy for service accounts
+      redhat.rhel_idm.ipapwpolicy:
+        name: service-accounts
+        maxlife: "{{ idm_service_account_max_life }}"
+        priority: 0
+
+    - name: configure | Set password policy for administrator accounts
+      redhat.rhel_idm.ipapwpolicy:
+        name: admin-accounts
+        maxlife: "{{ idm_admin_account_max_life }}"
+        priority: 1
+
+    - name: configure | Set external IP address for the primary DNS domain
+      redhat.rhel_idm.ipadnsrecord:
+        zone_name: "{{ idm_domain }}"
+        records:
+          - name: "@"
+            record_type: A
+            record_value: "{{ idm_domain_external_ip_address }}"
+      when: idm_domain_external_ip_address is defined and idm_domain_external_ip_address | length > 0
+
+    - name: configure | Set DNS Global Forwarders to `only` policy
+      redhat.rhel_idm.ipadnsconfig:
+        forwarders: "{{ idm_global_forwarders | default([]) }}"
+        forwardpolicy: only
+
+    - name: configure | Set DNS Forward Zones
+      redhat.rhel_idm.ipadnsforwardzone:
+        name: "{{ item.name }}"
+        forwarders: "{{ item.forwarders | flatten }}"
+        forwardpolicy: "{{ item.policy }}"
+        skip_overlap_check: "{{ item.skip_overlap_check | default(false) }}"
+      loop: "{{ idm_forwarder_zones | default([]) }}"
+
+    - name: configure | Allow synchronization of forward (A, AAAA) and reverse (PTR) records.
+      redhat.rhel_idm.ipadnszone:
+        name: "{{ item }}"
+        allow_sync_ptr: true
+        dynamic_update: true
+      loop: "{{ (idm_dns_zones | default([])) + (ipaserver_reverse_zones | default([])) }}"
+
+    - name: configure | Ensure IDM A records exist in each managed zone for NS
+      redhat.rhel_idm.ipadnsrecord:
+        zone_name: "{{ item }}"
+        name: "{{ inventory_hostname | regex_replace('\\.' + item + '\\.?$', '') }}"
+        record_type: A
+        record_value: "{{ idm_ip | default(ansible_default_ipv4.address) }}"
+        state: present
+      loop: "{{ idm_dns_zones }}"

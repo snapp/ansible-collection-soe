@@ -58,7 +58,6 @@ dependencies:
       firewall_log_denied: "{{ redhat_ansible_automation_platform_firewall_log_denied }}"
       firewall_disable_conflicting_services: "{{ redhat_ansible_automation_platform_firewall_disable_conflicting_services }}"
     tags:
-      - aap_identity_management
-      - idm_configure
-      - idm_users
+      - aap_firewall
+      - firewall
     when: redhat_ansible_automation_platform_firewall_enabled

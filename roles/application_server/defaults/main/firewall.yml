@@ -1,0 +1,33 @@
+---
+
+application_server_firewall_enabled: true
+application_server_firewall_log_denied: all
+application_server_firewall_disable_conflicting_services: false
+
+# https://console.redhat.com/ansible/automation-hub/repo/published/redhat/rhel_system_roles/content/role/firewall/
+application_server_firewall:
+  - zone: app_server
+    state: present
+    permanent: true
+
+  - service: application_server
+    short: Application Server
+    description: |-
+      Application Server
+    port:
+      - 80/tcp           # Hypertext Transfer Protocol (HTTP)
+      - 443/tcp          # Hypertext Transfer Protocol Secure (HTTPS)
+    state: present
+    permanent: true
+
+  - zone: app_server
+    service:
+      - dhcpv6-client
+      - application_server
+      - ssh
+    state: enabled
+    permanent: true
+
+  - set_default_zone: app_server
+    state: enabled
+    permanent: true

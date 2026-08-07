@@ -1,10 +1,14 @@
 ---
 
-- name: Reboot Managed Hosts
+- name: Reboot
   hosts: "{{ target_hosts | default('all') }}"
   gather_facts: false
   become: true
   tags:
     - reboot
-  roles:
-    - infra.soe.reboot
+  tasks:
+    - name: Reboot
+      ansible.builtin.include_role:
+        name: infra.soe.reboot
+      when:
+        - reboot | default(false) | bool

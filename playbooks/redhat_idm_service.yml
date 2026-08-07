@@ -4,6 +4,7 @@
   hosts: "{{ target_hosts | default('redhat') }}"
   gather_facts: false
   tags:
+    - redhat
     - idm_service
   roles:
     - infra.soe.redhat_idm_service

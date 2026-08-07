@@ -1,0 +1,16 @@
+---
+
+dependencies:
+  - name: Red Hat Cockpit IdM Service Certificate
+    role: infra.soe.redhat_idm_service
+    vars:
+      redhat_idm_service_admin_password: "{{ redhat_cockpit_idm_admin_password }}"
+      redhat_idm_service_principal: "{{ redhat_cockpit_idm_service_principal }}"
+      redhat_idm_service_tls_enabled: "{{ redhat_cockpit_idm_service_tls_enabled }}"
+      redhat_idm_service_tls_request_id: "{{ redhat_cockpit_idm_service_tls_request_id }}"
+      redhat_idm_service_tls_sans: "{{ redhat_cockpit_idm_service_tls_sans }}"
+    tags:
+      - cockpit_identity_management
+      - idm_configure
+      - idm_service
+    when: redhat_cockpit_idm_admin_password is defined
