@@ -14,8 +14,8 @@
     apply:
       tags: satellite_scap
   vars:
-    scap_tailoring_title: "{{ redhat_satellite_scap_tailoring_title }}"
-    scap_tailoring_description: "{{ redhat_satellite_scap_tailoring_description }}"
-    scap_tailoring_exceptions: "{{ redhat_satellite_scap_tailoring_exceptions }}"
+    redhat_scap_tailoring_title: "{{ redhat_satellite_scap_tailoring_title }}"
+    redhat_scap_tailoring_description: "{{ redhat_satellite_scap_tailoring_description }}"
+    redhat_scap_tailoring_exceptions: "{{ redhat_satellite_scap_tailoring_exceptions }}"
   tags: satellite_scap
   when: redhat_satellite_scap_profile is defined

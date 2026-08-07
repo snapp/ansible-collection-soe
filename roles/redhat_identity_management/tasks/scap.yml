@@ -14,8 +14,8 @@
     apply:
       tags: idm_scap
   vars:
-    scap_tailoring_title: "{{ redhat_identity_management_scap_tailoring_title }}"
-    scap_tailoring_description: "{{ redhat_identity_management_scap_tailoring_description }}"
-    scap_tailoring_exceptions: "{{ redhat_identity_management_scap_tailoring_exceptions }}"
+    redhat_scap_tailoring_title: "{{ redhat_identity_management_scap_tailoring_title }}"
+    redhat_scap_tailoring_description: "{{ redhat_identity_management_scap_tailoring_description }}"
+    redhat_scap_tailoring_exceptions: "{{ redhat_identity_management_scap_tailoring_exceptions }}"
   tags: idm_scap
   when: redhat_identity_management_scap_profile is defined

@@ -14,8 +14,8 @@
     apply:
       tags: aap_scap
   vars:
-    scap_tailoring_title: "{{ redhat_ansible_automation_platform_scap_tailoring_title }}"
-    scap_tailoring_description: "{{ redhat_ansible_automation_platform_scap_tailoring_description }}"
-    scap_tailoring_exceptions: "{{ redhat_ansible_automation_platform_scap_tailoring_exceptions }}"
+    redhat_scap_tailoring_title: "{{ redhat_ansible_automation_platform_scap_tailoring_title }}"
+    redhat_scap_tailoring_description: "{{ redhat_ansible_automation_platform_scap_tailoring_description }}"
+    redhat_scap_tailoring_exceptions: "{{ redhat_ansible_automation_platform_scap_tailoring_exceptions }}"
   tags: aap_scap
   when: redhat_ansible_automation_platform_scap_profile is defined
