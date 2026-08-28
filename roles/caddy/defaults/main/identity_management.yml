@@ -1,0 +1,13 @@
+---
+
+caddy_idm_users:
+  - description: Caddy Service Account
+    name:
+      username: caddy
+      first: Caddy
+      last: Service Account
+      full: Caddy Service Account
+    initials: CSA
+    home: /var/lib/caddy
+    shell: /sbin/nologin
+    enable_subid: true

@@ -6,8 +6,6 @@ dependencies:
     vars:
       firewall_enabled: "{{ application_server_firewall_enabled }}"
       firewall: "{{ application_server_firewall }}"
-      firewall_log_denied: "{{ application_server_firewall_log_denied }}"
-      firewall_disable_conflicting_services: "{{ application_server_firewall_disable_conflicting_services }}"
     tags:
       - app_server_firewall
       - firewall

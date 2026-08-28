@@ -1,16 +1,16 @@
 ---
 
-- name: Restart netbird-management
+- name: Restart netbird-server
   ansible.builtin.systemd:
-    name: netbird-management.service
+    name: netbird-server.service
     state: restarted
     scope: user
   become: true
   become_user: "{{ netbird_service_user }}"
 
-- name: Restart netbird-coturn
+- name: Restart netbird-dashboard
   ansible.builtin.systemd:
-    name: netbird-coturn.service
+    name: netbird-dashboard.service
     state: restarted
     scope: user
   become: true

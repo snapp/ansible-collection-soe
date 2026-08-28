@@ -16,6 +16,7 @@
         fail_msg: >-
           firewall_log_denied must be one of:
           off, all, unicast, broadcast, multicast
+      when: firewall_log_denied is defined
 
     # TODO|2024-02-18| Add firewalld_conf.LogDenied parameter support to redhat.rhel_system_roles.firewall_lib module
     - name: Configure firewall logging of denied packets
@@ -25,6 +26,7 @@
         line: "LogDenied={{ firewall_log_denied | default('off') }}"
         backrefs: false
       notify: Reload firewalld
+      when: firewall_log_denied is defined
 
     - name: Deploy quiet-drops nftables table
       ansible.builtin.copy:
@@ -40,7 +42,7 @@
               chain input {
                   type filter hook input priority filter; policy accept;
           {% for d in firewall_quiet_drops %}
-                  # {{ d.comment }}
+                  # {{ d.name }}
                   iifname "{{ d.iifname }}" ip saddr {{ d.saddr }} tcp dport {{ d.dport }} ct state invalid counter drop
           {% endfor %}
               }

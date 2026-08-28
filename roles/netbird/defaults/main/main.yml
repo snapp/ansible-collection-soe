@@ -1,0 +1,136 @@
+---
+
+# ---------------------------------------------------------------------------
+# Service identity — runs as a dedicated rootless IdM user, exactly like the
+# caddy and ai_webui roles. The 'netbird' user must exist with linger enabled:
+#   ipa user-add netbird --shell=/sbin/nologin --home=/var/lib/netbird
+#   loginctl enable-linger netbird
+# ---------------------------------------------------------------------------
+netbird_service_user: netbird
+
+netbird_service_group: netbird
+
+netbird_dns_static_hosts: []
+
+# Home directory of the rootless service user. Rootless Podman keeps its image
+# store under here (~/.local/share/containers). Because this sits outside /home,
+# container-selinux's stock file-context rules never assign container_file_t to
+# the store, so it must be registered as /home-equivalent (see the SELinux task).
+netbird_home_dir: /var/lib/netbird
+
+# Register netbird_home_dir as SELinux-equivalent to /home/<user> so the rootless
+# container store is labeled container_file_t. Disable only if the service user's
+# home already lives under /home.
+netbird_selinux_home_equivalent: true
+
+# Host-side config directory (rendered config.yaml + dashboard.env live here).
+# Lives under the service user's home — never committed to git.
+netbird_config_dir: "{{ netbird_home_dir }}/config"
+
+# ---------------------------------------------------------------------------
+# Application Plane namespace / TLS
+# Public FQDN fronted by the Caddy reverse proxy (Let's Encrypt DNS-01).
+# ---------------------------------------------------------------------------
+netbird_domain: netbird.selfhosted
+
+netbird_dashboard_url: "https://{{ netbird_domain }}"
+
+# ---------------------------------------------------------------------------
+# Container images
+# NOTE|2026-08-13| netbird-server is the combined management+signal+relay+STUN
+# image that replaced the separate management/signal/coturn containers as of
+# NetBird's embedded-IdP (Dex) architecture — confirmed against upstream's
+# current infrastructure_files/getting-started.sh. The dashboard remains its
+# own container/image, unchanged in role, only its OIDC env vars change (it now
+# talks to netbird-server's own embedded Dex issuer, not Keycloak directly).
+# Pinned to the release already live in this environment — bump deliberately,
+# never float on ':latest' again.
+# ---------------------------------------------------------------------------
+# https://github.com/netbirdio/dashboard
+netbird_dashboard_image: docker.io/netbirdio/dashboard:v2.91.0
+
+# https://github.com/netbirdio/netbird
+netbird_server_image: docker.io/netbirdio/netbird-server:0.77.0
+
+netbird_dashboard_port: 8090
+
+# ---------------------------------------------------------------------------
+# Localhost-published ports.
+# Caddy (a separate rootless container) reaches these via host.containers.internal.
+# Everything stays bound to 127.0.0.1 — only Caddy is ever network-exposed (443).
+# ---------------------------------------------------------------------------
+netbird_dashboard_publish_ports:
+  - "127.0.0.1:{{ netbird_dashboard_port }}:80"
+
+netbird_server_port: 8091
+
+# All of API/gRPC/relay/oauth2 are served on netbird-server's single internal
+# port 80 (confirmed against upstream's docker-compose template — there is no
+# separate management-vs-signal port split anymore).
+netbird_server_publish_ports:
+  - "127.0.0.1:{{ netbird_server_port }}:80"
+
+# STUN is embedded in netbird-server and published as a normal bridge-network
+# port mapping (no Network=host needed, unlike the old Coturn container —
+# confirmed against upstream's template, which publishes STUN the same way).
+netbird_stun_publish_ports:
+  - '{{ netbird_stun_port }}:{{ netbird_stun_port }}/udp'
+
+netbird_stun_port: 3478
+
+# ---------------------------------------------------------------------------
+# Embedded IdP (Dex) — issued by netbird-server itself, at {{ netbird_domain }}/oauth2.
+# The dashboard authenticates against this issuer, using Dex's fixed internal
+# client id 'netbird-dashboard' (not an RHBK client id — Dex brokers the actual
+# RHBK exchange server-side, the browser never talks to RHBK's OIDC endpoints
+# directly).
+# ---------------------------------------------------------------------------
+netbird_oidc_issuer: "https://{{ netbird_domain }}/oauth2"
+
+# Keep local/password login available until the RHBK connector (below) is
+# confirmed working end-to-end (see plan verification steps 3-5). Flip to true
+# in a deliberate follow-up run once RHBK SSO login is verified.
+netbird_local_auth_disabled: false
+
+# Redirect targets accepted by the native NetBird client's OAuth PKCE login (RFC 8252).
+netbird_cli_redirect_urls:
+  - "http://localhost:53000/"
+
+# IP/CIDR of the reverse proxy in front of netbird-server (Caddy), so it's
+# trusted for X-Forwarded-* headers. Caddy reaches netbird-server over the host
+# loopback in this deployment.
+# NOTE|2026-08-13| Confirm this is actually the source address netbird-server
+# sees (podman rootless networking may present a different gateway address than
+# 127.0.0.1) before relying on it — check netbird-server's logs for the client
+# IP on an incoming request.
+netbird_trusted_reverse_proxies:
+  - "127.0.0.1/32"
+
+# ---------------------------------------------------------------------------
+# RHBK (Keycloak) registered as an external OIDC connector behind the embedded
+# IdP — configured via NetBird's /api/identity-providers REST API, not config.yaml.
+# The PAT this needs is minted via `netbird-server admin token create` (see
+# tasks/main.yml) — no manual dashboard step required.
+# ---------------------------------------------------------------------------
+netbird_idp_name: RHBK
+
+netbird_idp_issuer: https://sso.example.org/realms/netbird
+
+netbird_idp_client_id: netbird
+
+# ---------------------------------------------------------------------------
+# Secrets — MUST be supplied at run time via AAP credential injectors as
+# extra_vars (never inline, never committed). The role asserts their presence.
+#
+#   netbird_datastore_encryption_key     # store.encryptionKey — base64 32-byte key
+#   netbird_relay_secret                 # server.authSecret — shared HMAC secret
+#   netbird_session_cookie_key           # server.auth.sessionCookieEncryptionKey
+#   netbird_idp_client_secret            # RHBK 'netbird' confidential client secret
+#
+# Generate each key once and store it in AAP:
+#   openssl rand -base64 32
+# ---------------------------------------------------------------------------
+
+# Open the STUN port in firewalld. Disable if a perimeter firewall already
+# governs it.
+netbird_manage_firewall: true

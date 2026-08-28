@@ -1,0 +1,10 @@
+---
+bugfixes:
+  - redhat_image_builder - guarded the ``redhat_idm_groups``/``redhat_idm_hbac``
+    role dependencies in ``meta/main.yml`` with
+    ``when: redhat_image_builder_idm_admin_password is defined``, matching
+    ``redhat_ansible_automation_platform`` and ``redhat_satellite``. Previously
+    the dependencies always ran, which fails with an undefined-variable error
+    for any consumer that sets ``redhat_image_builder_idm_groups`` or
+    ``redhat_image_builder_idm_hbac_rules`` without also setting the admin
+    password.

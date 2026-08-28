@@ -1,0 +1,196 @@
+---
+# https://console.redhat.com/ansible/automation-hub/repo/validated/infra/aap_utilities/content
+# https://console.redhat.com/ansible/automation-hub/repo/validated/infra/aap_utilities/content/role/aap_setup_download
+# https://console.redhat.com/ansible/automation-hub/repo/validated/infra/aap_utilities/content/role/aap_setup_prepare
+# https://console.redhat.com/ansible/automation-hub/repo/validated/infra/aap_utilities/content/role/aap_setup_install
+#
+# ansible-playbook playbooks/site.yml -l aap-27.dc1.lab.example.org -t aap_install
+
+aap_routable_hostname: aap-27.dc1.lab.example.org
+
+# gateway_hostname: "{{ aap_routable_hostname }}"
+aap_gateway_admin_password: "{{ _vault_aap_gateway_admin_password }}"
+aap_gateway_validate_certs: true
+
+# FIX|2026-03-12| Remove absolute path
+# https://access.redhat.com/management/subscription_allocations
+aap_controller_license:
+  manifest_file: /workspaces/ansible-site-tamlab-snapp/files/redhat-manifest.zip
+
+# Disable preflight checks for testing
+aap_setup_ignore_preflight_errors: false
+
+# Force installer to run against functioning AAP install
+aap_setup_inst_force: true
+
+aap_service_user: "{{ _vault_aap_service_user }}"
+
+redhat_ansible_automation_platform_idm_service_principal: "HTTP/aap-27.dc1.lab.example.org"
+redhat_ansible_automation_platform_idm_service_tls_sans:
+  - aap.lab.example.org
+  - ansible.lab.example.org
+redhat_ansible_automation_platform_idm_service_user: "{{ aap_service_user }}"
+redhat_ansible_automation_platform_idm_service_group: "{{ aap_service_user }}"
+
+# Red Hat Service Token used to access AAP installer
+# https://access.redhat.com/management/api
+aap_setup_down_offline_token: "{{ _vault_aap_setup_down_offline_token }}"
+
+# The major RHEL version being used
+aap_setup_rhel_version: 10
+
+# The version of the installer to download
+aap_setup_down_version: 2.7
+
+# The patch version of the installer to download
+aap_setup_down_version_patch: 3
+
+# Directory to download the installer to
+aap_setup_down_dest_dir: "/var/lib/{{ aap_service_user }}"
+
+# Directory to unpack the installer to
+aap_setup_prep_working_dir: "/var/lib/{{ aap_service_user }}"
+
+# Directory of unpacked installer
+aap_setup_prep_setup_dir: "/var/lib/{{ aap_service_user }}/ansible-automation-platform-containerized-setup-{{ aap_setup_down_version }}-{{ aap_setup_down_version_patch }}"
+
+# Directory to store backups
+aap_backup_dest: "/var/lib/{{ aap_service_user }}/backups"
+
+# Either setup or setup-bundle, depending which flavor of the tarball you want to download
+aap_setup_down_type: setup
+
+# When set to true the role will download the containerized installer.
+aap_setup_containerized: true
+
+# When set to true the role will prepare for a containerized install.
+aap_setup_prep_containerized: true
+
+# Dictionary of dictionaries of nodes in the cluster, where each top level key is a group name, and 2nd level is the host's name
+aap_setup_prep_inv_nodes:
+  automationgateway:
+    aap-27.dc1.lab.example.org:
+  automationcontroller:
+    aap-27.dc1.lab.example.org:
+  automationhub:
+    aap-27.dc1.lab.example.org:
+  automationeda:
+    aap-27.dc1.lab.example.org:
+  automationmetrics:
+    aap-27.dc1.lab.example.org:
+  # ansiblelightspeed:
+  #   aap-27.dc1.lab.example.org:
+  # ansiblemcp:
+  #   aap-27.dc1.lab.example.org:
+  database:
+    aap-27.dc1.lab.example.org:
+
+aap_setup_inst_extra_vars:
+  aap_setup_ignore_preflight_errors: "{{ aap_setup_ignore_preflight_errors }}"
+
+  # TODO|2026-02-26| Remove Home directory of the service account
+  # ansible_user_dir: "/var/lib/{{ aap_service_user }}"
+
+aap_setup_prep_inv_vars:
+  all:
+    # This is the AAP installer inventory file intended for the Container growth deployment topology.
+    # This inventory file expects to be run from the host where AAP will be installed.
+    # Please consult the Ansible Automation Platform product documentation about this topology's tested hardware configuration.
+    # https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.6/html/tested_deployment_models/container-topologies
+    #
+    # Please consult the docs if you're unsure what to add
+    # For all optional variables please consult the included README.md
+    # or the Ansible Automation Platform documentation:
+    # https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.6/html/containerized_installation
+    ansible_connection: local
+
+    routable_hostname: "{{ aap_routable_hostname }}"
+
+    # Ensure all containers trust the IdM Certificate Authority
+    custom_ca_cert: /etc/pki/aap_idm_service/ipa-ca.crt
+
+    # Common variables
+    # https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.6/html/containerized_installation/appendix-inventory-files-vars#ref-general-inventory-variables
+    # -----------------------------------------------------
+    postgresql_admin_username: "{{ _vault_aap_postgresql_admin_username }}"
+    postgresql_admin_password: "{{ _vault_aap_postgresql_admin_password }}"
+
+    registry_username: "{{ _vault_aap_registry_username }}"
+    registry_password: "{{ _vault_aap_registry_password }}"
+
+    redis_mode: standalone
+
+    # AAP Gateway
+    # https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.6/html/containerized_installation/appendix-inventory-files-vars#ref-gateway-variables
+    # -----------------------------------------------------
+    gateway_admin_password: "{{ _vault_aap_gateway_admin_password }}"
+    gateway_hostname: "{{ aap_routable_hostname }}"
+    gateway_pg_host: aap-27.dc1.lab.example.org
+    gateway_pg_password: "{{ _vault_aap_gateway_pg_password }}"
+    gateway_tls_cert: /etc/pki/aap_idm_service/service.crt
+    gateway_tls_key: /etc/pki/aap_idm_service/private/service.key
+
+    # AAP Controller
+    # https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.6/html/containerized_installation/appendix-inventory-files-vars#ref-controller-variables
+    # -----------------------------------------------------
+    controller_admin_password: "{{ _vault_aap_controller_admin_password }}"
+    controller_pg_host: aap-27.dc1.lab.example.org
+    controller_pg_password: "{{ _vault_aap_controller_pg_password }}"
+    controller_percent_memory_capacity: 0.5
+    controller_tls_cert: /etc/pki/aap_idm_service/service.crt
+    controller_tls_key: /etc/pki/aap_idm_service/private/service.key
+
+    # AAP Automation Hub
+    # https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.6/html/containerized_installation/appendix-inventory-files-vars#ref-hub-variables
+    # -----------------------------------------------------
+    hub_admin_password: "{{ _vault_aap_hub_admin_password }}"
+    hub_pg_host: aap-27.dc1.lab.example.org
+    hub_pg_password: "{{ _vault_aap_hub_pg_password }}"
+    hub_seed_collections: false
+    hub_tls_cert: /etc/pki/aap_idm_service/service.crt
+    hub_tls_key: /etc/pki/aap_idm_service/private/service.key
+    # generate_automationhub_token: true
+    # ee_from_hub_only: true
+
+    # AAP EDA Controller
+    # https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.6/html/containerized_installation/appendix-inventory-files-vars#event-driven-ansible-controller
+    # -----------------------------------------------------
+    eda_admin_password: "{{ _vault_aap_eda_admin_password }}"
+    eda_pg_host: aap-27.dc1.lab.example.org
+    eda_pg_password: "{{ _vault_aap_eda_pg_password }}"
+    eda_tls_cert: /etc/pki/aap_idm_service/service.crt
+    eda_tls_key: /etc/pki/aap_idm_service/private/service.key
+
+    # AAP Automation Metrics Service
+    # -----------------------------------------------------
+    automationmetrics_admin_password: "{{ _vault_aap_automationmetrics_admin_password }}"
+    automationmetrics_pg_host: aap-27.dc1.lab.example.org
+    automationmetrics_pg_password: "{{ _vault_aap_automationmetrics_pg_password }}"
+    automationmetrics_tls_key: /etc/pki/aap_idm_service/private/service.key
+    automationmetrics_tls_cert: /etc/pki/aap_idm_service/service.crt
+    automationmetrics_controller_read_pg_host: aap-27.dc1.lab.example.org
+    automationmetrics_controller_read_pg_password: "{{ _vault_aap_automationmetrics_controller_read_pg_password }}"
+
+    # AAP Lightspeed
+    # https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.6/html/containerized_installation/appendix-inventory-files-vars#ref-lightspeed-variables
+    # -----------------------------------------------------
+    lightspeed_admin_password: "{{ _vault_aap_lightspeed_admin_password }}"
+    lightspeed_pg_host: aap-27.dc1.lab.example.org
+    lightspeed_pg_password: "{{ _vault_aap_lightspeed_pg_password }}"
+
+    # In case chatbot is enabled, default provider is "rhoai"
+    # lightspeed_chatbot_model_url=<set your own>
+    # lightspeed_chatbot_model_api_key=<set your own>
+    # lightspeed_chatbot_model_id=<set your own>
+
+    # In case "azure" provider
+    # lightspeed_chatbot_default_provider = "azure"
+
+    # In case "openai" provider
+    # lightspeed_chatbot_default_provider = "openai"
+
+    # lightspeed_mcp_controller_enabled=true
+    # lightspeed_mcp_lightspeed_enabled=true
+    # lightspeed_wca_model_api_key=<set your own>
+    # lightspeed_wca_model_id=<set your own>
+

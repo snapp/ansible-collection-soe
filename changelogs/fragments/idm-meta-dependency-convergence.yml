@@ -1,0 +1,24 @@
+---
+minor_changes:
+  - redhat_cockpit - converted IdM service certificate composition from
+    ``include_role: name: redhat_idm_service`` in ``tasks/certificate.yml`` to a
+    ``meta/main.yml`` role dependency, matching ``redhat_ansible_automation_platform``
+    and ``redhat_satellite``. Requires a new ``redhat_cockpit_idm_admin_password``
+    variable (previously the role only used the generic ``idm_admin_password``).
+  - redhat_keycloak - converted IdM users/groups/service-certificate composition from
+    ``include_role``/``import_role`` calls in ``tasks/certificate.yml`` and
+    ``tasks/users.yml`` to ``meta/main.yml`` role dependencies. Requires new
+    ``redhat_keycloak_idm_admin_password``, ``redhat_keycloak_idm_users``, and
+    ``redhat_keycloak_idm_groups`` variables (previously the bare, un-namespaced
+    ``redhat_idm_users``/``redhat_idm_groups`` and the generic ``idm_admin_password``).
+    Also removes a dead "Configure AAP Certificate" task that duplicated the Keycloak
+    certificate request without actually parameterizing anything AAP-specific, and
+    fixes a bug where ``tasks/users.yml`` passed an ``ipaadmin_password`` variable that
+    ``redhat_idm_users``/``redhat_idm_groups`` never actually read.
+bugfixes:
+  - redhat_keycloak - the previous ``tasks/users.yml`` passed ``ipaadmin_password`` to
+    ``redhat_idm_users``/``redhat_idm_groups``, but those roles read
+    ``redhat_idm_users_admin_password``/``redhat_idm_groups_admin_password`` — so IdM
+    user/group provisioning from Keycloak would fail with an undefined-variable error
+    the moment real data was supplied. Fixed by the meta-dependency conversion, which
+    maps the admin password correctly.

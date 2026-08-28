@@ -1,15 +1,9 @@
 ---
 
 redhat_identity_management_firewall_enabled: true
-redhat_identity_management_firewall_log_denied: all
-redhat_identity_management_firewall_disable_conflicting_services: false
 
 # https://console.redhat.com/ansible/automation-hub/repo/published/redhat/rhel_system_roles/content/role/firewall/
 redhat_identity_management_firewall:
-  - zone: redhat_idm
-    state: present
-    permanent: true
-
   - service: redhat_identity_management
     short: Red Hat IdM
     description: |-
@@ -35,17 +29,6 @@ redhat_identity_management_firewall:
       - 464/udp          # Kerberos Password Change & Set
       - 636/tcp          # Lightweight Directory Access Protocol Secure (LDAPS)
       - 1024-1300/tcp    # Distributed Computing Environment (DCE) Remote Procedure Call (RPC)
+    runtime: true
+    permanent: true
     state: present
-    permanent: true
-
-  - zone: redhat_idm
-    service:
-      - dhcpv6-client
-      - redhat_identity_management
-      - ssh
-    state: enabled
-    permanent: true
-
-  - set_default_zone: redhat_idm
-    state: enabled
-    permanent: true

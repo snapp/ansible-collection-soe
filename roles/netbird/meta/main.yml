@@ -1,0 +1,34 @@
+---
+
+dependencies:
+  - name: Netbird IdM Users
+    role: infra.soe.redhat_idm_users
+    vars:
+      redhat_idm_users_admin_password: "{{ netbird_idm_admin_password }}"
+      redhat_idm_users: "{{ netbird_idm_users }}"
+    tags:
+      - netbird_identity_management
+      - idm_configure
+      - idm_users
+    when: netbird_idm_admin_password is defined
+
+  - name: Netbird IdM Groups
+    role: infra.soe.redhat_idm_groups
+    vars:
+      redhat_idm_groups_admin_password: "{{ netbird_idm_admin_password }}"
+      redhat_idm_groups: "{{ netbird_idm_groups }}"
+    tags:
+      - netbird_identity_management
+      - idm_configure
+      - idm_groups
+    when: netbird_idm_admin_password is defined
+
+  - name: Netbird Firewall
+    role: infra.soe.firewall
+    vars:
+      firewall_enabled: "{{ netbird_firewall_enabled }}"
+      firewall: "{{ netbird_firewall }}"
+    tags:
+      - netbird_firewall
+      - firewall
+    when: netbird_firewall_enabled

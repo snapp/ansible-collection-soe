@@ -6,14 +6,11 @@
 - name: Register Red Hat Enterprise Linux (RHEL) Hosts
   ansible.builtin.import_playbook: redhat_register.yml
 
-- name: Configure Local Storage
+- name: Configure Local Storaged
   ansible.builtin.import_playbook: local_storage.yml
 
 - name: Red Hat Enterprise Linux (RHEL) Update
   ansible.builtin.import_playbook: redhat_update.yml
-
-- name: Host Firewall
-  ansible.builtin.import_playbook: firewall.yml
 
 - name: Red Hat Identity Management (IdM)
   ansible.builtin.import_playbook: redhat_identity_management.yml
@@ -44,6 +41,9 @@
 
 - name: Application Server
   ansible.builtin.import_playbook: application_server.yml
+
+- name: Firewall
+  ansible.builtin.import_playbook: firewall.yml
 
 - name: Security Content Automation Protocol (SCAP) Remediation
   ansible.builtin.import_playbook: redhat_scap.yml

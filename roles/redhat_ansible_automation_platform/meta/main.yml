@@ -55,8 +55,6 @@ dependencies:
     vars:
       firewall_enabled: "{{ redhat_ansible_automation_platform_firewall_enabled }}"
       firewall: "{{ redhat_ansible_automation_platform_firewall }}"
-      firewall_log_denied: "{{ redhat_ansible_automation_platform_firewall_log_denied }}"
-      firewall_disable_conflicting_services: "{{ redhat_ansible_automation_platform_firewall_disable_conflicting_services }}"
     tags:
       - aap_firewall
       - firewall

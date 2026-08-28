@@ -1,0 +1,32 @@
+---
+
+netbird_firewall_enabled: true
+
+# https://console.redhat.com/ansible/automation-hub/collections/published/redhat/rhel_system_roles/documentation/role/firewall
+netbird_firewall:
+  - service: netbird-stun
+    short: NetBird STUN
+    description: NetBird WireGuard Mesh Virtual Private Network (VPN) Control Plane
+    port:
+      - "{{ netbird_stun_port }}/udp"
+    runtime: true
+    permanent: true
+    state: present
+
+  - service: netbird-dashboard
+    short: Web UI
+    description: NetBird WireGuard Mesh Virtual Private Network (VPN) Control Plane
+    port:
+      - "{{ netbird_dashboard_port }}/tcp"
+    runtime: true
+    permanent: true
+    state: present
+
+  - service: netbird-server
+    short: Web UI
+    description: NetBird WireGuard Mesh Virtual Private Network (VPN) Control Plane
+    port:
+      - "{{ netbird_server_port }}/tcp"
+    runtime: true
+    permanent: true
+    state: present

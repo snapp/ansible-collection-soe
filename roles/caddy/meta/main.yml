@@ -1,0 +1,23 @@
+---
+
+dependencies:
+  - name: Caddy IdM Users
+    role: infra.soe.redhat_idm_users
+    vars:
+      redhat_idm_users_admin_password: "{{ caddy_idm_admin_password }}"
+      redhat_idm_users: "{{ caddy_idm_users }}"
+    tags:
+      - caddy_identity_management
+      - idm_configure
+      - idm_users
+    when: caddy_idm_admin_password is defined
+
+  - name: Caddy Firewall
+    role: infra.soe.firewall
+    vars:
+      firewall_enabled: "{{ caddy_firewall_enabled }}"
+      firewall: "{{ caddy_firewall }}"
+    tags:
+      - caddy_firewall
+      - firewall
+    when: caddy_firewall_enabled

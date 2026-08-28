@@ -1,0 +1,23 @@
+---
+minor_changes:
+  - redhat_identity_management - became a real composing role instead of an
+    unfinished, unreferenced duplicate of the six ``redhat_idm_*`` roles. Deleted the
+    drifted duplicate ``tasks``/``defaults`` files (``acme``, ``groups``, ``hbac``,
+    ``service``, ``sudo``, ``users``) and the stale ``meta/argument_specs.yml``. Added
+    ``tasks/main.yml``, ``tasks/configure.yml``, and ``tasks/cleanup.yml``, absorbing
+    the inline ``pre_tasks``/``tasks``/``post_tasks`` logic (kinit, ``ipaconfig``
+    global defaults, password policies, DNS records, bootstrap-user cleanup) that
+    previously lived directly in ``playbooks/redhat_identity_management.yml``. Play 4
+    of that playbook now collapses to a single ``role: infra.soe.redhat_identity_management``,
+    matching the AAP/Keycloak/Cockpit/Image Builder playbooks. ``tasks/network.yml``
+    is unchanged.
+bugfixes:
+  - redhat_identity_management - the ``redhat_idm_users``/``redhat_idm_groups``/
+    ``redhat_idm_sudo``/``redhat_idm_hbac`` roles, when invoked directly from
+    ``playbooks/redhat_identity_management.yml``'s old inline ``roles:`` list, were
+    never actually passed their required ``redhat_idm_{users,groups,sudo,hbac}_admin_password``
+    variables — no default existed anywhere in the collection or
+    ``ansible-site-example``'s inventory, so provisioning against real (non-empty)
+    group/HBAC/sudo/user data would fail with an undefined-variable error.
+    ``tasks/configure.yml`` now passes ``idm_admin_password`` through explicitly to
+    each role.
