@@ -1,0 +1,9 @@
+---
+
+redhat_cockpit_enabled: false
+redhat_cockpit_started: false
+redhat_cockpit_port: 9090
+redhat_cockpit_zone: public
+redhat_cockpit_packages:
+  - cockpit-system
+  - cockpit-ws

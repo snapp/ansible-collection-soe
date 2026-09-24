@@ -1,7 +1,6 @@
 ---
 
 - name: Install Red Hat Cockpit
+  ansible.builtin.include_tasks: install.yml
   tags: cockpit_install
-  block:
-    - name: Run Cockpit Installer
-      ansible.builtin.import_tasks: install.yml
+  when: redhat_cockpit_enabled

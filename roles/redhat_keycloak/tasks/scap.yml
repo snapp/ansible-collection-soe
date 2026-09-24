@@ -16,6 +16,6 @@
   vars:
     redhat_scap_tailoring_title: "{{ redhat_keycloak_scap_tailoring_title }}"
     redhat_scap_tailoring_description: "{{ redhat_keycloak_scap_tailoring_description }}"
-    redhat_scap_tailoring_exceptions: "{{ redhat_keycloak_scap_tailoring_exceptions }}"
+    redhat_scap_tailoring_exceptions: "{{ redhat_keycloak_scap_tailoring_exceptions | list }}"
   tags: keycloak_scap
   when: redhat_keycloak_scap_profile is defined

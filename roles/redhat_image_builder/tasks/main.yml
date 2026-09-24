@@ -1,10 +1,11 @@
 ---
 
-- name: Set platform/version specific variables
+- name: Set platform specific variables
   ansible.builtin.import_tasks: set_vars.yml
   tags:
     - image_builder_install
     - image_builder_configure
+    - image_builder_scap
 
 - name: Red Hat Image Builder Installation
   ansible.builtin.import_tasks: install.yml

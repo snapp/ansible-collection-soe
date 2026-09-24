@@ -30,7 +30,7 @@ redhat_satellite_scap_tailoring_exceptions:
       Katello agent subscription endpoint. Removing httpd cascades to the entire
       Satellite application stack and renders the server inoperable.
       Confirmed: dnf returned exit code 1 during the remediation run.
-    review_date: 2026-04-21
+    review_date: '2026-04-21'
 
   - name: xccdf_org.ssgproject.content_rule_package_tftp-server_removed
     status: deselected
@@ -41,7 +41,7 @@ redhat_satellite_scap_tailoring_exceptions:
       to the TFTP root directory and serves them to provisioned hosts. Removing
       tftp-server disables all network-boot provisioning workflows.
       Confirmed: dnf returned exit code 1 during the remediation run.
-    review_date: 2026-04-21
+    review_date: '2026-04-21'
 
   # ---------------------------------------------------------------------------
   # Installer compatibility — CIS L2 sets noexec on /tmp and /var/tmp.
@@ -61,7 +61,7 @@ redhat_satellite_scap_tailoring_exceptions:
       the installer mid-run and leaving Satellite in a partially configured state.
       This rule was auto-remediated during the scan and must be deselected to
       preserve installer and upgrade operability.
-    review_date: 2026-04-21
+    review_date: '2026-04-21'
 
   - name: xccdf_org.ssgproject.content_rule_mount_option_var_tmp_noexec
     status: deselected
@@ -71,7 +71,7 @@ redhat_satellite_scap_tailoring_exceptions:
       for temporary executable artifacts that persist across reboots. The noexec
       flag on /var/tmp causes RPM %post scriptlets and installer post-configuration
       steps to fail. Excepted in conjunction with mount_option_tmp_noexec.
-    review_date: 2026-04-21
+    review_date: '2026-04-21'
 
   # ---------------------------------------------------------------------------
   # TLS / crypto policy — CIS L2 enforces a FUTURE-equivalent crypto policy
@@ -93,7 +93,7 @@ redhat_satellite_scap_tailoring_exceptions:
       the RHEL 7 fleet. The DEFAULT or LEGACY system-wide crypto policy should be
       used instead, with Apache configured to enforce TLS 1.2+ for the Satellite
       web UI independently via SSLProtocol in /etc/httpd/conf.d/foreman-ssl.conf.
-    review_date: 2026-04-21
+    review_date: '2026-04-21'
 
   # ---------------------------------------------------------------------------
   # Administrative SSH access — The sshd_limit_user_access rule requires
@@ -114,7 +114,7 @@ redhat_satellite_scap_tailoring_exceptions:
       foreman-proxy CLI. Because the allowed set is site-specific, this control
       is implemented via the site's SSH baseline playbook rather than the SCAP
       remediation, and is deselected here to prevent remediation failures.
-    review_date: 2026-04-21
+    review_date: '2026-04-21'
 
   # ---------------------------------------------------------------------------
   # File ownership — Satellite installation creates files owned by service
@@ -138,7 +138,7 @@ redhat_satellite_scap_tailoring_exceptions:
       automatic remediation ("No suitable fix found"). Post-install ownership
       should be verified with `rpm -Va --nomd5 --nosize` to identify genuinely
       unowned files versus expected Satellite service account files.
-    review_date: 2026-04-21
+    review_date: '2026-04-21'
 
   - name: xccdf_org.ssgproject.content_rule_file_permissions_ungroupowned
     status: deselected
@@ -151,7 +151,7 @@ redhat_satellite_scap_tailoring_exceptions:
       automatic remediation. Ownership should be audited with
       `find / -nogroup -ls` after Satellite installation is complete and all
       service groups are registered in /etc/group.
-    review_date: 2026-04-21
+    review_date: '2026-04-21'
 
   # ---------------------------------------------------------------------------
   # SSH — Kerberos GSSAPI authentication (conditional: IdM-enrolled hosts)
@@ -173,7 +173,7 @@ redhat_satellite_scap_tailoring_exceptions:
       Satellite's mod_auth_gssapi Apache module performs Kerberos negotiate
       authentication for web UI users and requires GSSAPI to be functional at
       the host level. Deselect only if the host is IdM-enrolled.
-    review_date: 2026-04-21
+    review_date: '2026-04-21'
 
   # ---------------------------------------------------------------------------
   # PAM / authselect — applies only when the Satellite host OS is IdM-enrolled.
@@ -193,7 +193,7 @@ redhat_satellite_scap_tailoring_exceptions:
       Kerberos authentication for OS logins. This is the root rule of the
       authselect cascade; the eight rules below also operate on the same profile
       and must be co-excepted. Deselect only if the host is IdM-enrolled.
-    review_date: 2026-04-21
+    review_date: '2026-04-21'
 
   - name: xccdf_org.ssgproject.content_rule_account_password_pam_faillock_password_auth
     status: deselected
@@ -203,7 +203,7 @@ redhat_satellite_scap_tailoring_exceptions:
       Applying this rule against the SCAP custom/hardening profile corrupts the
       IdM PAM stack. Excepted in conjunction with
       accounts_password_pam_modules_in_authselect_profile.
-    review_date: 2026-04-21
+    review_date: '2026-04-21'
 
   - name: xccdf_org.ssgproject.content_rule_account_password_pam_faillock_system_auth
     status: deselected
@@ -212,7 +212,7 @@ redhat_satellite_scap_tailoring_exceptions:
       system-auth. Applying this rule against the SCAP custom/hardening profile
       corrupts the IdM PAM stack. Excepted in conjunction with
       accounts_password_pam_modules_in_authselect_profile.
-    review_date: 2026-04-21
+    review_date: '2026-04-21'
 
   - name: xccdf_org.ssgproject.content_rule_accounts_password_pam_pwhistory_enforce_for_root
     status: deselected
@@ -222,7 +222,7 @@ redhat_satellite_scap_tailoring_exceptions:
       profile creates a conflicting local policy and corrupts the IdM-managed
       authselect profile. Excepted in conjunction with
       accounts_password_pam_modules_in_authselect_profile.
-    review_date: 2026-04-21
+    review_date: '2026-04-21'
 
   - name: xccdf_org.ssgproject.content_rule_accounts_password_pam_pwhistory_remember_password_auth
     status: deselected
@@ -231,7 +231,7 @@ redhat_satellite_scap_tailoring_exceptions:
       Applying pam_pwhistory via the SCAP custom/hardening profile creates a
       conflicting local policy and corrupts the IdM-managed authselect profile.
       Excepted in conjunction with accounts_password_pam_modules_in_authselect_profile.
-    review_date: 2026-04-21
+    review_date: '2026-04-21'
 
   - name: xccdf_org.ssgproject.content_rule_accounts_password_pam_pwhistory_remember_system_auth
     status: deselected
@@ -240,7 +240,7 @@ redhat_satellite_scap_tailoring_exceptions:
       Applying pam_pwhistory via the SCAP custom/hardening profile creates a
       conflicting local policy and corrupts the IdM-managed authselect profile.
       Excepted in conjunction with accounts_password_pam_modules_in_authselect_profile.
-    review_date: 2026-04-21
+    review_date: '2026-04-21'
 
   - name: xccdf_org.ssgproject.content_rule_accounts_passwords_pam_faillock_deny
     status: deselected
@@ -250,7 +250,7 @@ redhat_satellite_scap_tailoring_exceptions:
       a conflicting local lockout threshold and corrupts the IdM-managed
       authselect profile. Excepted in conjunction with
       accounts_password_pam_modules_in_authselect_profile.
-    review_date: 2026-04-21
+    review_date: '2026-04-21'
 
   - name: xccdf_org.ssgproject.content_rule_accounts_passwords_pam_faillock_deny_root
     status: deselected
@@ -259,7 +259,7 @@ redhat_satellite_scap_tailoring_exceptions:
       sssd authselect profile. Applying it via the SCAP custom/hardening profile
       corrupts the IdM-managed PAM stack. Excepted in conjunction with
       accounts_password_pam_modules_in_authselect_profile.
-    review_date: 2026-04-21
+    review_date: '2026-04-21'
 
   - name: xccdf_org.ssgproject.content_rule_accounts_passwords_pam_faillock_unlock_time
     status: deselected
@@ -268,4 +268,4 @@ redhat_satellite_scap_tailoring_exceptions:
       unlock_time via the SCAP custom/hardening profile creates a conflicting
       local policy and corrupts the IdM-managed authselect profile. Excepted
       in conjunction with accounts_password_pam_modules_in_authselect_profile.
-    review_date: 2026-04-21
+    review_date: '2026-04-21'

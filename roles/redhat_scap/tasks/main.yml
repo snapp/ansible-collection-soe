@@ -22,7 +22,7 @@
     content: |
       <?xml version="1.0" encoding="UTF-8"?>
 
-      <xccdf:Tailoring xmlns:xccdf="http://checklists.nist.gov/xccdf/1.2" id="xccdf_redhat_scap_tailoring_{{ inventory_hostname | regex_replace('[^a-zA-Z0-9]', '_') }}">
+      <xccdf:Tailoring xmlns:xccdf="http://checklists.nist.gov/xccdf/1.2" id="xccdf_scap_tailoring_{{ inventory_hostname | regex_replace('[^a-zA-Z0-9]', '_') }}">
 
         <xccdf:benchmark href="{{ redhat_scap_datastream }}"/>
 
@@ -33,7 +33,7 @@
           <xccdf:title>{{ redhat_scap_tailoring_title | default(redhat_scap_profile | regex_replace('xccdf_org.*.content_profile_', '') | upper + ' tailored for ' + inventory_hostname) }}</xccdf:title>
 
           <xccdf:description>{{ redhat_scap_tailoring_description | default(redhat_scap_profile | regex_replace('xccdf_org.*.content_profile_', '') | upper + ' profile tailored with ' + (redhat_scap_tailoring_exceptions | length | string) + ' exceptions for ' + inventory_hostname) }}</xccdf:description>
-      {% for exception in redhat_scap_tailoring_exceptions %}
+      {% for exception in (redhat_scap_tailoring_exceptions | from_yaml) %}
 
       {% if exception.owner is defined or exception.change_control is defined or exception.review_date is defined or exception.justification is defined %}
           <!--
@@ -44,7 +44,7 @@
             change_control : {{ exception.change_control | replace('--', '- -') }}
       {% endif %}
       {% if exception.review_date is defined %}
-            review_date    : {{ exception.review_date | replace('--', '- -') }}
+            review_date    : {{ exception.review_date }}
       {% endif %}
       {% if exception.justification is defined %}
             justification  : {{ exception.justification | replace('--', '- -') }}
