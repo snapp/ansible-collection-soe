@@ -1,0 +1,16 @@
+---
+
+- name: firewall | Red Hat Satellite Firewall
+  ansible.builtin.include_role:
+    name: infra.soe.firewall
+    apply:
+      tags:
+        - satellite_firewall
+        - firewall
+  vars:
+      firewall_enabled: "{{ redhat_satellite_firewall_enabled }}"
+      firewall: "{{ redhat_satellite_firewall }}"
+  tags:
+    - satellite_firewall
+    - firewall
+  when: redhat_satellite_firewall_enabled

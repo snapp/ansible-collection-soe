@@ -1,0 +1,52 @@
+---
+
+- name: realm | Check for Satellite's IdM realm-capsule
+  ansible.builtin.stat:
+    path: /etc/foreman-proxy/freeipa.keytab
+  register: _redhat_satellite_idm_realm_capsule
+
+- name: realm | Setup Satellite IdM realm-capsule
+  when: not _redhat_satellite_idm_realm_capsule.stat.exists
+  block:
+    - name: realm | Kerberos init as IdM admin for IPA CLI
+      ansible.builtin.shell: |
+        set -euo pipefail
+        echo '{{ redhat_satellite_idm_admin_password }}' | kinit admin
+      args:
+        executable: /bin/bash
+      changed_when: false
+      no_log: "{{ no_log_enabled | default(true) }}"
+
+    - name: realm | Run foreman-prepare-realm to configure IdM realm-capsule
+      ansible.builtin.shell: |
+        set -uo pipefail
+        echo '{{ redhat_satellite_idm_admin_password }}' | foreman-prepare-realm admin realm-capsule
+      args:
+        executable: /bin/bash
+        chdir: /root
+        creates: /root/freeipa.keytab
+      register: __redhat_satellite_realm_result
+      changed_when: >-
+        'Keytab successfully retrieved' in __redhat_satellite_realm_result.stderr
+      no_log: "{{ no_log_enabled | default(true) }}"
+    
+    - name: realm | Copy freeipa.keytab to /etc/foreman-proxy/
+      ansible.builtin.copy:
+        src: /root/freeipa.keytab
+        dest: /etc/foreman-proxy/freeipa.keytab
+        mode: '0640'
+        owner: root
+        group: foreman-proxy
+        remote_src: true
+
+    - name: realm | Run satellite-installer to configure foreman-proxy-realm
+      ansible.builtin.command:
+        cmd: >-
+          satellite-installer
+          --foreman-proxy-realm true
+          --foreman-proxy-realm-provider freeipa
+          --foreman-proxy-realm-principal "realm-capsule@{{ idm_domain | upper }}"
+          --foreman-proxy-realm-keytab /etc/foreman-proxy/freeipa.keytab
+      register: __redhat_foreman_prepare_realm
+      changed_when: >-
+        'Success!' in __redhat_foreman_prepare_realm.stdout

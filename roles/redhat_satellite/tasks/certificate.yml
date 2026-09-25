@@ -1,5 +1,24 @@
 ---
 
+- name: certificate | Red Hat Satellite IdM Service Certificate
+  ansible.builtin.include_role:
+    name: infra.soe.redhat_idm_service
+    apply:
+      tags:
+        - satellite_identity_management
+        - idm_configure
+        - idm_service
+  vars:
+    redhat_idm_service_admin_password: "{{ redhat_satellite_idm_admin_password }}"
+    redhat_idm_service_principal: "{{ redhat_satellite_idm_service_principal }}"
+    redhat_idm_service_tls_enabled: "{{ redhat_satellite_idm_service_tls_enabled }}"
+    redhat_idm_service_tls_request_id: "{{ redhat_satellite_idm_service_request_id }}"
+    redhat_idm_service_tls_sans: "{{ redhat_satellite_idm_service_tls_sans }}"
+  tags:
+    - satellite_identity_management
+    - idm_configure
+    - idm_service
+
 - name: certificate | Checksum Satellite Server IdM service certificate
   ansible.builtin.stat:
     path: "/etc/pki/{{ redhat_satellite_idm_service_request_id }}/service.crt"

@@ -3,7 +3,7 @@
 - name: scap | Load SCAP profile specific variables
   ansible.builtin.include_vars: "{{ __redhat_image_builder_scap_vars_file }}"
   vars:
-    __redhat_image_builder_scap_vars_file: "{{ role_path }}/vars/scap/{{ redhat_image_builder_scap_profile | regex_replace('xccdf_org.*.content_profile_', '') }}"
+    __redhat_image_builder_scap_vars_file: "{{ role_path }}/vars/scap/{{ redhat_image_builder_scap_profile | regex_replace('xccdf_org.*.content_profile_', '') }}.yml"
   when:
     - redhat_image_builder_scap_profile is defined
     - __redhat_image_builder_scap_vars_file is file
@@ -12,10 +12,14 @@
   ansible.builtin.include_role:
     name: infra.soe.redhat_scap
     apply:
-      tags: image_builder_scap
+      tags:
+        - image_builder_scap
+        - scap
   vars:
     redhat_scap_tailoring_title: "{{ redhat_image_builder_scap_tailoring_title }}"
     redhat_scap_tailoring_description: "{{ redhat_image_builder_scap_tailoring_description }}"
     redhat_scap_tailoring_exceptions: "{{ redhat_image_builder_scap_tailoring_exceptions | list }}"
-  tags: image_builder_scap
+  tags:
+    - image_builder_scap
+    - scap
   when: redhat_image_builder_scap_profile is defined

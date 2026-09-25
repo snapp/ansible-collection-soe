@@ -19,7 +19,7 @@ redhat_ansible_automation_platform_scap_tailoring_exceptions:
       host at the boot menu, causing patching jobs to time out. Emergency
       physical/console access uses a separate break-glass procedure.
       CIS L2-only requirement; not present in CIS L1 Server.
-    review_date: 2026-04-24
+    review_date: '2026-04-24'
 
   - name: xccdf_org.ssgproject.content_rule_ensure_root_password_configured
     status: deselected
@@ -30,7 +30,7 @@ redhat_ansible_automation_platform_scap_tailoring_exceptions:
       procedure (console → sulogin bypass via rescue kernel parameter).
       Linked to grub2_password — both cover the same boot-time access-control
       layer that is incompatible with unattended automation.
-    review_date: 2026-04-24
+    review_date: '2026-04-24'
 
   - name: xccdf_org.ssgproject.content_rule_ensure_journald_and_rsyslog_not_active_together
     status: deselected
@@ -43,7 +43,7 @@ redhat_ansible_automation_platform_scap_tailoring_exceptions:
       satisfies the spirit of non-duplication without disabling either service.
       The automated remediation script does not handle this split-role
       configuration.
-    review_date: 2026-04-24
+    review_date: '2026-04-24'
 
   - name: xccdf_org.ssgproject.content_rule_service_systemd-journal-upload_enabled
     status: deselected
@@ -53,7 +53,7 @@ redhat_ansible_automation_platform_scap_tailoring_exceptions:
       for centralized log aggregation instead. Enabling journal-upload would
       create a redundant, unmonitored log stream.
       CIS L2-only requirement; not present in CIS L1 Server.
-    review_date: 2026-04-24
+    review_date: '2026-04-24'
 
   - name: xccdf_org.ssgproject.content_rule_no_files_or_dirs_unowned_by_user
     status: deselected
@@ -64,7 +64,7 @@ redhat_ansible_automation_platform_scap_tailoring_exceptions:
       unavoidable with the Podman container model: rootless containers use
       subordinate UID ranges (subuid/subgid) that are not registered as named
       users in the host NSS databases.
-    review_date: 2026-04-24
+    review_date: '2026-04-24'
 
   - name: xccdf_org.ssgproject.content_rule_no_files_or_dirs_ungroupowned
     status: deselected
@@ -72,7 +72,7 @@ redhat_ansible_automation_platform_scap_tailoring_exceptions:
       Same cause as no_files_or_dirs_unowned_by_user. Container overlay layers
       use subordinate GID ranges (subgid) for rootless Podman that are not
       registered as named groups in /etc/group.
-    review_date: 2026-04-24
+    review_date: '2026-04-24'
 
   - name: xccdf_org.ssgproject.content_rule_sebool_deny_execmem
     status: deselected
@@ -84,7 +84,7 @@ redhat_ansible_automation_platform_scap_tailoring_exceptions:
       "cannot apply additional memory protection after relocation: Permission
       denied".
       CIS L2-only requirement; not present in CIS L1 Server.
-    review_date: 2026-04-24
+    review_date: '2026-04-24'
 
   - name: xccdf_org.ssgproject.content_rule_sshd_limit_user_access
     status: deselected
@@ -96,4 +96,4 @@ redhat_ansible_automation_platform_scap_tailoring_exceptions:
       by the AAP post-provision playbook after environment-specific group
       membership is established. Hardcoding in the image would lock out the
       bootstrap ansible service account during initial provisioning.
-    review_date: 2026-04-24
+    review_date: '2026-04-24'
