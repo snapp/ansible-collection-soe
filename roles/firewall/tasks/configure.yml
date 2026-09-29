@@ -1,14 +1,14 @@
 ---
 
-- name: Firewall Configuration
+- name: configure | Firewall Configuration
   tags: firewall
   when: firewall_enabled | default(false)
   block:
-    - name: Setup Firewall
+    - name: configure | Setup Firewall
       ansible.builtin.import_role:
         name: redhat.rhel_system_roles.firewall
 
-    - name: Validate firewall log-denied value
+    - name: configure | Validate firewall log-denied value
       ansible.builtin.assert:
         that:
           - firewall_log_denied | default('off') | string in
@@ -19,7 +19,7 @@
       when: firewall_log_denied is defined
 
     # TODO|2024-02-18| Add firewalld_conf.LogDenied parameter support to redhat.rhel_system_roles.firewall_lib module
-    - name: Configure firewall logging of denied packets
+    - name: configure | Configure firewall logging of denied packets
       ansible.builtin.lineinfile:
         path: /etc/firewalld/firewalld.conf
         regexp: '^LogDenied\s*=.*'
@@ -28,7 +28,7 @@
       notify: Reload firewalld
       when: firewall_log_denied is defined
 
-    - name: Deploy quiet-drops nftables table
+    - name: configure | Deploy quiet-drops nftables table
       ansible.builtin.copy:
         dest: /etc/nftables/quiet-drops.nft
         owner: root
@@ -50,7 +50,7 @@
       notify: Reload nftables
       when: firewall_quiet_drops | default([]) | length > 0
 
-    - name: Include quiet-drops in nftables main config
+    - name: configure | Include quiet-drops in nftables main config
       ansible.builtin.lineinfile:
         path: /etc/sysconfig/nftables.conf
         line: 'include "/etc/nftables/quiet-drops.nft"'
@@ -58,13 +58,13 @@
       notify: Reload nftables
       when: firewall_quiet_drops | default([]) | length > 0
 
-    - name: Ensure flush ruleset is not enabled in nftables.conf
+    - name: configure | Ensure flush ruleset is not enabled in nftables.conf
       ansible.builtin.lineinfile:
         path: /etc/sysconfig/nftables.conf
         regexp: '^\s*flush ruleset'
         state: absent
 
-    - name: Enable and start nftables service
+    - name: configure | Enable and start nftables service
       ansible.builtin.systemd_service:
         name: nftables
         enabled: true

@@ -1,6 +1,6 @@
 ---
 
-- name: Red Hat Satellite IdM HBAC rules
+- name: hbac | Red Hat Satellite IdM HBAC rules
   ansible.builtin.include_role:
     name: infra.soe.redhat_idm_hbac
     apply:

@@ -7,6 +7,22 @@
     - image_builder_configure
     - image_builder_scap
 
+- name: Red Hat Image Builder IdM Groups
+  ansible.builtin.import_tasks: groups.yml
+  tags:
+    - image_builder_identity_management
+    - idm_configure
+    - idm_groups
+  when: redhat_image_builder_idm_admin_password is defined
+
+- name: Red Hat Image Builder IdM HBAC rules
+  ansible.builtin.import_tasks: hbac.yml
+  tags:
+    - image_builder_identity_management
+    - idm_configure
+    - idm_hbac
+  when: redhat_image_builder_idm_admin_password is defined
+
 - name: Red Hat Image Builder Installation
   ansible.builtin.import_tasks: install.yml
   tags: image_builder_install
@@ -17,4 +33,6 @@
 
 - name: Red Hat Image Builder SCAP Remediation
   ansible.builtin.import_tasks: scap.yml
-  tags: image_builder_scap
+  tags:
+    - image_builder_scap
+    - scap

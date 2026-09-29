@@ -22,4 +22,3 @@
   tags:
     - aap_scap
     - scap
-  when: redhat_ansible_automation_platform_scap_profile is defined

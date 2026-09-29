@@ -18,4 +18,4 @@ redhat_image_builder_scap_tailoring_exceptions:
       cockpit-image-builder delivers the Image Builder web UI exclusively through the
       Cockpit framework.
       This rule is deselected because Cockpit is optional on this host.
-    review_date: 2026-04-25
+    review_date: '2026-04-25'

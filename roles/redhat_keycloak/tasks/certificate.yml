@@ -1,0 +1,22 @@
+---
+
+- name: certificate | RHBK IdM Service Certificate
+  ansible.builtin.include_role:
+    name: infra.soe.redhat_idm_service
+    apply:
+      tags:
+        - keycloak_identity_management
+        - idm_configure
+        - idm_service
+  vars:
+    redhat_idm_service_admin_password: "{{ redhat_keycloak_idm_admin_password }}"
+    redhat_idm_service_principal: "{{ redhat_keycloak_idm_service_principal }}"
+    redhat_idm_service_user: "{{ redhat_keycloak_idm_service_user }}"
+    redhat_idm_service_group: "{{ redhat_keycloak_idm_service_group }}"
+    redhat_idm_service_tls_enabled: true
+    redhat_idm_service_tls_request_id: "{{ redhat_keycloak_idm_service_request_id }}"
+    redhat_idm_service_tls_sans: "{{ keycloak_idm_service_tls_sans | default([]) }}"
+  tags:
+    - keycloak_identity_management
+    - idm_configure
+    - idm_service

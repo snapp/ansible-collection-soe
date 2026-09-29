@@ -1,0 +1,17 @@
+---
+
+- name: users | Caddy IdM Users
+  ansible.builtin.include_role:
+    name: infra.soe.redhat_idm_users
+    apply:
+      tags:
+        - caddy_identity_management
+        - idm_configure
+        - idm_users
+  vars:
+    redhat_idm_users_admin_password: "{{ caddy_idm_admin_password }}"
+    redhat_idm_users: "{{ caddy_idm_users }}"
+  tags:
+    - caddy_identity_management
+    - idm_configure
+    - idm_users

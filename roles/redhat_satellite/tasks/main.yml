@@ -61,9 +61,11 @@
   tags:
     - satellite_firewall
     - firewall
+  when: redhat_satellite_firewall_enabled
 
 - name: Red Hat Satellite SCAP Remediation
   ansible.builtin.import_tasks: scap.yml
   tags:
     - satellite_scap
     - scap
+  when: redhat_satellite_scap_profile is defined

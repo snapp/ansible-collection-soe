@@ -1,6 +1,7 @@
 ---
 minor_changes:
-  - redhat_identity_management - became a real composing role instead of an
+  - >
+    redhat_identity_management - became a real composing role instead of an
     unfinished, unreferenced duplicate of the six ``redhat_idm_*`` roles. Deleted the
     drifted duplicate ``tasks``/``defaults`` files (``acme``, ``groups``, ``hbac``,
     ``service``, ``sudo``, ``users``) and the stale ``meta/argument_specs.yml``. Added
@@ -12,7 +13,8 @@ minor_changes:
     matching the AAP/Keycloak/Cockpit/Image Builder playbooks. ``tasks/network.yml``
     is unchanged.
 bugfixes:
-  - redhat_identity_management - the ``redhat_idm_users``/``redhat_idm_groups``/
+  - >
+    redhat_identity_management - the ``redhat_idm_users``/``redhat_idm_groups``/
     ``redhat_idm_sudo``/``redhat_idm_hbac`` roles, when invoked directly from
     ``playbooks/redhat_identity_management.yml``'s old inline ``roles:`` list, were
     never actually passed their required ``redhat_idm_{users,groups,sudo,hbac}_admin_password``

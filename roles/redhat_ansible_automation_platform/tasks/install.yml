@@ -18,6 +18,27 @@
         validate: /usr/sbin/visudo -cf %s
       when: aap_service_user != 'root'
 
+    - name: install | Fetch service user details
+      ansible.builtin.getent:
+        database: passwd
+        key: "{{ aap_service_user }}"
+
+    - name: install | Ensure SELinux equivalence for AAP home directory
+      ansible.builtin.command:
+        cmd: semanage fcontext -a -e /home "{{ ansible_facts.getent_passwd.aap[4] }}"
+      register: __redhat_ansible_automation_platform_semanage_result
+      changed_when: __redhat_ansible_automation_platform_semanage_result.rc == 0
+      failed_when:
+        - __redhat_ansible_automation_platform_semanage_result.rc != 0
+        - "'already exists' not in __redhat_ansible_automation_platform_semanage_result.stderr"
+      when: not ansible_facts.getent_passwd.aap[4].startswith('/home')
+
+    - name: install | Apply SELinux context to the AAP mount
+      ansible.builtin.command:
+        cmd: restorecon -v "{{ ansible_facts.getent_passwd.aap[4] }}"
+      changed_when: false
+      when: not ansible_facts.getent_passwd.aap[4].startswith('/home')
+
     - name: install | Create AAP install location
       ansible.builtin.file:
         path: "{{ aap_setup_prep_working_dir }}"

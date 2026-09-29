@@ -5,6 +5,14 @@
     state: present
     name: "{{ redhat_image_builder_packages }}"
 
+- name: install | Ensure cockpit systemd units are not masked
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    masked: false
+  loop:
+    - cockpit.service
+    - cockpit.socket
+
 - name: install | Enable Image Builder Services
   ansible.builtin.systemd:
     state: started

@@ -22,4 +22,3 @@
   tags:
     - satellite_scap
     - scap
-  when: redhat_satellite_scap_profile is defined

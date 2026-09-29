@@ -1,0 +1,14 @@
+---
+
+- name: local_users | RHBK Local Users
+  ansible.builtin.include_role:
+    name: infra.soe.local_users
+    apply:
+      tags:
+        - keycloak_local_users
+        - local_users
+  vars:
+    local_users: "{{ redhat_keycloak_local_users }}"
+  tags:
+    - keycloak_local_users
+    - local_users

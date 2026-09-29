@@ -1,6 +1,7 @@
 ---
 bugfixes:
-  - redhat_satellite - replaced the hardcoded ``/etc/pki/satellite_idm_service/``
+  - >
+    redhat_satellite - replaced the hardcoded ``/etc/pki/satellite_idm_service/``
     certificate path in ``tasks/certificate.yml`` with
     ``/etc/pki/{{ redhat_satellite_idm_service_request_id }}/``, the same variable the
     ``redhat_idm_service`` dependency uses to compute its TLS directory.

@@ -14,7 +14,7 @@ redhat_ansible_automation_platform_idm_users:
       full: Ansible Automation Platform Service Account
     initials: AAP
     home: /var/lib/aap
-    shell: /sbin/nologin
+    shell: /bin/bash
     enable_subid: true
 
 redhat_ansible_automation_platform_idm_groups:

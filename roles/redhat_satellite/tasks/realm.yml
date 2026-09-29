@@ -29,7 +29,7 @@
       changed_when: >-
         'Keytab successfully retrieved' in __redhat_satellite_realm_result.stderr
       no_log: "{{ no_log_enabled | default(true) }}"
-    
+
     - name: realm | Copy freeipa.keytab to /etc/foreman-proxy/
       ansible.builtin.copy:
         src: /root/freeipa.keytab
@@ -47,6 +47,6 @@
           --foreman-proxy-realm-provider freeipa
           --foreman-proxy-realm-principal "realm-capsule@{{ idm_domain | upper }}"
           --foreman-proxy-realm-keytab /etc/foreman-proxy/freeipa.keytab
-      register: __redhat_foreman_prepare_realm
+      register: __redhat_satellite_prepare_realm
       changed_when: >-
-        'Success!' in __redhat_foreman_prepare_realm.stdout
+        'Success!' in __redhat_satellite_prepare_realm.stdout

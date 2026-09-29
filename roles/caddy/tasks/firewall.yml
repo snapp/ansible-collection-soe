@@ -1,0 +1,15 @@
+---
+
+- name: firewall | Caddy Firewall
+  ansible.builtin.include_role:
+    name: infra.soe.firewall
+    apply:
+      tags:
+        - caddy_firewall
+        - firewall
+  vars:
+    firewall_enabled: "{{ caddy_firewall_enabled }}"
+    firewall: "{{ caddy_firewall }}"
+  tags:
+    - caddy_firewall
+    - firewall

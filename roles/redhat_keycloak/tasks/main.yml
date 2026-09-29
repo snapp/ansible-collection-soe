@@ -1,5 +1,38 @@
 ---
 
+- name: Red Hat Build of Keycloak (RHBK) Local Users
+  ansible.builtin.import_tasks: local_users.yml
+  vars:
+    local_users: "{{ redhat_keycloak_local_users }}"
+  tags:
+    - keycloak_local_users
+    - local_users
+  when: redhat_keycloak_local_users is defined
+
+- name: Red Hat Build of Keycloak (RHBK) IdM Users
+  ansible.builtin.import_tasks: users.yml
+  tags:
+    - keycloak_identity_management
+    - idm_configure
+    - idm_users
+  when: redhat_keycloak_idm_admin_password is defined
+
+- name: Red Hat Build of Keycloak (RHBK) IdM Groups
+  ansible.builtin.import_tasks: groups.yml
+  tags:
+    - keycloak_identity_management
+    - idm_configure
+    - idm_groups
+  when: redhat_keycloak_idm_admin_password is defined
+
+- name: Red Hat Build of Keycloak (RHBK) Certificate
+  ansible.builtin.import_tasks: certificate.yml
+  tags:
+    - keycloak_identity_management
+    - idm_configure
+    - idm_service
+  when: redhat_keycloak_idm_admin_password is defined
+
 - name: Red Hat Build of Keycloak (RHBK) Installation
   ansible.builtin.import_tasks: install.yml
   tags: keycloak_install
@@ -8,6 +41,16 @@
   ansible.builtin.import_tasks: configure.yml
   tags: keycloak_configure
 
+- name: Red Hat Satellite Firewall
+  ansible.builtin.import_tasks: firewall.yml
+  tags:
+    - keycloak_firewall
+    - firewall
+  when: redhat_keycloak_firewall_enabled
+
 - name: Red Hat Build of Keycloak (RHBK) SCAP Remediation
   ansible.builtin.import_tasks: scap.yml
-  tags: keycloak_scap
+  tags:
+    - keycloak_scap
+    - scap
+  when: redhat_keycloak_scap_profile is defined

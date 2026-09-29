@@ -1,6 +1,6 @@
 ---
 
-- name: Red Hat Satellite IdM Groups
+- name: groups | Red Hat Satellite IdM Groups
   ansible.builtin.include_role:
     name: infra.soe.redhat_idm_groups
     apply:

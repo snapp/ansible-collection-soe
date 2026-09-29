@@ -97,3 +97,11 @@ redhat_ansible_automation_platform_scap_tailoring_exceptions:
       membership is established. Hardcoding in the image would lock out the
       bootstrap ansible service account during initial provisioning.
     review_date: '2026-04-24'
+
+  - name: xccdf_org.ssgproject.content_rule_kernel_module_overlayfs_disabled
+    status: deselected
+    justification: >-
+      AAP containerized deployment utilizes rootless Podman, which requires
+      the overlay kernel module for the overlayfs storage driver. Disabling
+      the overlay module prevents container execution and breaks the AAP stack.
+    review_date: '2026-09-29'
