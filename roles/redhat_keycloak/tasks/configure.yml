@@ -1,7 +1,6 @@
 ---
 
 - name: configure | Keycloak Realm
-  tags: keycloak_realm
   delegate_to: localhost
   block:
     - name: configure | Keycloak Realm
@@ -11,11 +10,14 @@
           tags: keycloak_realm
       vars:
         # REDO|2026/05/30| Remove rhbk_realm when redhat.rhbk no longer hardcodes rhbk_realm to null
-        rhbk_realm_realm: "{{ redhat_keycloak_primary_realm }}"
         rhbk_realm: "{{ redhat_keycloak_primary_realm }}"
+        rhbk_realm_realm: "{{ redhat_keycloak_primary_realm }}"
+        rhbk_realm_admin_user: "{{ redhat_keycloak_admin_user | default(omit) }}"
+        rhbk_realm_admin_password: "{{ redhat_keycloak_admin_password }}"
         organizations_enabled: true
 
 - name: configure | Keycloak clients
+  delegate_to: localhost
   redhat.rhbk.rhbk_client:
     auth_rhbk_url: "{{ rhbk_url }}"
     auth_realm: master
@@ -41,10 +43,11 @@
   loop_control:
     label: "{{ item.client_id }}"
   no_log: "{{ no_log_enabled | default(true) }}"
-  delegate_to: localhost
+  when: rhbk_clients is defined and rhbk_clients | length > 0
 
 # REDO|2026/05/30| Replace with redhat.rhbk when available
 - name: configure | Map keycloak client roles to groups
+  delegate_to: localhost
   community.general.keycloak_client_rolemapping:
     auth_keycloak_url: "{{ rhbk_url }}"
     auth_realm: master
@@ -59,10 +62,11 @@
   loop_control:
     label: "{{ item.group_name }} -> {{ item.client_id }}"
   no_log: "{{ no_log_enabled | default(true) }}"
-  delegate_to: localhost
+  when: rhbk_client_rolemappings is defined and rhbk_client_rolemappings | length > 0
 
 # REDO|2026/05/30| Replace with redhat.rhbk when available
 - name: configure | Map keycloak user roles to groups
+  delegate_to: localhost
   community.general.keycloak_user_rolemapping:
     auth_keycloak_url: "{{ rhbk_url }}"
     auth_realm: master
@@ -75,4 +79,4 @@
     state: present
   loop: "{{ rhbk_user_rolemappings }}"
   no_log: "{{ no_log_enabled | default(true) }}"
-  delegate_to: localhost
+  when: rhbk_user_rolemappings is defined and rhbk_user_rolemappings | length > 0
