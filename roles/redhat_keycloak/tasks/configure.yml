@@ -1,9 +1,20 @@
 ---
 
-- name: configure | Keycloak Realm
+- name: configure | Keycloak Realms
   delegate_to: localhost
   block:
-    - name: configure | Keycloak Realm
+    - name: configure | Keycloak Master Realm
+      ansible.builtin.include_role:
+        name: redhat.rhbk.rhbk_realm
+        apply:
+          tags: keycloak_realm
+      vars:
+        rhbk_realm: master
+        rhbk_realm_realm: master
+        rhbk_realm_admin_user: "{{ redhat_keycloak_admin_user | default(omit) }}"
+        rhbk_realm_admin_password: "{{ redhat_keycloak_admin_password }}"
+
+    - name: configure | Keycloak Primary Realm
       ansible.builtin.include_role:
         name: redhat.rhbk.rhbk_realm
         apply:
