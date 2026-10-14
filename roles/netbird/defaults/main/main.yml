@@ -47,10 +47,10 @@ netbird_dashboard_url: "https://{{ netbird_domain }}"
 # never float on ':latest' again.
 # ---------------------------------------------------------------------------
 # https://github.com/netbirdio/dashboard
-netbird_dashboard_image: docker.io/netbirdio/dashboard:v2.91.0
+netbird_dashboard_image: docker.io/netbirdio/dashboard:v2.91.1
 
 # https://github.com/netbirdio/netbird
-netbird_server_image: docker.io/netbirdio/netbird-server:0.77.0
+netbird_server_image: docker.io/netbirdio/netbird-server:0.77.1
 
 netbird_dashboard_port: 8090
 
@@ -70,13 +70,18 @@ netbird_server_port: 8091
 netbird_server_publish_ports:
   - "127.0.0.1:{{ netbird_server_port }}:80"
 
+
+netbird_stun_publish_ip: 0.0.0.0
+
 # STUN is embedded in netbird-server and published as a normal bridge-network
 # port mapping (no Network=host needed, unlike the old Coturn container —
 # confirmed against upstream's template, which publishes STUN the same way).
 netbird_stun_publish_ports:
-  - '{{ netbird_stun_port }}:{{ netbird_stun_port }}/udp'
+  - "{{ netbird_stun_publish_ip }}:{{ netbird_stun_port }}:{{ netbird_stun_port }}/udp"
 
 netbird_stun_port: 3478
+
+netbird_client_wireguard_port: 51820
 
 # ---------------------------------------------------------------------------
 # Embedded IdP (Dex) — issued by netbird-server itself, at {{ netbird_domain }}/oauth2.

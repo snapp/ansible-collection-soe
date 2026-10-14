@@ -78,8 +78,9 @@
       server:
         listenAddress: ":80"
         exposedAddress: "https://{{ netbird_domain }}:443"
-        stunPorts:
-          - {{ netbird_stun_port }}
+        stuns:
+          - uri: "stun:{{ netbird_stun_publish_ip }}:{{ netbird_stun_port }}"
+            proto: "udp"
         metricsPort: 9090
         healthcheckAddress: ":9000"
         logLevel: "info"
@@ -121,8 +122,8 @@
     mode: '0600'
     setype: container_file_t
     content: |
-      NETBIRD_MGMT_API_ENDPOINT=https://{{ netbird_domain }}
-      NETBIRD_MGMT_GRPC_API_ENDPOINT=https://{{ netbird_domain }}
+      NETBIRD_MGMT_API_ENDPOINT={{ netbird_dashboard_url }}
+      NETBIRD_MGMT_GRPC_API_ENDPOINT={{ netbird_dashboard_url }}
       AUTH_AUDIENCE=netbird-dashboard
       AUTH_CLIENT_ID=netbird-dashboard
       AUTH_CLIENT_SECRET=
@@ -137,15 +138,15 @@
   notify: Restart netbird-dashboard
   tags: netbird_configure
 
-- name: Open STUN port (firewalld)
-  ansible.posix.firewalld:
-    port: "{{ netbird_stun_port }}/udp"
-    state: enabled
-    permanent: true
-    immediate: true
-  become: true
-  when: netbird_manage_firewall | bool
-  tags: netbird_firewall
+# - name: Open STUN port (firewalld)
+#   ansible.posix.firewalld:
+#     port: "{{ netbird_stun_port }}/udp"
+#     state: enabled
+#     permanent: true
+#     immediate: true
+#   become: true
+#   when: netbird_manage_firewall | bool
+#   tags: netbird_firewall
 
 # redhat.rhel_system_roles.podman writes each spec to
 # ~netbird/.config/containers/systemd/, runs `systemctl --user daemon-reload`,
@@ -315,30 +316,30 @@
   no_log: "{{ no_log_enabled | default(true) }}"
   tags: netbird_idp
 
-- name: Check whether the RHBK identity provider connector already exists
-  ansible.builtin.uri:
-    url: "http://{{ netbird_server_publish_ports[0].split(':')[0] }}:{{ netbird_server_publish_ports[0].split(':')[1] }}/api/identity-providers"
-    headers:
-      Authorization: "Token {{ netbird_admin_api_token }}"
-    status_code: 200
-  register: netbird_idp_list
-  no_log: "{{ no_log_enabled | default(true) }}"
-  tags: netbird_idp
+# - name: Check whether the RHBK identity provider connector already exists
+#   ansible.builtin.uri:
+#     url: "http://{{ netbird_server_publish_ports[0].split(':')[0] }}:{{ netbird_server_publish_ports[0].split(':')[1] }}/api/identity-providers"
+#     headers:
+#       Authorization: "Token {{ netbird_admin_api_token }}"
+#     status_code: 200
+#   register: netbird_idp_list
+#   no_log: "{{ no_log_enabled | default(true) }}"
+#   tags: netbird_idp
 
-- name: Register RHBK as a NetBird identity provider connector
-  ansible.builtin.uri:
-    url: "http://{{ netbird_server_publish_ports[0].split(':')[0] }}:{{ netbird_server_publish_ports[0].split(':')[1] }}/api/identity-providers"
-    method: POST
-    headers:
-      Authorization: "Token {{ netbird_admin_api_token }}"
-    body_format: json
-    body:
-      type: oidc
-      name: "{{ netbird_idp_name }}"
-      issuer: "{{ netbird_idp_issuer }}"
-      client_id: "{{ netbird_idp_client_id }}"
-      client_secret: "{{ netbird_idp_client_secret }}"
-    status_code: 200, 201
-  no_log: "{{ no_log_enabled | default(true) }}"
-  when: netbird_idp_list.json | selectattr('name', 'equalto', netbird_idp_name) | list | length == 0
-  tags: netbird_idp
+# - name: Register RHBK as a NetBird identity provider connector
+#   ansible.builtin.uri:
+#     url: "http://{{ netbird_server_publish_ports[0].split(':')[0] }}:{{ netbird_server_publish_ports[0].split(':')[1] }}/api/identity-providers"
+#     method: POST
+#     headers:
+#       Authorization: "Token {{ netbird_admin_api_token }}"
+#     body_format: json
+#     body:
+#       type: oidc
+#       name: "{{ netbird_idp_name }}"
+#       issuer: "{{ netbird_idp_issuer }}"
+#       client_id: "{{ netbird_idp_client_id }}"
+#       client_secret: "{{ netbird_idp_client_secret }}"
+#     status_code: 200, 201
+#   no_log: "{{ no_log_enabled | default(true) }}"
+#   when: netbird_idp_list.json | selectattr('name', 'equalto', netbird_idp_name) | list | length == 0
+#   tags: netbird_idp

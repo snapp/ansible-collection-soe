@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+{{ ansible_managed | comment('xml') }}
+<policy target="{{ item.target | default('CONTINUE') }}"{% if item.priority is defined %} priority="{{ item.priority }}"{% endif %}>
+{% if item.short is defined %}
+  <short>{{ item.short }}</short>
+{% endif %}
+{% if item.description is defined %}
+  <description>{{ item.description | trim }}</description>
+{% endif %}
+{% for zone in item.ingress_zones %}
+  <ingress-zone name="{{ zone }}"/>
+{% endfor %}
+{% for zone in item.egress_zones %}
+  <egress-zone name="{{ zone }}"/>
+{% endfor %}
+{% for svc in item.service | default([]) %}
+  <service name="{{ svc }}"/>
+{% endfor %}
+{% for p in item.port | default([]) %}
+  <port port="{{ p.split('/')[0] }}" protocol="{{ p.split('/')[1] }}"/>
+{% endfor %}
+{% if item.masquerade | default(false) %}
+  <masquerade/>
+{% endif %}
+</policy>

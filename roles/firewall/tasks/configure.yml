@@ -4,10 +4,6 @@
   tags: firewall
   when: firewall_enabled | default(false)
   block:
-    - name: configure | Setup Firewall
-      ansible.builtin.import_role:
-        name: redhat.rhel_system_roles.firewall
-
     - name: configure | Validate firewall log-denied value
       ansible.builtin.assert:
         that:
@@ -17,6 +13,29 @@
           firewall_log_denied must be one of:
           off, all, unicast, broadcast, multicast
       when: firewall_log_denied is defined
+
+    - name: configure | Validate firewall policy definitions
+      ansible.builtin.assert:
+        that:
+          - item.name is defined
+          - item.name is match('^[A-Za-z0-9_-]+$')
+          - item.ingress_zones | default([]) | length > 0
+          - item.egress_zones | default([]) | length > 0
+          - item.target | default('CONTINUE') in ['ACCEPT', 'REJECT', 'DROP', 'CONTINUE']
+          - item.state | default('present') in ['present', 'absent']
+        fail_msg: >-
+          Invalid firewall_policies entry '{{ item.name | default("<unnamed>") }}':
+          name must be alphanumeric/dash/underscore, ingress_zones and
+          egress_zones must each be non-empty, target must be one of
+          ACCEPT, REJECT, DROP, CONTINUE, and state must be present or absent.
+        quiet: true
+      loop: "{{ firewall_policies | default([]) }}"
+      loop_control:
+        label: "{{ item.name | default('<unnamed>') }}"
+
+    - name: configure | Setup Firewall
+      ansible.builtin.import_role:
+        name: redhat.rhel_system_roles.firewall
 
     # TODO|2024-02-18| Add firewalld_conf.LogDenied parameter support to redhat.rhel_system_roles.firewall_lib module
     - name: configure | Configure firewall logging of denied packets
@@ -29,24 +48,12 @@
       when: firewall_log_denied is defined
 
     - name: configure | Deploy quiet-drops nftables table
-      ansible.builtin.copy:
+      ansible.builtin.template:
+        src: quiet-drops.nft.j2
         dest: /etc/nftables/quiet-drops.nft
         owner: root
         group: root
         mode: '0600'
-        content: |
-          # Silently drops known-benign invalid-state flows before firewalld's
-          # LogDenied rule (this table hooks at priority "filter"; firewalld
-          # hooks at "filter + 10", so we evaluate first).
-          table inet quiet_drops {
-              chain input {
-                  type filter hook input priority filter; policy accept;
-          {% for d in firewall_quiet_drops %}
-                  # {{ d.name }}
-                  iifname "{{ d.iifname }}" ip saddr {{ d.saddr }} tcp dport {{ d.dport }} ct state invalid counter drop
-          {% endfor %}
-              }
-          }
       notify: Reload nftables
       when: firewall_quiet_drops | default([]) | length > 0
 
@@ -70,3 +77,36 @@
         enabled: true
         state: started
       when: firewall_quiet_drops | default([]) | length > 0
+
+    - name: Ensure firewalld policy directory exists
+      ansible.builtin.file:
+        path: /etc/firewalld/policies
+        state: directory
+        owner: root
+        group: root
+        mode: '0750'
+      when: firewall_policies | default([]) | length > 0
+
+    # TODO|2026-09-08| Add policy object support to redhat.rhel_system_roles.firewall_lib module
+    - name: Deploy firewalld policy objects
+      ansible.builtin.template:
+        src: firewalld-policy.xml.j2
+        dest: "/etc/firewalld/policies/{{ item.name }}.xml"
+        owner: root
+        group: root
+        mode: '0644'
+      loop: "{{ firewall_policies | default([]) }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: item.state | default('present') == 'present'
+      notify: Reload firewalld
+
+    - name: Remove firewalld policy objects
+      ansible.builtin.file:
+        path: "/etc/firewalld/policies/{{ item.name }}.xml"
+        state: absent
+      loop: "{{ firewall_policies | default([]) }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: item.state | default('present') == 'absent'
+      notify: Reload firewalld
