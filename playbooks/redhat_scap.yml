@@ -1,0 +1,11 @@
+---
+
+- name: Red Hat Security Content Automation Protocol (SCAP)
+  hosts: "{{ target_hosts | default('redhat') }}"
+  gather_facts: true
+  become: true
+  tags:
+    - redhat
+    - scap
+  roles:
+    - infra.soe.redhat_scap
