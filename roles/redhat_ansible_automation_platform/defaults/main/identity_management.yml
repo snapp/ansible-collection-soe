@@ -1,0 +1,40 @@
+---
+
+# Setting either this or the un-namespaced idm_admin_password enables the IdM
+# integration below. Empty means the IdM tasks are skipped entirely.
+redhat_ansible_automation_platform_idm_admin_password: "{{ idm_admin_password | default('') }}"
+
+redhat_ansible_automation_platform_service_user: aap
+redhat_ansible_automation_platform_service_group: "{{ redhat_ansible_automation_platform_service_user }}"
+
+redhat_ansible_automation_platform_idm_service_principal: "HTTP/{{ inventory_hostname }}"
+redhat_ansible_automation_platform_idm_service_request_id: aap_idm_service
+redhat_ansible_automation_platform_idm_service_tls_enabled: true
+redhat_ansible_automation_platform_idm_service_tls_sans: []
+
+redhat_ansible_automation_platform_idm_users:
+  - description: AAP Service Account
+    name:
+      username: "{{ redhat_ansible_automation_platform_service_user }}"
+      first: AAP
+      last: Service Account
+      full: Ansible Automation Platform Service Account
+    initials: AAP
+    home: /var/lib/aap
+    shell: /bin/bash
+    enable_subid: true
+
+redhat_ansible_automation_platform_idm_groups:
+  - name: aap-admins
+    description: Ansible Automation Platform (AAP) Super Users
+
+  - name: aap-users
+    description: Ansible Automation Platform (AAP) Users
+
+redhat_ansible_automation_platform_idm_hbac_rules:
+  - name: allow_ansible_automation_platform
+    description: Allow users to access Ansible Automation Platform
+    servicecategory: all
+    groups:
+      - aap-admins
+      - aap-users

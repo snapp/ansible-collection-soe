@@ -1,0 +1,15 @@
+---
+
+- name: firewall | AAP Firewall
+  ansible.builtin.include_role:
+    name: infra.soe.firewall
+    apply:
+      tags:
+        - aap_firewall
+        - firewall
+  vars:
+    firewall_enabled: "{{ redhat_ansible_automation_platform_firewall_enabled }}"
+    firewall: "{{ redhat_ansible_automation_platform_firewall }}"
+  tags:
+    - aap_firewall
+    - firewall

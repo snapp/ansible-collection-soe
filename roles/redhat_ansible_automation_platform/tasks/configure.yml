@@ -1,0 +1,24 @@
+---
+
+- name: configure | AAP Manifest
+  ansible.builtin.include_role:
+    name: infra.aap_configuration.controller_license
+    apply:
+      tags: aap_manifest
+  vars:
+    aap_validate_certs: "{{ aap_gateway_validate_certs | default(true) | bool }}"
+    aap_hostname: "{{ aap_routable_hostname }}"
+    aap_username: admin
+    aap_password: "{{ aap_gateway_admin_password }}"
+    controller_license: "{{ aap_controller_license }}"
+  tags: aap_manifest
+  when: aap_manifest_import | default(false)
+
+- name: configure | Dispatch AAP Configuration
+  ansible.builtin.import_role:
+    name: infra.aap_configuration.dispatch
+  vars:
+    aap_validate_certs: "{{ aap_gateway_validate_certs | default(true) | bool }}"
+    aap_hostname: "{{ aap_routable_hostname }}"
+    aap_username: admin
+    aap_password: "{{ aap_gateway_admin_password }}"

@@ -1,0 +1,45 @@
+---
+
+redhat_ansible_automation_platform_firewall_enabled: true
+
+# https://console.redhat.com/ansible/automation-hub/collections/published/redhat/rhel_system_roles/documentation/role/firewall
+redhat_ansible_automation_platform_firewall:
+  - service: redhat_ansible_automation_platform
+    short: Red Hat AAP
+    description: Red Hat Ansible Automation Platform (AAP)
+    port:
+      - 443/tcp    # Hypertext Transfer Protocol Secure (HTTPS)
+      - 5432/tcp   # PostgreSQL Database
+      - 6379/tcp   # Redis
+      - 8443/tcp   # Automation Controller (HTTPS)
+      - 8444/tcp   # Automation Hub (HTTPS)
+      - 8445/tcp   # Event-Driven Ansible (HTTPS)
+      - 8446/tcp   # Platform Gateway (HTTPS)
+      - 27199/tcp  # Ansible Automation Platform (AAP) Receptor for mesh network control plane clustering
+    runtime: true
+    permanent: true
+    state: present
+
+  - service: redhat_aap_frontend
+    short: Red Hat AAP Frontend
+    description: Red Hat Ansible Automation Platform (AAP) Frontend
+    port:
+      - 443/tcp  # Hypertext Transfer Protocol Secure (HTTPS)
+    runtime: true
+    permanent: true
+    state: present
+
+  - service: redhat_aap_internal
+    short: Red Hat AAP Internal
+    description: Red Hat Ansible Automation Platform (AAP) Internal
+    port:
+      - 5432/tcp   # PostgreSQL Database
+      - 6379/tcp   # Redis
+      - 8443/tcp   # Automation Controller (HTTPS)
+      - 8444/tcp   # Automation Hub (HTTPS)
+      - 8445/tcp   # Event-Driven Ansible (HTTPS)
+      - 8446/tcp   # Platform Gateway (HTTPS)
+      - 27199/tcp  # Ansible Automation Platform (AAP) Receptor for mesh network control plane clustering
+    runtime: true
+    permanent: true
+    state: present

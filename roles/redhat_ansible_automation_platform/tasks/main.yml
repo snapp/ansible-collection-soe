@@ -1,0 +1,55 @@
+---
+
+- name: Red Hat Ansible Automation Platform (AAP) IdM Users
+  ansible.builtin.import_tasks: users.yml
+  tags:
+    - aap_identity_management
+    - idm_configure
+    - idm_users
+  when: redhat_ansible_automation_platform_idm_admin_password | length > 0
+
+- name: Red Hat Ansible Automation Platform (AAP) IdM Groups
+  ansible.builtin.import_tasks: groups.yml
+  tags:
+    - aap_identity_management
+    - idm_configure
+    - idm_groups
+  when: redhat_ansible_automation_platform_idm_admin_password | length > 0
+
+- name: Red Hat Ansible Automation Platform (AAP) IdM HBAC rules
+  ansible.builtin.import_tasks: hbac.yml
+  tags:
+    - aap_identity_management
+    - idm_configure
+    - idm_hbac
+  when: redhat_ansible_automation_platform_idm_admin_password | length > 0
+
+- name: Red Hat Ansible Automation Platform (AAP) Certificate
+  ansible.builtin.import_tasks: certificate.yml
+  tags:
+    - aap_identity_management
+    - idm_configure
+    - idm_service
+  when: redhat_ansible_automation_platform_idm_admin_password | length > 0
+
+- name: Red Hat Ansible Automation Platform (AAP) Installation
+  ansible.builtin.import_tasks: install.yml
+  tags: aap_install
+
+- name: Red Hat Ansible Automation Platform (AAP) Configuration
+  ansible.builtin.import_tasks: configure.yml
+  tags: aap_configure
+
+- name: Red Hat Ansible Automation Platform (AAP) Firewall
+  ansible.builtin.import_tasks: firewall.yml
+  tags:
+    - aap_firewall
+    - firewall
+  when: redhat_ansible_automation_platform_firewall_enabled
+
+- name: Red Hat Ansible Automation Platform (AAP) SCAP Remediation
+  ansible.builtin.import_tasks: scap.yml
+  tags:
+    - aap_scap
+    - scap
+  when: redhat_ansible_automation_platform_scap_profile is defined

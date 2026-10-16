@@ -1,0 +1,20 @@
+---
+minor_changes:
+  - >-
+    redhat_ansible_automation_platform - the two plays of the
+    ``redhat_ansible_automation_platform`` playbook became a single role, split
+    across ``tasks/users.yml``, ``groups.yml``, ``hbac.yml``,
+    ``certificate.yml``, ``install.yml`` and ``configure.yml``, with firewall and
+    SCAP delegated to ``infra.soe.firewall`` and ``infra.soe.redhat_scap``. The
+    containerized installer inputs handed to ``infra.aap_utilities`` live in
+    ``defaults/main/aap_installer.yml``.
+bugfixes:
+  - >-
+    redhat_ansible_automation_platform - restored the installer defaults, which
+    had been deleted wholesale. ``aap_service_user``,
+    ``aap_setup_prep_working_dir``, ``aap_setup_down_dest_dir``,
+    ``aap_gateway_validate_certs`` and ``aap_setup_ignore_preflight_errors`` were
+    read by the role but defined nowhere, and the ``aap_setup_*`` pins for the
+    RHEL version, AAP version and containerized install mode were gone, so
+    ``infra.aap_utilities`` silently fell back to its own defaults and installed
+    the wrong thing rather than failing.

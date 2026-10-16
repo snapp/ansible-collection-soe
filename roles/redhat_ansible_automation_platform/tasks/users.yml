@@ -1,0 +1,17 @@
+---
+
+- name: users | AAP IdM Users
+  ansible.builtin.include_role:
+    name: infra.soe.redhat_idm_users
+    apply:
+      tags:
+        - aap_identity_management
+        - idm_configure
+        - idm_users
+  vars:
+    redhat_idm_users_admin_password: "{{ redhat_ansible_automation_platform_idm_admin_password }}"
+    redhat_idm_users: "{{ redhat_ansible_automation_platform_idm_users }}"
+  tags:
+    - aap_identity_management
+    - idm_configure
+    - idm_users
