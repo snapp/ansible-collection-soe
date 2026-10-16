@@ -1,0 +1,9 @@
+---
+breaking_changes:
+  - Playbook tags - renamed the ``sso_install`` tag to ``keycloak_install`` so the
+    Keycloak install/configure lifecycle tags share a common prefix, and removed
+    the redundant synonym tags ``identity_management``, ``ansible_automation_platform``,
+    ``satellite_server`` and ``sso`` which always co-occurred with their canonical
+    short forms (``idm``, ``aap``, ``satellite``, ``keycloak``). Update any
+    ``--tags``/``--skip-tags`` invocations or AAP job templates that referenced the
+    removed or renamed tags.

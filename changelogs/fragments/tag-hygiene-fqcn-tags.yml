@@ -1,0 +1,13 @@
+---
+minor_changes:
+  - Playbook tags - removed the hand-added FQCN role tags (for example
+    ``redhat.rhel_idm.ipaserver``, ``redhat.satellite.activation_keys``,
+    ``redhat.rhbk.rhbk_client``, ``infra.aap_configuration.controller_license``,
+    ``redhat.rhel_system_roles.firewall``) that mirrored internal role names and
+    only added noise to ``ansible-playbook --list-tags`` output. Selection is
+    still covered by the domain, component and lifecycle tags; use a short local
+    tag if per-role targeting is needed.
+  - Playbook tags - dropped the redundant task tag ``install_satellite`` (the
+    enclosing play is already tagged ``satellite_install``) and the redundant
+    ``redhat_image_builder`` role tag (duplicated the play's ``image_builder``
+    tag).
