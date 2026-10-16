@@ -1,0 +1,12 @@
+---
+
+redhat_keycloak_local_users:
+  - name: "{{ redhat_keycloak_service_user }}"
+    uid: "{{ redhat_keycloak_service_user_id }}"
+    group: "{{ redhat_keycloak_service_group }}"
+    gid: "{{ redhat_keycloak_service_group_id }}"
+    groups: ''
+    comment: Keycloak Application Account
+    home: /opt
+    shell: /sbin/nologin
+    selinux_home_equivalent: false

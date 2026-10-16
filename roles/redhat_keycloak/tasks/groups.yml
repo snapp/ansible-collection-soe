@@ -1,0 +1,17 @@
+---
+
+- name: groups | RHBK IdM Groups
+  ansible.builtin.include_role:
+    name: infra.soe.redhat_idm_groups
+    apply:
+      tags:
+        - keycloak_identity_management
+        - idm_configure
+        - idm_groups
+  vars:
+    redhat_idm_groups_admin_password: "{{ redhat_keycloak_idm_admin_password }}"
+    redhat_idm_groups: "{{ redhat_keycloak_idm_groups }}"
+  tags:
+    - keycloak_identity_management
+    - idm_configure
+    - idm_groups

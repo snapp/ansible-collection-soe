@@ -1,0 +1,21 @@
+---
+
+# REDO| workaround redhat.rhbk.rhbk blindly evaluates a dynamic fact inside an always tag without a safety net
+- name: install | Ensure ansible_facts required by redhat.rhbk.rhbk have been gathered
+  tags:
+    - always
+  ansible.builtin.setup:
+    gather_subset:
+      - '!all'
+      - '!min'
+      - network
+
+- name: install | Red Hat Build of Keycloak (RHBK) Installation
+  ansible.builtin.import_role:
+    name: redhat.rhbk.rhbk
+  vars:
+    rhbk_admin_user: "{{ redhat_keycloak_admin_user }}"
+    rhbk_admin_password: "{{ redhat_keycloak_admin_password }}"
+    rhbk_service_user: "{{ redhat_keycloak_service_user }}"
+    rhbk_service_group: "{{ redhat_keycloak_service_group }}"
+  tags: keycloak_install

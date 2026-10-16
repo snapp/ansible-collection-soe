@@ -1,0 +1,15 @@
+---
+
+- name: firewall | RHBK Firewall
+  ansible.builtin.include_role:
+    name: infra.soe.firewall
+    apply:
+      tags:
+        - keycloak_firewall
+        - firewall
+  vars:
+    firewall_enabled: "{{ redhat_keycloak_firewall_enabled }}"
+    firewall: "{{ redhat_keycloak_firewall }}"
+  tags:
+    - keycloak_firewall
+    - firewall

@@ -1,0 +1,24 @@
+---
+
+- name: scap | Load SCAP profile specific variables
+  ansible.builtin.include_vars: "{{ __redhat_keycloak_scap_vars_file }}"
+  vars:
+    __redhat_keycloak_scap_vars_file: "{{ role_path }}/vars/scap/{{ redhat_keycloak_scap_profile | regex_replace('xccdf_org.*.content_profile_', '') }}.yml"
+  when:
+    - redhat_keycloak_scap_profile is defined
+    - __redhat_keycloak_scap_vars_file is file
+
+- name: scap | Security Content Automation Protocol (SCAP) Remediation
+  ansible.builtin.include_role:
+    name: infra.soe.redhat_scap
+    apply:
+      tags:
+        - keycloak_scap
+        - scap
+  vars:
+    redhat_scap_tailoring_title: "{{ redhat_keycloak_scap_tailoring_title | default(omit) }}"
+    redhat_scap_tailoring_description: "{{ redhat_keycloak_scap_tailoring_description | default(omit) }}"
+    redhat_scap_tailoring_exceptions: "{{ redhat_keycloak_scap_tailoring_exceptions | default([]) | list }}"
+  tags:
+    - keycloak_scap
+    - scap

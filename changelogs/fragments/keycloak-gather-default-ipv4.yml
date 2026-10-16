@@ -1,0 +1,9 @@
+---
+bugfixes:
+  - >-
+    redhat_keycloak - ``redhat.rhbk.rhbk`` defaults ``rhbk_jgroups_bind_address``
+    to ``ansible_default_ipv4.address`` in its argument spec and validates it
+    under the ``always`` tag, so any tag-filtered job that reached the Keycloak
+    install without gathered facts failed with ``'ansible_default_ipv4' is
+    undefined``. The role now gathers the ``network`` fact subset under the
+    ``always`` tag immediately before importing it.

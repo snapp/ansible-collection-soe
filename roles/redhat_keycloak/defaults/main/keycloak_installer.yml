@@ -1,0 +1,17 @@
+---
+
+redhat_keycloak_service_user: rhbk
+redhat_keycloak_service_user_id: 900
+
+redhat_keycloak_service_group: "{{ redhat_keycloak_service_user }}"
+redhat_keycloak_service_group_id: "{{ redhat_keycloak_service_user_id }}"
+
+# The bootstrap admin created at install time and reused to configure realms.
+# Named rhbk_bootstrap_admin_user/_password in inventory before this role
+# existed; both names are still accepted.
+redhat_keycloak_admin_user: "{{ rhbk_bootstrap_admin_user | default('admin') }}"
+redhat_keycloak_admin_password: "{{ rhbk_bootstrap_admin_password | default('') }}"
+
+redhat_keycloak_base_url: "{{ keycloak_base_url | default(omit) }}"
+
+redhat_keycloak_primary_realm: "{{ keycloak_primary_realm | default(omit) }}"

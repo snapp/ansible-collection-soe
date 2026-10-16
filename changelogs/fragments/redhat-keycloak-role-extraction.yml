@@ -1,0 +1,36 @@
+---
+minor_changes:
+  - >-
+    redhat_keycloak - the two plays of the ``redhat_keycloak`` playbook became a
+    single role, split across ``tasks/local_users.yml``, ``users.yml``,
+    ``groups.yml``, ``hbac.yml``, ``certificate.yml``, ``install.yml`` and
+    ``configure.yml``, with firewall and SCAP delegated to ``infra.soe.firewall``
+    and ``infra.soe.redhat_scap``.
+  - >-
+    redhat_keycloak - added ``tasks/hbac.yml``, so the
+    ``redhat_keycloak_idm_hbac_rules`` default is actually applied. It was
+    previously defined but consumed by nothing, leaving Keycloak the only
+    IdM-integrated product role without an HBAC rule.
+  - >-
+    redhat_keycloak - the role now asserts that
+    ``redhat_keycloak_admin_password`` is set before installing, rather than
+    failing part-way through with an undefined variable or an authentication
+    error against the new realm.
+bugfixes:
+  - >-
+    redhat_keycloak - ``redhat_keycloak_admin_user`` and
+    ``redhat_keycloak_admin_password`` were read by both ``tasks/install.yml``
+    and ``tasks/configure.yml`` but defined nowhere, so installing Keycloak
+    failed with an undefined-variable error. They now default from the
+    ``rhbk_bootstrap_admin_user`` and ``rhbk_bootstrap_admin_password`` names
+    used before the role existed.
+  - >-
+    redhat_keycloak - ``tasks/scap.yml`` passed three
+    ``redhat_keycloak_scap_tailoring_*`` variables unconditionally, but the role
+    ships no ``vars/scap/`` tailoring file to define them, so setting
+    ``redhat_keycloak_scap_profile`` failed with an undefined-variable error.
+    They are now optional; with no tailoring the shared SCAP role generates a
+    title and description and skips the tailoring file.
+  - >-
+    redhat_keycloak - the firewall dispatch task was labelled "Red Hat Satellite
+    Firewall".
