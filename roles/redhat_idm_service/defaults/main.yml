@@ -3,7 +3,7 @@
 
 redhat_idm_service_user: root
 
-redhat_idm_service_group: root
+redhat_idm_service_group: "{{ redhat_idm_service_user }}"
 
 redhat_idm_service_fqdn: "{{ inventory_hostname }}"
 
@@ -13,7 +13,7 @@ redhat_idm_service_principal: "HTTP/{{ redhat_idm_service_fqdn }}"
 
 redhat_idm_service_tls_enabled: false
 
-redhat_idm_service_tls_request_id: "idm_service"
+redhat_idm_service_tls_request_id: idm_service
 
 redhat_idm_service_tls_dir: "/etc/pki/{{ redhat_idm_service_tls_request_id }}"
 
