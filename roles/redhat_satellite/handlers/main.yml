@@ -1,0 +1,39 @@
+---
+
+- name: Reload sysctl
+  ansible.builtin.command:
+    cmd: 'sysctl -p /etc/sysctl.d/ipv6.conf'
+  changed_when: true
+
+- name: Rebuild Initial RAM Disk Image
+  ansible.builtin.command:
+    cmd: 'dracut -f'
+  changed_when: true
+
+- name: Wait for HTTPS to become available
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: 443
+    timeout: 120
+  listen: Verify Satellite Server certificate
+
+- name: Retrieve HTTPS certificate from Satellite Server
+  ansible.builtin.shell:
+    cmd: >-
+      openssl s_client
+      -connect 127.0.0.1:443
+      -showcerts
+      </dev/null
+  register: _redhat_satellite_ssl_result
+  changed_when: false
+  listen: Verify Satellite Server certificate
+
+- name: Verify Satellite Server HTTPS certificate
+  ansible.builtin.assert:
+    that:
+      - satellite_hostname in _redhat_satellite_ssl_result.stdout
+    fail_msg: >-
+      SSL certificate does not contain the expected hostname
+    success_msg: >-
+      SSL certificate confirmed
+  listen: Verify Satellite Server certificate

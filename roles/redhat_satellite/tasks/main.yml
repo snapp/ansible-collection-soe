@@ -1,0 +1,71 @@
+---
+
+- name: Red Hat Satellite IdM Users
+  ansible.builtin.import_tasks: users.yml
+  tags:
+    - satellite_identity_management
+    - idm_configure
+    - idm_users
+  when: redhat_satellite_idm_admin_password | length > 0
+
+- name: Red Hat Satellite IdM Groups
+  ansible.builtin.import_tasks: groups.yml
+  tags:
+    - satellite_identity_management
+    - idm_configure
+    - idm_groups
+  when: redhat_satellite_idm_admin_password | length > 0
+
+- name: Red Hat Satellite IdM HBAC rules
+  ansible.builtin.import_tasks: hbac.yml
+  tags:
+    - satellite_identity_management
+    - idm_configure
+    - idm_hbac
+  when: redhat_satellite_idm_admin_password | length > 0
+
+- name: Red Hat Satellite Network
+  ansible.builtin.import_tasks: network.yml
+  tags:
+    - satellite_network
+    - satellite_install
+
+- name: Red Hat Satellite Installation
+  ansible.builtin.import_tasks: install.yml
+  tags: satellite_install
+
+- name: Red Hat Satellite Realm
+  ansible.builtin.import_tasks: realm.yml
+  tags:
+    - satellite_identity_management
+    - idm_configure
+    - idm_realm
+  when:
+    - redhat_satellite_idm_admin_password | length > 0
+    - satellite_realms is defined and satellite_realms | length > 0
+
+- name: Red Hat Satellite Certificate
+  ansible.builtin.import_tasks: certificate.yml
+  tags:
+    - satellite_identity_management
+    - idm_configure
+    - idm_service
+  when: redhat_satellite_idm_admin_password | length > 0
+
+- name: Red Hat Satellite Configuration
+  ansible.builtin.import_tasks: configure.yml
+  tags: satellite_configure
+
+- name: Red Hat Satellite Firewall
+  ansible.builtin.import_tasks: firewall.yml
+  tags:
+    - satellite_firewall
+    - firewall
+  when: redhat_satellite_firewall_enabled
+
+- name: Red Hat Satellite SCAP Remediation
+  ansible.builtin.import_tasks: scap.yml
+  tags:
+    - satellite_scap
+    - scap
+  when: redhat_satellite_scap_profile is defined

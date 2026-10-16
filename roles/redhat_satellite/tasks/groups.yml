@@ -1,0 +1,17 @@
+---
+
+- name: groups | Red Hat Satellite IdM Groups
+  ansible.builtin.include_role:
+    name: infra.soe.redhat_idm_groups
+    apply:
+      tags:
+        - satellite_identity_management
+        - idm_configure
+        - idm_groups
+  vars:
+    redhat_idm_groups_admin_password: "{{ redhat_satellite_idm_admin_password }}"
+    redhat_idm_groups: "{{ redhat_satellite_idm_groups }}"
+  tags:
+    - satellite_identity_management
+    - idm_configure
+    - idm_groups

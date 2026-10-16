@@ -1,0 +1,17 @@
+---
+
+- name: hbac | Red Hat Satellite IdM HBAC rules
+  ansible.builtin.include_role:
+    name: infra.soe.redhat_idm_hbac
+    apply:
+      tags:
+        - satellite_identity_management
+        - idm_configure
+        - idm_hbac
+  vars:
+    redhat_idm_hbac_admin_password: "{{ redhat_satellite_idm_admin_password }}"
+    redhat_idm_hbac_rules: "{{ redhat_satellite_idm_hbac_rules }}"
+  tags:
+    - satellite_identity_management
+    - idm_configure
+    - idm_hbac

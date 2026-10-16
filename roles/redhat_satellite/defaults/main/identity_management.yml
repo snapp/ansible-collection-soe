@@ -1,0 +1,34 @@
+---
+
+# Setting either this or the un-namespaced idm_admin_password enables the IdM
+# integration below. Empty means the IdM tasks are skipped entirely.
+redhat_satellite_idm_admin_password: "{{ idm_admin_password | default('') }}"
+
+redhat_satellite_idm_service_principal: "HTTP/{{ inventory_hostname }}"
+redhat_satellite_idm_service_request_id: satellite_idm_service
+redhat_satellite_idm_service_tls_enabled: true
+redhat_satellite_idm_service_tls_sans: []
+
+redhat_satellite_idm_users:
+  - description: Satellite Automation Account
+    name:
+      username: satellite
+      first: Satellite
+      last: Automation
+      full: Satellite Automation Account
+    initials: SAA
+
+redhat_satellite_idm_groups:
+  - name: satellite-admins
+    description: Red Hat Satellite Administrators
+
+  - name: satellite-users
+    description: Red Hat Satellite Users
+
+redhat_satellite_idm_hbac_rules:
+  - name: allow_satellite
+    description: Allow users to access Red Hat Satellite
+    servicecategory: all
+    groups:
+      - satellite-admins
+      - satellite-users

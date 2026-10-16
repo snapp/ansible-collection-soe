@@ -1,0 +1,10 @@
+---
+
+- name: install | Satellite Server package
+  ansible.builtin.dnf:
+    name: satellite
+    update_cache: true
+
+- name: install | Run Satellite Installer
+  ansible.builtin.include_role:
+    name: redhat.satellite_operations.installer
