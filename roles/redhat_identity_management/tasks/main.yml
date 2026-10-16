@@ -1,0 +1,54 @@
+---
+
+- name: Ensure ansible_facts required by role have been gathered
+  ansible.builtin.import_tasks: set_vars.yml
+  tags:
+    - idm_install
+    - idm_network
+    - idm_configure
+    - idm_cleanup
+    - idm_firewall
+    - firewall
+    - idm_scap
+    - scap
+
+- name: Red Hat Identity Management (IdM) /etc/hosts
+  ansible.builtin.import_tasks: network.yml
+  tags:
+    - idm_install
+    - idm_network
+
+- name: Red Hat Identity Management (IdM) Server Installation
+  ansible.builtin.import_tasks: install_server.yml
+  tags:
+    - idm_install
+    - idm_server
+  when: "'idm_server' in group_names"
+
+- name: Red Hat Identity Management (IdM) Replica Installation
+  ansible.builtin.import_tasks: install_replica.yml
+  tags:
+    - idm_install
+    - idm_replica
+  when: "'idm_replica' in group_names"
+
+- name: Red Hat Identity Management (IdM) Configuration
+  ansible.builtin.import_tasks: configure.yml
+  tags: idm_configure
+  when: "'idm_server' in group_names"
+
+- name: Red Hat Identity Management (IdM) Cleanup
+  ansible.builtin.import_tasks: cleanup.yml
+  tags: idm_cleanup
+
+- name: Red Hat Identity Management (IdM) Firewall
+  ansible.builtin.import_tasks: firewall.yml
+  tags:
+    - idm_firewall
+    - firewall
+
+- name: Red Hat Identity Management (IdM) SCAP Remediation
+  ansible.builtin.import_tasks: scap.yml
+  tags:
+    - idm_scap
+    - scap

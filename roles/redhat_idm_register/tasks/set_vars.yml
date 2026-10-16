@@ -1,0 +1,6 @@
+---
+
+- name: set_vars | Gather Facts
+  ansible.builtin.setup:
+    gather_subset: "{{ __redhat_idm_register_required_facts_subsets }}"
+  when: not ansible_facts.keys() | list | intersect(__redhat_idm_register_required_facts) == __redhat_idm_register_required_facts

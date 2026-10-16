@@ -1,0 +1,9 @@
+---
+
+- name: Ensure ansible_facts required by role have been gathered
+  ansible.builtin.import_tasks: set_vars.yml
+  tags: idm_register
+
+- name: Red Hat Identity Management (IdM) Client Registration
+  ansible.builtin.import_tasks: register.yml
+  tags: idm_register

@@ -1,0 +1,28 @@
+---
+
+# The authorized kerberos principal used to join the IdM realm
+redhat_idm_register_admin_user: "{{ idm_admin_user | default('admin') }}"
+
+# The password for the IdM principal user
+redhat_idm_register_admin_password: "{{ idm_admin_password | default(omit) }}"
+
+# DNS domain that will be used for client installation
+redhat_idm_register_domain: "{{ idm_domain | default(omit) }}"
+
+# SSSD will be configured as a data source for subid
+redhat_idm_register_subid: "{{ idm_client_subid | default(true) | bool }}"
+
+# PAM will be configured to create a users home directory if it does not exist
+redhat_idm_register_mkhomedir: "{{ idm_client_mkhomedir | default(true) | bool }}"
+
+# Already joined or partly set-up client can be repaired
+redhat_idm_register_allow_repair: "{{ idm_client_allow_repair | default(false) | bool }}"
+
+# Settings will be forced even in the error case
+redhat_idm_register_force: "{{ idm_client_force | default(false) | bool }}"
+
+# Already enrolled host can join again
+redhat_idm_register_force_join: "{{ idm_client_force_join | default(false) | bool }}"
+
+# Create DNS A/AAAA records for each IP address on the client
+redhat_idm_register_all_ip_addresses: "{{ idm_client_all_ip_addresses | default(false) | bool }}"

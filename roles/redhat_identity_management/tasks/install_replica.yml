@@ -1,0 +1,32 @@
+---
+
+- name: install_replica | Red Hat Identity Management (IdM) Replica Installation
+  vars:
+    ipadm_password: "{{ redhat_identity_management_admin_password }}"
+    ipaadmin_password: "{{ redhat_identity_management_admin_password }}"
+  block:
+    - name: install_replica | Change umask to 022
+      ansible.builtin.lineinfile:
+        path: "{{ item }}"
+        regexp: '^umask 077'
+        line: umask 022
+      with_items:
+        - /etc/profile
+        - /etc/bashrc
+
+    - name: install_replica | Red Hat Identity Management (IdM) Replica Registration
+      ansible.builtin.import_role:
+        name: redhat.rhel_idm.ipaclient
+
+    - name: install_replica | Red Hat Identity Management (IdM) Replica Registration
+      ansible.builtin.import_role:
+        name: redhat.rhel_idm.ipareplica
+
+    - name: install_replica | Change umask back to 077
+      ansible.builtin.lineinfile:
+        path: "{{ item }}"
+        regexp: '^umask 022'
+        line: umask 077
+      with_items:
+        - /etc/profile
+        - /etc/bashrc

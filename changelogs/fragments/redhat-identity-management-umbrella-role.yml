@@ -1,0 +1,28 @@
+---
+minor_changes:
+  - >-
+    redhat_identity_management - the four plays of the
+    ``redhat_identity_management`` playbook became a single composing role, and
+    the playbook collapsed to a thin wrapper matching the Satellite, AAP,
+    Keycloak and Image Builder playbooks. The plays map onto lifecycle task
+    files - peer fact-gathering and ``/etc/hosts`` to ``tasks/network.yml``,
+    ``ipaserver`` to ``tasks/install_server.yml`` (gated on membership of the
+    ``idm_server`` group), ``ipaclient`` and ``ipareplica`` to
+    ``tasks/install_replica.yml`` (gated on ``idm_replica``), the kinit,
+    ``ipaconfig`` globals, password policies and DNS records to
+    ``tasks/configure.yml``, and the bootstrap-user scrub to
+    ``tasks/cleanup.yml``.
+  - >-
+    redhat_identity_management - the role maps its own admin password onto each
+    composed ``redhat_idm_*`` role explicitly, replacing the play-level
+    ``ipaadmin_password`` that the leaf roles previously read as a shared
+    variable. The leaf roles are also now referenced by FQCN rather than relying
+    on collection-local role resolution.
+breaking_changes:
+  - >-
+    redhat_identity_management - the playbook took its admin password from the
+    un-namespaced inventory variable ``idm_admin_password``; the role requires
+    ``redhat_identity_management_admin_password`` instead. No default is
+    provided, so an unset password is a visible failure rather than a silent
+    skip. Rename the variable in inventory, or map the old name onto the new one
+    in group_vars.

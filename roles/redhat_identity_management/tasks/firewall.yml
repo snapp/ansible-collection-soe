@@ -1,0 +1,16 @@
+---
+
+- name: firewall | Red Hat Identity Management (IdM) Firewall
+  ansible.builtin.include_role:
+    name: infra.soe.firewall
+    apply:
+      tags:
+        - idm_firewall
+        - firewall
+  vars:
+    firewall_enabled: "{{ redhat_identity_management_firewall_enabled }}"
+    firewall: "{{ redhat_identity_management_firewall }}"
+  tags:
+    - idm_firewall
+    - firewall
+  when: redhat_identity_management_firewall_enabled
