@@ -4,6 +4,91 @@ infra.soe Release Notes
 
 .. contents:: Topics
 
+v0.27.0
+=======
+
+Release Summary
+---------------
+
+This release restructures the collection around roles. Logic that previously
+lived inline in playbooks now lives in a role per product, each composed from
+shared concern roles for firewalling, SCAP remediation and Identity Management
+integration, with every playbook reduced to a thin wrapper. Two new feature
+roles are added, ``caddy`` and ``netbird``.
+
+Because of the restructuring this release carries a number of breaking changes,
+almost all of them variable and tag renames. The ``soe_`` prefix is gone from
+the collection's variables, the ``site_rhis`` playbook is now ``site``,
+``scap_remediation`` is now ``redhat_scap``, and playbooks select hosts with
+``target_hosts`` rather than ``target``. Review the Breaking Changes section
+before upgrading.
+
+This is deliberately a pre-1.0 release. The collection still lacks role
+documentation and argument specs for most roles and has no test suite, all of
+which should land before 1.0.0.
+
+Minor Changes
+-------------
+
+- Playbook tags - dropped the redundant task tag ``install_satellite`` (the enclosing play is already tagged ``satellite_install``) and the redundant ``redhat_image_builder`` role tag (duplicated the play's ``image_builder`` tag).
+- Playbook tags - removed the hand-added FQCN role tags (for example ``redhat.rhel_idm.ipaserver``, ``redhat.satellite.activation_keys``, ``redhat.rhbk.rhbk_client``, ``infra.aap_configuration.controller_license``, ``redhat.rhel_system_roles.firewall``) that mirrored internal role names and only added noise to ``ansible-playbook --list-tags`` output. Selection is still covered by the domain, component and lifecycle tags; use a short local tag if per-role targeting is needed.
+- caddy - new role and playbook deploying Caddy as a rootless Podman Quadlet under an IdM service account, as the site's TLS-terminating reverse proxy. Site blocks are supplied as raw Caddyfile fragments in ``caddy_domains`` and concatenated into the Caddyfile, so a service can publish its own block without the role needing to know about it. The role sets ``net.ipv4.ip_unprivileged_port_start`` from the lowest port in ``caddy_publish_ports`` so rootless Podman can bind 80 and 443, and enables the ``container_read_certs`` seboolean to let the container read the host trust bundle.
+- caddy - optional per-vhost oauth2-proxy sidecars via ``caddy_oauth2_proxies``, which put Keycloak SSO in front of applications that have no OIDC support of their own. Each entry becomes a Quadlet container acting as the OIDC client for one vhost, reached by Caddy's ``forward_auth`` directive over a private container network and never published to the host. Client id, client secret and cookie secret are held as Podman secrets. Access is gated on the ``groups`` claim via ``allowed_groups``, which takes bare group names because the realm's group mappers set ``full.path: false``.
+- firewall - added support for firewalld policy objects via ``firewall_policies``, each rendered to ``/etc/firewalld/policies/<name>.xml`` and validated for a well-formed name, non-empty ingress and egress zones, and a known target and state.
+- firewall - the nftables quiet-drop rules are now templated from ``firewall_quiet_drops`` with ``input`` and ``forward`` chain support and matching on ``iifname``, ``oifname``, ``saddr``, ``daddr``, ``sport``, ``dport``, ``icmp_type`` and ``ct_state``, replacing a single hardcoded rule.
+- firewall - the role now ships ``defaults/main.yml`` documenting its full variable contract. ``firewall_enabled`` defaults to ``false``, so targeting a host with the role is not on its own enough to start filtering its traffic.
+- local_storage, redhat_register, redhat_update, application_server, redhat_cockpit - the inline logic of these playbooks moved into roles of the same name, leaving each playbook a thin wrapper. Behaviour is unchanged apart from the variable renames noted below.
+- netbird - ``files/caddy_netbird.conf`` is a reference Caddyfile site block for use in the ``caddy`` role's ``caddy_domains``, routing the gRPC paths over h2c to the server and the single-page app to the dashboard. It is documentation, not something the role deploys.
+- netbird - new role and playbook deploying a self-hosted NetBird WireGuard mesh VPN control plane as rootless Podman Quadlets: the combined ``netbird-server`` (management, signal, relay and an embedded Dex IdP) and the dashboard, on their own container network. Keycloak is wired in as an external OIDC connector behind Dex rather than as the dashboard's direct identity provider.
+- netbird - the role registers ``netbird_home_dir`` as a ``/home`` equivalent with ``community.general.sefcontext`` so the rootless container store is labelled ``container_file_t`` even though it lives outside ``/home``, and relabels any store left behind by an earlier run that predated the mapping.
+- redhat_ansible_automation_platform - the two plays of the ``redhat_ansible_automation_platform`` playbook became a single role, split across ``tasks/users.yml``, ``groups.yml``, ``hbac.yml``, ``certificate.yml``, ``install.yml`` and ``configure.yml``, with firewall and SCAP delegated to ``infra.soe.firewall`` and ``infra.soe.redhat_scap``. The containerized installer inputs handed to ``infra.aap_utilities`` live in ``defaults/main/aap_installer.yml``.
+- redhat_cockpit, redhat_keycloak - IdM composition converged on the same shape as the other product roles: a per-concern ``tasks/`` shim that calls the relevant ``infra.soe.redhat_idm_*`` role through ``include_role`` and maps the caller's namespaced variables onto the leaf role's. Previously each playbook set a play-level ``ipaadmin_password`` that the leaf roles read as a shared variable, which meant every role in a play had to use the same IdM identity.
+- redhat_identity_management - the four plays of the ``redhat_identity_management`` playbook became a single composing role, and the playbook collapsed to a thin wrapper matching the Satellite, AAP, Keycloak and Image Builder playbooks. The plays map onto lifecycle task files - peer fact-gathering and ``/etc/hosts`` to ``tasks/network.yml``, ``ipaserver`` to ``tasks/install_server.yml`` (gated on membership of the ``idm_server`` group), ``ipaclient`` and ``ipareplica`` to ``tasks/install_replica.yml`` (gated on ``idm_replica``), the kinit, ``ipaconfig`` globals, password policies and DNS records to ``tasks/configure.yml``, and the bootstrap-user scrub to ``tasks/cleanup.yml``.
+- redhat_identity_management - the role maps its own admin password onto each composed ``redhat_idm_*`` role explicitly, replacing the play-level ``ipaadmin_password`` that the leaf roles previously read as a shared variable. The leaf roles are also now referenced by FQCN rather than relying on collection-local role resolution.
+- redhat_image_builder - the role's single ``tasks/main.yml`` was split into ``set_vars.yml``, ``groups.yml``, ``hbac.yml``, ``install.yml``, ``configure.yml`` and ``scap.yml``, and it gained a ``meta/argument_specs.yml``. The playbook no longer inlines the ``redhat_idm_groups`` and ``redhat_idm_hbac`` roles.
+- redhat_keycloak - added ``tasks/hbac.yml``, so the ``redhat_keycloak_idm_hbac_rules`` default is actually applied. It was previously defined but consumed by nothing, leaving Keycloak the only IdM-integrated product role without an HBAC rule.
+- redhat_keycloak - the role now asserts that ``redhat_keycloak_admin_password`` is set before installing, rather than failing part-way through with an undefined variable or an authentication error against the new realm.
+- redhat_keycloak - the two plays of the ``redhat_keycloak`` playbook became a single role, split across ``tasks/local_users.yml``, ``users.yml``, ``groups.yml``, ``hbac.yml``, ``certificate.yml``, ``install.yml`` and ``configure.yml``, with firewall and SCAP delegated to ``infra.soe.firewall`` and ``infra.soe.redhat_scap``.
+- redhat_satellite - added defaults for ``redhat_satellite_idm_groups`` and ``redhat_satellite_idm_hbac_rules``, matching the shape already shipped by ``redhat_ansible_automation_platform`` and ``redhat_image_builder``. They create ``satellite-admins`` and ``satellite-users`` groups and an ``allow_satellite`` HBAC rule covering both.
+- redhat_satellite - dropped the dependency on the ``redhat.satellite.host_collections`` role, which is not part of the published ``redhat.satellite`` collection, in favour of looping the published ``redhat.satellite.host_collection`` module over ``satellite_host_collections``. The collection no longer needs a patched ``redhat.satellite`` to run the Satellite playbook.
+- redhat_satellite - the three plays of the ``redhat_satellite`` playbook became a single role, with the lifecycle split across ``tasks/network.yml``, ``install.yml``, ``realm.yml``, ``certificate.yml`` and ``configure.yml``, and the firewall and SCAP concerns delegated to ``infra.soe.firewall`` and ``infra.soe.redhat_scap``.
+- redhat_scap - SCAP remediation is now available both as a standalone playbook and as a per-product concern. Product roles that define a ``<role>_scap_profile`` load their own CIS tailoring from ``vars/scap/<profile>.yml`` and delegate to this role, so exemptions can be justified and reviewed per product rather than in one site-wide list.
+- site - the playbook gained the ``caddy``, ``netbird`` and ``reboot`` imports, and ``firewall`` moved to second-to-last so that host firewalling is applied after the services that declare their own ports have been installed.
+
+Breaking Changes / Porting Guide
+--------------------------------
+
+- Playbook tags - renamed the ``sso_install`` tag to ``keycloak_install`` so the Keycloak install/configure lifecycle tags share a common prefix, and removed the redundant synonym tags ``identity_management``, ``ansible_automation_platform``, ``satellite_server`` and ``sso`` which always co-occurred with their canonical short forms (``idm``, ``aap``, ``satellite``, ``keycloak``). Update any ``--tags``/``--skip-tags`` invocations or AAP job templates that referenced the removed or renamed tags.
+- Renamed the ``site_rhis`` playbook to ``site``. Update any references from ``infra.soe.site_rhis`` to ``infra.soe.site``.
+- firewall - the inline logic of the ``firewall`` playbook moved into a new ``infra.soe.firewall`` role, and its inventory variables lost the ``soe_`` prefix - ``soe_firewall_enabled`` is now ``firewall_enabled``, ``soe_firewall`` is now ``firewall``, and ``soe_firewall_log_denied`` is now ``firewall_log_denied``. Rename these in inventory and group_vars.
+- firewall - the pass-through of ``soe_firewall_disable_conflicting_services`` to ``redhat.rhel_system_roles.firewall`` was removed; that role's own default now governs the behaviour. Set ``firewall_disable_conflicting_services`` directly if the previous override is still wanted.
+- playbooks - the host-selection variable is now ``target_hosts`` rather than ``target``, and each playbook defaults it to the inventory group matching its purpose instead of to ``all``.
+- redhat_cockpit - ``soe_redhat_cockpit_enabled`` and ``soe_redhat_cockpit_port`` are now ``redhat_cockpit_enabled`` and ``redhat_cockpit_port``.
+- redhat_cockpit, redhat_keycloak - the IdM inputs are namespaced per role. ``redhat_cockpit_idm_admin_password`` and ``redhat_keycloak_idm_admin_password`` replace the generic ``idm_admin_password``, and ``redhat_keycloak_idm_users`` and ``redhat_keycloak_idm_groups`` replace the bare ``redhat_idm_users`` and ``redhat_idm_groups``. Both passwords fall back to ``idm_admin_password`` when unset, so existing inventories keep working, but the user and group lists must be renamed.
+- redhat_identity_management - the playbook took its admin password from the un-namespaced inventory variable ``idm_admin_password``; the role requires ``redhat_identity_management_admin_password`` instead. No default is provided, so an unset password is a visible failure rather than a silent skip. Rename the variable in inventory, or map the old name onto the new one in group_vars.
+- redhat_scap - the ``scap_remediation`` playbook was replaced by ``redhat_scap``, backed by a new ``infra.soe.redhat_scap`` role. Update any references to ``infra.soe.scap_remediation`` and rename the inventory variables, which lost their bare ``scap_`` prefix in favour of ``redhat_scap_`` - for example ``scap_profile`` is now ``redhat_scap_profile``.
+- redhat_update - the role variables lost their ``soe_`` prefix: ``soe_redhat_update_enabled``, ``soe_redhat_update_bugfix``, ``soe_redhat_update_reboot_enabled``, ``soe_redhat_update_update_cache`` and ``soe_redhat_update_update_only`` are now the same names without the prefix. Rename them in inventory and group_vars.
+- site - the site playbook no longer runs a site-wide SCAP pass. It previously ended by importing ``scap_remediation.yml``, which remediated every host against one profile. SCAP is now a per-product concern: the ``redhat_identity_management``, ``redhat_satellite``, ``redhat_keycloak``, ``redhat_ansible_automation_platform`` and ``redhat_image_builder`` roles each remediate with their own tailoring when a ``<role>_scap_profile`` is set. Hosts that are not covered by one of those roles are no longer remediated by ``site``; run the ``redhat_scap`` playbook against them, or add it back to your own site playbook.
+
+Bugfixes
+--------
+
+- redhat_ansible_automation_platform - restored the installer defaults, which had been deleted wholesale. ``aap_service_user``, ``aap_setup_prep_working_dir``, ``aap_setup_down_dest_dir``, ``aap_gateway_validate_certs`` and ``aap_setup_ignore_preflight_errors`` were read by the role but defined nowhere, and the ``aap_setup_*`` pins for the RHEL version, AAP version and containerized install mode were gone, so ``infra.aap_utilities`` silently fell back to its own defaults and installed the wrong thing rather than failing.
+- redhat_cockpit - ``tasks/certificate.yml`` read ``redhat_cockpit_idm_service_tls_request_id``, but the role defines ``redhat_cockpit_idm_service_request_id``, so requesting the Cockpit TLS certificate from IdM failed with an undefined-variable error. Every other product role already used the name without the ``tls_`` infix.
+- redhat_image_builder - the IdM group and HBAC composition is now gated on an admin password being set, matching ``redhat_ansible_automation_platform`` and ``redhat_satellite``. Previously it ran unconditionally, so a consumer that set ``redhat_image_builder_idm_groups`` or ``redhat_image_builder_idm_hbac_rules`` without an admin password failed with an undefined-variable error.
+- redhat_keycloak - ``redhat.rhbk.rhbk`` defaults ``rhbk_jgroups_bind_address`` to ``ansible_default_ipv4.address`` in its argument spec and validates it under the ``always`` tag, so any tag-filtered job that reached the Keycloak install without gathered facts failed with ``'ansible_default_ipv4' is undefined``. The role now gathers the ``network`` fact subset under the ``always`` tag immediately before importing it.
+- redhat_keycloak - ``redhat_keycloak_admin_user`` and ``redhat_keycloak_admin_password`` were read by both ``tasks/install.yml`` and ``tasks/configure.yml`` but defined nowhere, so installing Keycloak failed with an undefined-variable error. They now default from the ``rhbk_bootstrap_admin_user`` and ``rhbk_bootstrap_admin_password`` names used before the role existed.
+- redhat_keycloak - ``tasks/scap.yml`` passed three ``redhat_keycloak_scap_tailoring_*`` variables unconditionally, but the role ships no ``vars/scap/`` tailoring file to define them, so setting ``redhat_keycloak_scap_profile`` failed with an undefined-variable error. They are now optional; with no tailoring the shared SCAP role generates a title and description and skips the tailoring file.
+- redhat_keycloak - the firewall dispatch task was labelled "Red Hat Satellite Firewall".
+- redhat_satellite - ``tasks/groups.yml`` and ``tasks/hbac.yml`` consumed ``redhat_satellite_idm_groups`` and ``redhat_satellite_idm_hbac_rules`` without either being defined anywhere, so enabling the IdM integration failed with an undefined-variable error. Both now have defaults.
+- redhat_satellite - replaced the hardcoded ``/etc/pki/satellite_idm_service/`` certificate path in ``tasks/certificate.yml`` with ``/etc/pki/{{ redhat_satellite_idm_service_request_id }}/``, the same variable the ``redhat_idm_service`` dependency uses to compute its TLS directory. Previously the path was a literal string that only matched by coincidence with the default ``redhat_satellite_idm_service_request_id`` value, so changing that variable would have silently broken certificate lookup.
+- redhat_scap - removed an unconditional, untagged debug task that printed the SCAP profile on every run.
+
+Known Issues
+------------
+
+- netbird - the role sets file ownership from ``netbird_service_user`` but does not create that account, so it must exist on the target host before the role runs. The IdM users and groups dependencies drafted for this were left out because their inputs were never defined.
+
 v0.26.1
 =======
 
