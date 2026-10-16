@@ -1,0 +1,16 @@
+---
+
+application_server_firewall_enabled: true
+
+# https://console.redhat.com/ansible/automation-hub/repo/published/redhat/rhel_system_roles/content/role/firewall/
+application_server_firewall:
+  - service: application_server
+    short: Application Server
+    description: |-
+      Application Server
+    port:
+      - 80/tcp           # Hypertext Transfer Protocol (HTTP)
+      - 443/tcp          # Hypertext Transfer Protocol Secure (HTTPS)
+    runtime: true
+    permanent: true
+    state: present

@@ -1,0 +1,35 @@
+---
+minor_changes:
+  - >-
+    local_storage, redhat_register, redhat_update, application_server,
+    redhat_cockpit - the inline logic of these playbooks moved into roles of the
+    same name, leaving each playbook a thin wrapper. Behaviour is unchanged
+    apart from the variable renames noted below.
+  - >-
+    redhat_image_builder - the role's single ``tasks/main.yml`` was split into
+    ``set_vars.yml``, ``groups.yml``, ``hbac.yml``, ``install.yml``,
+    ``configure.yml`` and ``scap.yml``, and it gained a
+    ``meta/argument_specs.yml``. The playbook no longer inlines the
+    ``redhat_idm_groups`` and ``redhat_idm_hbac`` roles.
+breaking_changes:
+  - >-
+    redhat_update - the role variables lost their ``soe_`` prefix:
+    ``soe_redhat_update_enabled``, ``soe_redhat_update_bugfix``,
+    ``soe_redhat_update_reboot_enabled``, ``soe_redhat_update_update_cache`` and
+    ``soe_redhat_update_update_only`` are now the same names without the prefix.
+    Rename them in inventory and group_vars.
+  - >-
+    redhat_cockpit - ``soe_redhat_cockpit_enabled`` and
+    ``soe_redhat_cockpit_port`` are now ``redhat_cockpit_enabled`` and
+    ``redhat_cockpit_port``.
+  - >-
+    playbooks - the host-selection variable is now ``target_hosts`` rather than
+    ``target``, and each playbook defaults it to the inventory group matching its
+    purpose instead of to ``all``.
+bugfixes:
+  - >-
+    redhat_cockpit - ``tasks/certificate.yml`` read
+    ``redhat_cockpit_idm_service_tls_request_id``, but the role defines
+    ``redhat_cockpit_idm_service_request_id``, so requesting the Cockpit TLS
+    certificate from IdM failed with an undefined-variable error. Every other
+    product role already used the name without the ``tls_`` infix.

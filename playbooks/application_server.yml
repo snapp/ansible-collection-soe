@@ -1,54 +1,12 @@
 ---
 
-- name: Configure Application Server
-  hosts: application_server
-  gather_facts: true
+- name: Application Server
+  hosts: "{{ target_hosts | default('application_server') }}"
+  gather_facts: false
   become: true
   tags:
     - redhat
-    - application_server
-  vars:
-    ipaadmin_password: "{{ idm_admin_password }}"
-  pre_tasks:
-    - name: Check if system is ostree
-      ansible.builtin.stat:
-        path: /run/ostree-booted
-      register: __application_server_ostree_booted_stat
-
-    - name: Install Podman (Standard RHEL/Fedora)
-      ansible.builtin.dnf:
-        name: podman
-        state: present
-      when: not __application_server_ostree_booted_stat.stat.exists
-      tags: podman
-
-    - name: Install Podman (OSTree)
-      community.general.rpm_ostree_pkg:
-        name:
-          - podman
-          - python3-rpm  # required for redhat.rhel_system_roles.podman package_facts
-          # https://docs.ansible.com/projects/ansible-core/2.16/playbook_guide/playbooks_privilege_escalation.html#risks-of-becoming-an-unprivileged-user
-          - acl          # required for ansible unprivileged user management
-        state: present
-      register: __application_server_ostree_package_install
-      when: __application_server_ostree_booted_stat.stat.exists
-
-    - name: Reboot host following ostree package install
-      ansible.builtin.reboot:
-      when:
-        - __application_server_ostree_booted_stat.stat.exists
-        - __application_server_ostree_package_install.changed
+    - fedora
+    - app_server
   roles:
-    - role: redhat_idm_users
-      run_once: true
-      when: idm_admin_password is defined
-      tags:
-        - redhat_idm_users
-        - idm_configure
-
-    - role: redhat_idm_groups
-      run_once: true
-      when: idm_admin_password is defined
-      tags:
-        - redhat_idm_groups
-        - idm_configure
+    - infra.soe.application_server

@@ -1,0 +1,5 @@
+---
+
+- name: Reload SELinux Policy
+  ansible.builtin.command: semodule -R
+  changed_when: true

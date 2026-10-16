@@ -1,0 +1,10 @@
+---
+bugfixes:
+  - >-
+    redhat_image_builder - the IdM group and HBAC composition is now gated on an
+    admin password being set, matching
+    ``redhat_ansible_automation_platform`` and ``redhat_satellite``. Previously
+    it ran unconditionally, so a consumer that set
+    ``redhat_image_builder_idm_groups`` or
+    ``redhat_image_builder_idm_hbac_rules`` without an admin password failed with
+    an undefined-variable error.

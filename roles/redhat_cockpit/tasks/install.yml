@@ -1,0 +1,32 @@
+---
+
+- name: install | Ensure cockpit systemd units are not masked
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    masked: false
+  loop:
+    - cockpit.service
+    - cockpit.socket
+
+# https://access.redhat.com/solutions/2761591
+- name: install | Enable SELinux context on Cockpit Web Console port
+  redhat.rhel_system_roles.seport:
+    ports: "{{ redhat_cockpit_port | default(9090) }}"
+    proto: tcp
+    setype: websm_port_t
+    state: present
+  notify: Reload SELinux Policy
+  when: (cockpit_port | default(9090)) | int != 443
+
+- name: install | Allow websm_port_t on port 443 (Cockpit on HTTPS default port)
+  redhat.rhel_system_roles.seport:
+    ports: 443
+    proto: tcp
+    setype: websm_port_t
+    state: present
+  notify: Reload SELinux Policy
+  when: (cockpit_port | default(9090)) | int == 443
+
+- name: install | Run Cockpit Installer
+  ansible.builtin.include_role:
+    name: redhat.rhel_system_roles.cockpit

@@ -1,0 +1,77 @@
+---
+
+- name: configure | Add Image Builder users to local weldr group
+  ansible.builtin.shell:
+    cmd: |
+      set -euo pipefail
+      if ! id -nG "{{ item }}" | grep -qw weldr; then
+        gpasswd -a "{{ item }}" weldr
+        echo "CHANGED"
+      fi
+  args:
+    executable: /bin/bash
+  loop: "{{ redhat_image_builder_users | default([]) }}"
+  register: _redhat_image_builder_gpasswd_result
+  changed_when: "'CHANGED' in _redhat_image_builder_gpasswd_result.stdout"
+
+- name: configure | Check if Satellite CA is present
+  ansible.builtin.stat:
+    path: /etc/rhsm/ca/katello-server-ca.pem
+  register: _redhat_image_builder_satellite_ca
+
+- name: configure | Replace redhat-uep.pem with Satellite CA for osbuild-composer RHSM trust
+  ansible.builtin.copy:
+    src: /etc/rhsm/ca/katello-server-ca.pem
+    dest: /etc/rhsm/ca/redhat-uep.pem
+    remote_src: true
+    owner: root
+    group: root
+    mode: '0644'
+  when:
+    - _redhat_image_builder_satellite_ca.stat.exists
+    - redhat_image_builder_repositories is defined
+  notify: Restart Image Builder
+
+- name: configure | Find default osbuild-composer repository files targeting Red Hat CDN
+  ansible.builtin.find:
+    paths: /usr/share/osbuild-composer/repositories/
+    patterns: "rhel-*.json"
+  register: _redhat_image_builder_default_repo_files
+  when:
+    - _redhat_image_builder_satellite_ca.stat.exists
+    - redhat_image_builder_satellite.baseurl is defined
+
+- name: configure | Remove RHEL Image Builder repositories that target Red Hat CDN
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ _redhat_image_builder_default_repo_files.files }}"
+  when:
+    - _redhat_image_builder_satellite_ca.stat.exists
+    - redhat_image_builder_repositories is defined
+  notify: Restart Image Builder
+
+- name: configure | Create Image Builder Repositories Directory
+  ansible.builtin.file:
+    path: /etc/osbuild-composer/repositories
+    state: directory
+    owner: root
+    mode: '0755'
+  loop:
+    - /etc/osbuild-composer
+    - /etc/osbuild-composer/repositories
+  when:
+    - _redhat_image_builder_satellite_ca.stat.exists
+    - redhat_image_builder_repositories is defined
+
+- name: configure | Define Image Builder Repositories
+  ansible.builtin.template:
+    src: templates/rhel.json.j2
+    dest: /etc/osbuild-composer/repositories/{{ item.name }}.json
+    owner: root
+    mode: '0644'
+  loop: "{{ redhat_image_builder_repositories }}"
+  when:
+    - _redhat_image_builder_satellite_ca.stat.exists
+    - redhat_image_builder_repositories is defined
+  notify: Restart Image Builder

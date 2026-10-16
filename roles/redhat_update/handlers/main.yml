@@ -1,0 +1,6 @@
+---
+
+- name: Reboot host following patch update
+  ansible.builtin.reboot:
+  # FIXME|2024-05-01| create a proper collection scoped variable for the `reboot_enabled` boolean
+  when: redhat_update_reboot_enabled | default(false)

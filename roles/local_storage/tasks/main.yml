@@ -1,0 +1,19 @@
+---
+
+- name: Ensure LVM Physical Volume is using all available space
+  ansible.builtin.command: /bin/growpart {{ local_storage_pv.device }} {{ local_storage_pv.partition }}
+  register: __local_storage_growpart_result
+  changed_when: "'CHANGED' in __local_storage_growpart_result.stdout"
+  failed_when: >
+    __local_storage_growpart_result.rc != 0 and
+    'NOCHANGE' not in __local_storage_growpart_result.stdout
+  when:
+    - local_storage_pv is defined
+    - local_storage_pv.partition is defined
+
+- name: Configure Logical Volumes
+  ansible.builtin.import_role:
+    name: redhat.rhel_system_roles.storage
+  vars:
+    storage_pools: "{{ local_storage_lv | default(omit) }}"
+  when: local_storage_lv is defined

@@ -1,0 +1,16 @@
+---
+
+# Setting either this or the un-namespaced idm_admin_password enables the IdM
+# integration below. Empty means the IdM tasks are skipped entirely.
+redhat_image_builder_idm_admin_password: "{{ idm_admin_password | default('') }}"
+
+redhat_image_builder_idm_groups:
+  - name: imagebuilder-users
+    description: Image Builder Users
+
+redhat_image_builder_idm_hbac_rules:
+  - name: allow_image_builder
+    description: Allow users to access Image Builder
+    servicecategory: all
+    groups:
+      - imagebuilder-users

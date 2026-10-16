@@ -1,0 +1,11 @@
+---
+
+# https://redhat-cop.github.io/automation-good-practices/#_platform_specific_variables
+__redhat_image_builder_required_facts:
+  - architecture
+  - distribution
+  - distribution_major_version
+
+# ensure the minimum number of required facts are gathered by the 'gather_subset' parameter of the 'setup' module
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/setup_module.html#parameter-gather_subset
+__redhat_image_builder_required_facts_subsets: "{{ ['!all', '!min'] + __redhat_image_builder_required_facts }}"

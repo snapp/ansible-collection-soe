@@ -1,0 +1,17 @@
+---
+
+- name: hbac | Red Hat Image Builder IdM HBAC rules
+  ansible.builtin.include_role:
+    name: infra.soe.redhat_idm_hbac
+    apply:
+      tags:
+        - image_builder_identity_management
+        - idm_configure
+        - idm_hbac
+  vars:
+    redhat_idm_hbac_admin_password: "{{ redhat_image_builder_idm_admin_password }}"
+    redhat_idm_hbac_rules: "{{ redhat_image_builder_idm_hbac_rules }}"
+  tags:
+    - image_builder_identity_management
+    - idm_configure
+    - idm_hbac
