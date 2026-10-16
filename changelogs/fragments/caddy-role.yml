@@ -1,0 +1,21 @@
+---
+minor_changes:
+  - >-
+    caddy - new role and playbook deploying Caddy as a rootless Podman Quadlet
+    under an IdM service account, as the site's TLS-terminating reverse proxy.
+    Site blocks are supplied as raw Caddyfile fragments in ``caddy_domains`` and
+    concatenated into the Caddyfile, so a service can publish its own block
+    without the role needing to know about it. The role sets
+    ``net.ipv4.ip_unprivileged_port_start`` from the lowest port in
+    ``caddy_publish_ports`` so rootless Podman can bind 80 and 443, and enables
+    the ``container_read_certs`` seboolean to let the container read the host
+    trust bundle.
+  - >-
+    caddy - optional per-vhost oauth2-proxy sidecars via ``caddy_oauth2_proxies``,
+    which put Keycloak SSO in front of applications that have no OIDC support of
+    their own. Each entry becomes a Quadlet container acting as the OIDC client
+    for one vhost, reached by Caddy's ``forward_auth`` directive over a private
+    container network and never published to the host. Client id, client secret
+    and cookie secret are held as Podman secrets. Access is gated on the
+    ``groups`` claim via ``allowed_groups``, which takes bare group names because
+    the realm's group mappers set ``full.path: false``.

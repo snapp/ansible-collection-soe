@@ -1,0 +1,58 @@
+---
+
+- name: configure | Assert caddy_domains is provided
+  ansible.builtin.assert:
+    that:
+      - caddy_domains is defined and caddy_domains | length > 0
+    fail_msg: caddy_domains list is required for Caddy configuration
+
+- name: configure | Validate each caddy oauth2-proxy entry
+  ansible.builtin.assert:
+    that:
+      - __caddy_oauth2_proxy.name is defined
+      - __caddy_oauth2_proxy.name is match('^[a-z0-9-]+$')
+      - __caddy_oauth2_proxy.domain is defined and __caddy_oauth2_proxy.domain | length > 0
+      - __caddy_oauth2_proxy.allowed_groups is defined and __caddy_oauth2_proxy.allowed_groups | length > 0
+      - __caddy_oauth2_proxy.client_id is defined and __caddy_oauth2_proxy.client_id | length > 0
+      - __caddy_oauth2_proxy.client_secret is defined and __caddy_oauth2_proxy.client_secret | length > 0
+      - __caddy_oauth2_proxy.cookie_secret is defined and __caddy_oauth2_proxy.cookie_secret | length > 0
+    quiet: true
+    fail_msg: >-
+      Invalid caddy_oauth2_proxies entry '{{ __caddy_oauth2_proxy.name | default('<no name>') }}':
+      require a DNS-safe name (^[a-z0-9-]+$), a domain, a non-empty allowed_groups list,
+      and client_id / client_secret / cookie_secret.
+  loop: "{{ caddy_oauth2_proxies }}"
+  loop_control:
+    loop_var: __caddy_oauth2_proxy
+    label: "{{ __caddy_oauth2_proxy.name | default('?') }}"
+  no_log: "{{ no_log_enabled | default(true) }}"
+
+- name: configure | Ensure Caddy config directory exists
+  ansible.builtin.file:
+    path: "{{ caddy_config_dir }}"
+    state: directory
+    owner: "{{ caddy_service_user }}"
+    group: "{{ caddy_service_group }}"
+    mode: '0750'
+  become: true
+
+- name: configure | Deploy Caddy Configuration
+  ansible.builtin.copy:
+    dest: "{{ caddy_config_dir }}/Caddyfile"
+    owner: "{{ caddy_service_user }}"
+    group: "{{ caddy_service_group }}"
+    mode: '0644'
+    setype: container_file_t
+    content: |
+      {% for caddy_domain in caddy_domains %}
+      {{ caddy_domain }}
+      {% endfor %}
+  become: true
+  notify: Restart caddy
+
+- name: configure | Configure one oauth2-proxy per protected vhost
+  ansible.builtin.include_tasks: oauth2_proxy.yml
+  loop: "{{ caddy_oauth2_proxies }}"
+  loop_control:
+    loop_var: __caddy_oauth2_proxy
+    label: "{{ __caddy_oauth2_proxy.name }}"

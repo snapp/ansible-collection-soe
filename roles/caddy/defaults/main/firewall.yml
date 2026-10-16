@@ -1,0 +1,16 @@
+---
+
+caddy_firewall_enabled: true
+
+# https://console.redhat.com/ansible/automation-hub/collections/published/redhat/rhel_system_roles/documentation/role/firewall
+caddy_firewall:
+  - service: caddy
+    short: Caddy
+    description: Caddy Transport Layer Security (TLS) Reverse Proxy
+    port:
+      - 80/tcp   # TCP for IdM ACME challenge
+      - 443/tcp
+      - 443/udp  # HTTP/3 QUIC support
+    runtime: true
+    permanent: true
+    state: present

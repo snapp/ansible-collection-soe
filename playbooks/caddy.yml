@@ -1,0 +1,10 @@
+---
+
+- name: Caddy Transport Layer Security (TLS) Reverse Proxy
+  hosts: "{{ target_hosts | default('caddy') }}"
+  gather_facts: false
+  become: true
+  tags:
+    - caddy
+  roles:
+    - infra.soe.caddy
