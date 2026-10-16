@@ -1,0 +1,25 @@
+---
+minor_changes:
+  - >-
+    netbird - new role and playbook deploying a self-hosted NetBird WireGuard
+    mesh VPN control plane as rootless Podman Quadlets: the combined
+    ``netbird-server`` (management, signal, relay and an embedded Dex IdP) and
+    the dashboard, on their own container network. Keycloak is wired in as an
+    external OIDC connector behind Dex rather than as the dashboard's direct
+    identity provider.
+  - >-
+    netbird - the role registers ``netbird_home_dir`` as a ``/home`` equivalent
+    with ``community.general.sefcontext`` so the rootless container store is
+    labelled ``container_file_t`` even though it lives outside ``/home``, and
+    relabels any store left behind by an earlier run that predated the mapping.
+  - >-
+    netbird - ``files/caddy_netbird.conf`` is a reference Caddyfile site block
+    for use in the ``caddy`` role's ``caddy_domains``, routing the gRPC paths
+    over h2c to the server and the single-page app to the dashboard. It is
+    documentation, not something the role deploys.
+known_issues:
+  - >-
+    netbird - the role sets file ownership from ``netbird_service_user`` but does
+    not create that account, so it must exist on the target host before the role
+    runs. The IdM users and groups dependencies drafted for this were left out
+    because their inputs were never defined.

@@ -1,0 +1,18 @@
+---
+
+dependencies:
+  - name: Netbird Firewall
+    role: infra.soe.firewall
+    vars:
+      firewall_enabled: "{{ netbird_firewall_enabled }}"
+      firewall: "{{ netbird_firewall }}"
+    tags:
+      - netbird_firewall
+      - firewall
+    when: netbird_firewall_enabled
+
+# TODO|2026-10-16| Provision the netbird service account. The role consumes
+# netbird_service_user for file ownership but never creates it, so the account
+# must exist on the host beforehand. IdM users/groups dependencies were drafted
+# for this but their inputs (netbird_idm_users, netbird_idm_groups,
+# netbird_idm_admin_password) were never defined.

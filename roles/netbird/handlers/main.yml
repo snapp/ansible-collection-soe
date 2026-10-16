@@ -1,0 +1,17 @@
+---
+
+- name: Restart netbird-server
+  ansible.builtin.systemd:
+    name: netbird-server.service
+    state: restarted
+    scope: user
+  become: true
+  become_user: "{{ netbird_service_user }}"
+
+- name: Restart netbird-dashboard
+  ansible.builtin.systemd:
+    name: netbird-dashboard.service
+    state: restarted
+    scope: user
+  become: true
+  become_user: "{{ netbird_service_user }}"

@@ -1,0 +1,345 @@
+---
+
+- name: Assert required NetBird secrets are provided
+  ansible.builtin.assert:
+    that:
+      - netbird_relay_secret is defined and netbird_relay_secret | length > 0
+      - netbird_datastore_encryption_key is defined and netbird_datastore_encryption_key | length > 0
+      - netbird_session_cookie_key is defined and netbird_session_cookie_key | length > 0
+      - netbird_idp_client_secret is defined and netbird_idp_client_secret | length > 0
+    fail_msg: >-
+      One or more required secrets are missing. Provide them via AAP credential
+      injectors or -e extra_vars: netbird_relay_secret,
+      netbird_datastore_encryption_key, netbird_session_cookie_key,
+      netbird_idp_client_secret.
+    quiet: true
+
+- name: Allow containers to read host CA certificates (SELinux)
+  ansible.posix.seboolean:
+    name: container_read_certs
+    state: true
+    persistent: true
+  become: true
+
+# ---------------------------------------------------------------------------
+# The service user's home is outside /home (netbird_home_dir), so rootless
+# Podman's image store never receives container_file_t from container-selinux's
+# stock file-context rules. The confined container_t process is then denied read
+# on its own image layers (libc, python, netbird-server) and nothing starts.
+# Register the home as /home-equivalent so the store labels correctly, then
+# relabel any images a prior (broken) run already pulled.
+# ---------------------------------------------------------------------------
+- name: Register rootless container storage as /home-equivalent (SELinux)
+  community.general.sefcontext:
+    target: "{{ netbird_home_dir }}"
+    substitute: "/home/{{ netbird_service_user }}"
+    state: present
+  become: true
+  when: netbird_selinux_home_equivalent | bool
+  tags: netbird_selinux
+
+- name: Check whether rootless container storage already exists
+  ansible.builtin.stat:
+    path: "{{ netbird_home_dir }}/.local/share/containers"
+  become: true
+  register: netbird_container_storage
+  when: netbird_selinux_home_equivalent | bool
+  tags: netbird_selinux
+
+- name: Relabel pre-existing rootless container storage (SELinux)
+  ansible.builtin.command:
+    cmd: restorecon -R -v {{ netbird_home_dir }}
+  become: true
+  register: netbird_restorecon
+  changed_when: netbird_restorecon.stdout | length > 0
+  when:
+    - netbird_selinux_home_equivalent | bool
+    - netbird_container_storage.stat.exists | default(false)
+  tags: netbird_selinux
+
+- name: Ensure NetBird config directory exists
+  ansible.builtin.file:
+    path: "{{ netbird_config_dir }}"
+    state: directory
+    owner: "{{ netbird_service_user }}"
+    group: "{{ netbird_service_group }}"
+    mode: '0750'
+  become: true
+  tags: netbird_configure
+
+- name: Deploy Management configuration (config.yaml)
+  ansible.builtin.copy:
+    dest: "{{ netbird_config_dir }}/config.yaml"
+    owner: "{{ netbird_service_user }}"
+    group: "{{ netbird_service_group }}"
+    mode: '0600'
+    setype: container_file_t
+    content: |
+      server:
+        listenAddress: ":80"
+        exposedAddress: "https://{{ netbird_domain }}:443"
+        stuns:
+          - uri: "stun:{{ netbird_stun_publish_ip }}:{{ netbird_stun_port }}"
+            proto: "udp"
+        metricsPort: 9090
+        healthcheckAddress: ":9000"
+        logLevel: "info"
+        logFile: "console"
+
+        authSecret: "{{ netbird_relay_secret }}"
+        dataDir: "/var/lib/netbird"
+
+        auth:
+          issuer: "{{ netbird_oidc_issuer }}"
+          localAuthDisabled: {{ netbird_local_auth_disabled | bool | lower }}
+          signKeyRefreshEnabled: true
+          sessionCookieEncryptionKey: "{{ netbird_session_cookie_key }}"
+          dashboardRedirectURIs:
+            - "https://{{ netbird_domain }}/nb-auth"
+            - "https://{{ netbird_domain }}/nb-silent-auth"
+          cliRedirectURIs: {{ netbird_cli_redirect_urls | to_json }}
+
+        reverseProxy:
+          trustedHTTPProxies: {{ netbird_trusted_reverse_proxies | to_json }}
+
+        store:
+          engine: "sqlite"
+          encryptionKey: "{{ netbird_datastore_encryption_key }}"
+  become: true
+  no_log: "{{ no_log_enabled | default(true) }}"
+  notify: Restart netbird-server
+  tags: netbird_configure
+
+# Fixed, Dex-internal client id/secret pair — not RHBK's client id. The browser
+# only ever talks to netbird-server's own embedded Dex issuer; Dex brokers the
+# actual exchange with RHBK server-side once the RHBK connector is registered
+# (see the identity-providers tasks below).
+- name: Deploy Dashboard configuration (dashboard.env)
+  ansible.builtin.copy:
+    dest: "{{ netbird_config_dir }}/dashboard.env"
+    owner: "{{ netbird_service_user }}"
+    group: "{{ netbird_service_group }}"
+    mode: '0600'
+    setype: container_file_t
+    content: |
+      NETBIRD_MGMT_API_ENDPOINT={{ netbird_dashboard_url }}
+      NETBIRD_MGMT_GRPC_API_ENDPOINT={{ netbird_dashboard_url }}
+      AUTH_AUDIENCE=netbird-dashboard
+      AUTH_CLIENT_ID=netbird-dashboard
+      AUTH_CLIENT_SECRET=
+      AUTH_AUTHORITY={{ netbird_oidc_issuer }}
+      USE_AUTH0=false
+      AUTH_SUPPORTED_SCOPES=openid profile email groups
+      AUTH_REDIRECT_URI=/nb-auth
+      AUTH_SILENT_REDIRECT_URI=/nb-silent-auth
+      NGINX_SSL_PORT=443
+      LETSENCRYPT_DOMAIN=none
+  become: true
+  notify: Restart netbird-dashboard
+  tags: netbird_configure
+
+# - name: Open STUN port (firewalld)
+#   ansible.posix.firewalld:
+#     port: "{{ netbird_stun_port }}/udp"
+#     state: enabled
+#     permanent: true
+#     immediate: true
+#   become: true
+#   when: netbird_manage_firewall | bool
+#   tags: netbird_firewall
+
+# redhat.rhel_system_roles.podman writes each spec to
+# ~netbird/.config/containers/systemd/, runs `systemctl --user daemon-reload`,
+# and starts the units (podman_activate_systemd_unit). Running as the rootless
+# 'netbird' user keeps the whole stack off the root account.
+- name: Deploy NetBird Quadlet units
+  ansible.builtin.include_role:
+    name: redhat.rhel_system_roles.podman
+  vars:
+    podman_run_as_user: "{{ netbird_service_user }}"
+    podman_systemd_unit_scope: user
+    podman_activate_systemd_unit: true
+    podman_quadlet_specs:
+      # --- Isolated bridge network shared by the web-plane containers ---------
+      - name: netbird
+        type: network
+        state: started
+        file_content: |
+          [Network]
+          NetworkName=netbird
+          Label=app=netbird
+
+      # --- Persistent Management state (SQLite store, keys) -------------------
+      - name: netbird-server
+        type: volume
+        state: started
+        file_content: |
+          [Volume]
+          VolumeName=netbird-server
+          Label=app=netbird
+
+      # --- Combined management + signal + relay + embedded STUN/IdP ----------
+      - name: netbird-server
+        type: container
+        pull_image: "{{ podman_pull_image | bool | default(false) }}"
+        continue_if_pull_fails: true
+        state: started
+        file_content: |
+          [Unit]
+          Description=NetBird Server — management, signal, relay, embedded IdP
+          After=local-fs.target network-online.target
+          Wants=network-online.target
+
+          [Service]
+          Restart=on-failure
+          RestartSec=10
+          TimeoutStartSec=120
+
+          [Container]
+          ContainerName=netbird-server
+          Image={{ netbird_server_image }}
+          Network=netbird.network
+
+          {% for host in netbird_dns_static_hosts %}
+          AddHost={{ host }}
+          {% endfor %}
+
+          Exec=--config /etc/netbird/config.yaml
+
+          # Plain HTTP behind Caddy, which terminates TLS and forwards REST + gRPC (h2c).
+          Volume={{ netbird_config_dir }}/config.yaml:/etc/netbird/config.yaml:ro
+
+          # Persist the SQLite store and generated keys.
+          Volume=netbird-server.volume:/var/lib/netbird
+
+          {% for port in netbird_server_publish_ports %}
+          PublishPort={{ port }}
+          {% endfor %}
+          {% for port in netbird_stun_publish_ports %}
+          PublishPort={{ port }}
+          {% endfor %}
+
+          # Mount host consolidated trust bundle for IdM-signed certs
+          Volume=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:ro
+
+          # Ensure TLS stack can find the CA bundle
+          Environment=SSL_CERT_FILE=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+          Environment=REQUESTS_CA_BUNDLE=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+
+          [Install]
+          WantedBy=default.target
+
+      # --- Dashboard / Web UI ------------------------------------------------
+      - name: netbird-dashboard
+        type: container
+        pull_image: "{{ podman_pull_image | bool | default(false) }}"
+        continue_if_pull_fails: true
+        state: started
+        file_content: |
+          [Unit]
+          Description=NetBird Dashboard — web management UI
+          After=local-fs.target network-online.target
+          Wants=network-online.target
+
+          [Service]
+          Restart=on-failure
+          RestartSec=10
+          TimeoutStartSec=60
+
+          [Container]
+          ContainerName=netbird-dashboard
+          Image={{ netbird_dashboard_image }}
+          Network=netbird.network
+          EnvironmentFile={{ netbird_config_dir }}/dashboard.env
+
+          {% for port in netbird_dashboard_publish_ports %}
+          PublishPort={{ port }}
+          {% endfor %}
+
+          # Mount host consolidated trust bundle for IdM-signed certs
+          Volume=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:ro
+
+          # Ensure TLS stack can find the CA bundle
+          Environment=SSL_CERT_FILE=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+          Environment=REQUESTS_CA_BUNDLE=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+
+          [Install]
+          WantedBy=default.target
+
+# ---------------------------------------------------------------------------
+# Register RHBK as an OIDC connector behind the embedded IdP. The admin PAT is
+# minted via netbird-server's own CLI (confirmed against upstream's
+# getting-started.sh, which uses the identical mechanism to bootstrap its proxy
+# component) — no manual dashboard login required. The token is cached on disk
+# so repeated runs don't mint a new one every time.
+# ---------------------------------------------------------------------------
+- name: Check for a cached NetBird admin API token
+  ansible.builtin.stat:
+    path: "{{ netbird_config_dir }}/.admin_api_token"
+  become: true
+  register: netbird_admin_token_file
+  tags: netbird_idp
+
+- name: Mint a NetBird admin API token
+  ansible.builtin.shell:
+    cmd: >-
+      set -o pipefail &&
+      podman exec netbird-server /go/bin/netbird-server admin token create
+      --name ansible-automation --config /etc/netbird/config.yaml
+      | grep '^Token:' | awk '{print $2}' > {{ netbird_config_dir }}/.admin_api_token
+  become: true
+  become_user: "{{ netbird_service_user }}"
+  changed_when: true
+  when: not netbird_admin_token_file.stat.exists
+  tags: netbird_idp
+
+- name: Restrict permissions on the cached admin API token
+  ansible.builtin.file:
+    path: "{{ netbird_config_dir }}/.admin_api_token"
+    owner: "{{ netbird_service_user }}"
+    group: "{{ netbird_service_group }}"
+    mode: '0600'
+  become: true
+  tags: netbird_idp
+
+- name: Read the cached NetBird admin API token
+  ansible.builtin.slurp:
+    src: "{{ netbird_config_dir }}/.admin_api_token"
+  become: true
+  register: netbird_admin_token_raw
+  no_log: "{{ no_log_enabled | default(true) }}"
+  tags: netbird_idp
+
+- name: Set the NetBird admin API token fact
+  ansible.builtin.set_fact:
+    netbird_admin_api_token: "{{ (netbird_admin_token_raw.content | b64decode).strip() }}"
+  no_log: "{{ no_log_enabled | default(true) }}"
+  tags: netbird_idp
+
+# - name: Check whether the RHBK identity provider connector already exists
+#   ansible.builtin.uri:
+#     url: "http://{{ netbird_server_publish_ports[0].split(':')[0] }}:{{ netbird_server_publish_ports[0].split(':')[1] }}/api/identity-providers"
+#     headers:
+#       Authorization: "Token {{ netbird_admin_api_token }}"
+#     status_code: 200
+#   register: netbird_idp_list
+#   no_log: "{{ no_log_enabled | default(true) }}"
+#   tags: netbird_idp
+
+# - name: Register RHBK as a NetBird identity provider connector
+#   ansible.builtin.uri:
+#     url: "http://{{ netbird_server_publish_ports[0].split(':')[0] }}:{{ netbird_server_publish_ports[0].split(':')[1] }}/api/identity-providers"
+#     method: POST
+#     headers:
+#       Authorization: "Token {{ netbird_admin_api_token }}"
+#     body_format: json
+#     body:
+#       type: oidc
+#       name: "{{ netbird_idp_name }}"
+#       issuer: "{{ netbird_idp_issuer }}"
+#       client_id: "{{ netbird_idp_client_id }}"
+#       client_secret: "{{ netbird_idp_client_secret }}"
+#     status_code: 200, 201
+#   no_log: "{{ no_log_enabled | default(true) }}"
+#   when: netbird_idp_list.json | selectattr('name', 'equalto', netbird_idp_name) | list | length == 0
+#   tags: netbird_idp

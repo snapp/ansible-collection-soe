@@ -1,0 +1,69 @@
+---
+
+netbird_firewall_enabled: true
+
+# https://console.redhat.com/ansible/automation-hub/collections/published/redhat/rhel_system_roles/documentation/role/firewall
+netbird_firewall:
+  - service: netbird-dashboard
+    short: Web UI
+    description: Management web UI for NetBird.
+    port:
+      - "{{ netbird_dashboard_port }}/tcp"
+    runtime: true
+    permanent: true
+    state: present
+
+  - service: netbird-server
+    short: NetBird Server API
+    description: >-
+      HTTP endpoint of the combined netbird-server container, serving the
+      management API, signal exchange, and relay. Published on the internal
+      VLAN for the Caddy reverse proxy; external clients reach it via Caddy
+      on 443 rather than this port directly.
+    port:
+      - "{{ netbird_server_port }}/tcp"
+    runtime: true
+    permanent: true
+    state: present
+
+  - service: netbird-stun
+    short: NetBird Session Traversal Utilities for NAT (STUN)
+    description: >-
+      Embedded STUN service of the combined netbird-server. Peers send
+      binding requests here to learn the public address a NAT presents them
+      as, producing the server-reflexive ICE candidate needed for direct
+      connections. UDP only and cannot be reverse proxied.
+    port:
+      - "{{ netbird_stun_port }}/udp"
+    runtime: true
+    permanent: true
+    state: present
+
+  - service: netbird-client
+    short: NetBird Peer Data Plane
+    description: >-
+      Inbound WireGuard data plane for NetBird peers. Carries ICE
+      connectivity checks during hole punching and, once a direct pair is
+      selected, the encrypted peer-to-peer tunnel itself. Peers probe every
+      host candidate a host advertises, so this must be open on the zone
+      whose address should win candidate selection; leaving it closed forces
+      the connection onto the relay. Not required for control plane traffic.
+    port:
+      - "{{ netbird_client_wireguard_port }}/udp"
+    runtime: true
+    permanent: true
+    state: present
+
+  - service: netbird-dns-forwarder
+    short: NetBird DNS Forwarder
+    description: >-
+      Local DNS forwarder on routing peers, used to resolve domain-based
+      Network Resources on behalf of clients. Moved from 5353 to 22054 in
+      v0.59.0 to avoid mDNS collisions; 5353 retained for legacy peers.
+    port:
+      - 22054/udp
+      - 22054/tcp
+      - 5353/udp
+    runtime: true
+    permanent: true
+    state: present
