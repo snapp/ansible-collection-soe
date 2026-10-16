@@ -1,0 +1,5 @@
+---
+
+- name: Red Hat Firewall Configuration
+  ansible.builtin.import_tasks: configure.yml
+  tags: firewall

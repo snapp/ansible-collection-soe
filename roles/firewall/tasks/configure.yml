@@ -1,0 +1,112 @@
+---
+
+- name: configure | Firewall Configuration
+  tags: firewall
+  when: firewall_enabled | default(false)
+  block:
+    - name: configure | Validate firewall log-denied value
+      ansible.builtin.assert:
+        that:
+          - firewall_log_denied | default('off') | string in
+            ['off', 'all', 'unicast', 'broadcast', 'multicast']
+        fail_msg: >-
+          firewall_log_denied must be one of:
+          off, all, unicast, broadcast, multicast
+      when: firewall_log_denied is defined
+
+    - name: configure | Validate firewall policy definitions
+      ansible.builtin.assert:
+        that:
+          - item.name is defined
+          - item.name is match('^[A-Za-z0-9_-]+$')
+          - item.ingress_zones | default([]) | length > 0
+          - item.egress_zones | default([]) | length > 0
+          - item.target | default('CONTINUE') in ['ACCEPT', 'REJECT', 'DROP', 'CONTINUE']
+          - item.state | default('present') in ['present', 'absent']
+        fail_msg: >-
+          Invalid firewall_policies entry '{{ item.name | default("<unnamed>") }}':
+          name must be alphanumeric/dash/underscore, ingress_zones and
+          egress_zones must each be non-empty, target must be one of
+          ACCEPT, REJECT, DROP, CONTINUE, and state must be present or absent.
+        quiet: true
+      loop: "{{ firewall_policies | default([]) }}"
+      loop_control:
+        label: "{{ item.name | default('<unnamed>') }}"
+
+    - name: configure | Setup Firewall
+      ansible.builtin.import_role:
+        name: redhat.rhel_system_roles.firewall
+
+    # TODO|2024-02-18| Add firewalld_conf.LogDenied parameter support to redhat.rhel_system_roles.firewall_lib module
+    - name: configure | Configure firewall logging of denied packets
+      ansible.builtin.lineinfile:
+        path: /etc/firewalld/firewalld.conf
+        regexp: '^LogDenied\s*=.*'
+        line: "LogDenied={{ firewall_log_denied | default('off') }}"
+        backrefs: false
+      notify: Reload firewalld
+      when: firewall_log_denied is defined
+
+    - name: configure | Deploy quiet-drops nftables table
+      ansible.builtin.template:
+        src: quiet-drops.nft.j2
+        dest: /etc/nftables/quiet-drops.nft
+        owner: root
+        group: root
+        mode: '0600'
+      notify: Reload nftables
+      when: firewall_quiet_drops | default([]) | length > 0
+
+    - name: configure | Include quiet-drops in nftables main config
+      ansible.builtin.lineinfile:
+        path: /etc/sysconfig/nftables.conf
+        line: 'include "/etc/nftables/quiet-drops.nft"'
+        state: present
+      notify: Reload nftables
+      when: firewall_quiet_drops | default([]) | length > 0
+
+    - name: configure | Ensure flush ruleset is not enabled in nftables.conf
+      ansible.builtin.lineinfile:
+        path: /etc/sysconfig/nftables.conf
+        regexp: '^\s*flush ruleset'
+        state: absent
+
+    - name: configure | Enable and start nftables service
+      ansible.builtin.systemd_service:
+        name: nftables
+        enabled: true
+        state: started
+      when: firewall_quiet_drops | default([]) | length > 0
+
+    - name: configure | Ensure firewalld policy directory exists
+      ansible.builtin.file:
+        path: /etc/firewalld/policies
+        state: directory
+        owner: root
+        group: root
+        mode: '0750'
+      when: firewall_policies | default([]) | length > 0
+
+    # TODO|2026-09-08| Add policy object support to redhat.rhel_system_roles.firewall_lib module
+    - name: configure | Deploy firewalld policy objects
+      ansible.builtin.template:
+        src: firewalld-policy.xml.j2
+        dest: "/etc/firewalld/policies/{{ item.name }}.xml"
+        owner: root
+        group: root
+        mode: '0644'
+      loop: "{{ firewall_policies | default([]) }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: item.state | default('present') == 'present'
+      notify: Reload firewalld
+
+    - name: configure | Remove firewalld policy objects
+      ansible.builtin.file:
+        path: "/etc/firewalld/policies/{{ item.name }}.xml"
+        state: absent
+      loop: "{{ firewall_policies | default([]) }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: item.state | default('present') == 'absent'
+      notify: Reload firewalld

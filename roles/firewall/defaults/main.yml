@@ -1,0 +1,28 @@
+---
+# https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#role-directory-structure
+
+# Master switch. Left false so that targeting a host with this role is never
+# on its own enough to start filtering its traffic — opt in from inventory or
+# from a calling role's tasks/firewall.yml.
+firewall_enabled: false
+
+# firewalld policy objects, applied as /etc/firewalld/policies/<name>.xml.
+# Each entry takes name, ingress_zones, egress_zones, target and state.
+firewall_policies: []
+
+# nftables rules for traffic to drop without logging, rendered into
+# /etc/nftables/quiet-drops.nft. Each entry may set chain, iifname, oifname,
+# saddr, daddr, sport, dport, icmp_type and ct_state.
+firewall_quiet_drops: []
+
+# Two further variables are deliberately left undefined rather than defaulted:
+#
+#   firewall            Passed straight through to
+#                       redhat.rhel_system_roles.firewall, whose own defaults
+#                       should govern it. See
+#                       https://console.redhat.com/ansible/automation-hub/collections/published/redhat/rhel_system_roles/documentation/role/firewall
+#
+#   firewall_log_denied  One of off, all, unicast, broadcast, multicast.
+#                        The task that writes LogDenied to firewalld.conf is
+#                        gated on this being defined, so defaulting it here
+#                        would rewrite that file on every run.

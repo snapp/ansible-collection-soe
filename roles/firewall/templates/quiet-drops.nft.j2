@@ -1,0 +1,40 @@
+{%- macro nfnames(v) -%}
+{%- if v is string -%}"{{ v }}"{%- else -%}{ {{ v | map('to_json') | join(', ') }} }{%- endif -%}
+{%- endmacro -%}
+{%- macro nfvals(v) -%}
+{%- if v is string or v is number -%}{{ v }}{%- else -%}{ {{ v | join(', ') }} }{%- endif -%}
+{%- endmacro -%}
+{{ ansible_managed | comment }}
+#
+# Silently drops known-benign flows before firewalld's LogDenied rule. This
+# table hooks at priority "filter" (0); firewalld hooks at "filter + 10", so
+# we evaluate first. Note that "drop" here is a real, terminal verdict --
+# these rules discard the packet, they do not merely suppress its log line.
+
+table inet quiet_drops {
+{% for chain in ['input', 'forward'] %}
+    chain {{ chain }} {
+        type filter hook {{ chain }} priority filter; policy accept;
+{% for d in firewall_quiet_drops if (d.chain | default('input')) == chain %}
+{% set parts = [] %}
+{% if d.iifname is defined %}{% set _ = parts.append('iifname ' ~ nfnames(d.iifname)) %}{% endif %}
+{% if d.oifname is defined %}{% set _ = parts.append('oifname ' ~ nfnames(d.oifname)) %}{% endif %}
+{% if d.saddr is defined %}{% set _ = parts.append('ip saddr ' ~ nfvals(d.saddr)) %}{% endif %}
+{% if d.daddr is defined %}{% set _ = parts.append('ip daddr ' ~ nfvals(d.daddr)) %}{% endif %}
+{% if d.proto is defined %}
+{% if d.proto in ['icmp', 'icmpv6'] %}
+{% set _ = parts.append('meta l4proto ' ~ d.proto) %}
+{% if d.icmp_type is defined %}{% set _ = parts.append(d.proto ~ ' type ' ~ nfvals(d.icmp_type)) %}{% endif %}
+{% else %}
+{% if d.sport is defined %}{% set _ = parts.append(d.proto ~ ' sport ' ~ nfvals(d.sport)) %}{% endif %}
+{% if d.dport is defined %}{% set _ = parts.append(d.proto ~ ' dport ' ~ nfvals(d.dport)) %}{% endif %}
+{% if d.sport is not defined and d.dport is not defined %}{% set _ = parts.append('meta l4proto ' ~ d.proto) %}{% endif %}
+{% endif %}
+{% endif %}
+{% if d.ct_state | default('invalid') %}{% set _ = parts.append('ct state ' ~ nfvals(d.ct_state | default('invalid'))) %}{% endif %}
+        # {{ d.name }}
+        {{ parts | join(' ') }} counter drop
+{% endfor %}
+    }
+{% endfor %}
+}

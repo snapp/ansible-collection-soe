@@ -1,0 +1,23 @@
+---
+breaking_changes:
+  - firewall - the inline logic of the ``firewall`` playbook moved into a new
+    ``infra.soe.firewall`` role, and its inventory variables lost the ``soe_``
+    prefix - ``soe_firewall_enabled`` is now ``firewall_enabled``, ``soe_firewall``
+    is now ``firewall``, and ``soe_firewall_log_denied`` is now
+    ``firewall_log_denied``. Rename these in inventory and group_vars.
+  - firewall - the pass-through of ``soe_firewall_disable_conflicting_services``
+    to ``redhat.rhel_system_roles.firewall`` was removed; that role's own default
+    now governs the behaviour. Set ``firewall_disable_conflicting_services``
+    directly if the previous override is still wanted.
+minor_changes:
+  - firewall - added support for firewalld policy objects via
+    ``firewall_policies``, each rendered to
+    ``/etc/firewalld/policies/<name>.xml`` and validated for a well-formed name,
+    non-empty ingress and egress zones, and a known target and state.
+  - firewall - the nftables quiet-drop rules are now templated from
+    ``firewall_quiet_drops`` with ``input`` and ``forward`` chain support and
+    matching on ``iifname``, ``oifname``, ``saddr``, ``daddr``, ``sport``,
+    ``dport``, ``icmp_type`` and ``ct_state``, replacing a single hardcoded rule.
+  - firewall - the role now ships ``defaults/main.yml`` documenting its full
+    variable contract. ``firewall_enabled`` defaults to ``false``, so targeting a
+    host with the role is not on its own enough to start filtering its traffic.
