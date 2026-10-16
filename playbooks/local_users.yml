@@ -1,9 +1,13 @@
 ---
 
-- name: Manage local user accounts
-  hosts: "{{ target | default('all') }}"
+- name: Local Users
+  hosts: "{{ target_hosts | default('all') }}"
   gather_facts: false
+  become: true
   tags:
+    - redhat
+    - fedora
+    - microsoft
     - local_users
   roles:
-    - local_users
+    - infra.soe.local_users
