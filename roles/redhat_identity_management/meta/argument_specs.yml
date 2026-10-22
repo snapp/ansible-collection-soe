@@ -1,0 +1,211 @@
+---
+
+argument_specs:
+  main:
+    short_description: Install and configure Red Hat Identity Management (IdM) servers and replicas as the site root of trust
+    description:
+      - Prepares the IdM hosts (static hostname and /etc/hosts entries for every server and replica), installs the first
+        server with redhat.rhel_idm.ipaserver on the idm_server group and the replicas with ipaclient and ipareplica on the
+        idm_replica group, then configures the realm once from the first server. Configuration covers the global user
+        defaults, the ACME service, users, groups, sudo and HBAC rules through the infra.soe.redhat_idm_* roles, password
+        policies for service and administrator accounts, DNS global forwarders, forward zones, zone synchronisation and the
+        server records in every managed DNS zone.
+      - Once IdM login works the cleanup stage removes the local bootstrap account, and the firewall and SCAP stages apply
+        the IdM port set and the IdM-specific CIS tailoring through infra.soe.firewall and infra.soe.redhat_scap.
+      - IdM is the certificate authority, Kerberos realm and DNS of the reference implementation, so this is the fifth
+        stage of site.yml and every later stage presupposes it. Installer inputs of the ipaserver and ipareplica roles
+        (ipaserver_*, ipareplica_*) are read from inventory by those roles; this role only supplies the administrator
+        password.
+    options:
+      redhat_identity_management_admin_password:
+        type: str
+        required: true
+        no_log: true
+        description:
+          - Secret. IdM administrator password. Used as the Directory Manager and administrator password at installation
+            and as ipaadmin_password for every redhat.rhel_idm module in the configure stage.
+
+      redhat_identity_management_firewall_enabled:
+        type: bool
+        default: true
+        description:
+          - Apply redhat_identity_management_firewall through infra.soe.firewall.
+
+      redhat_identity_management_firewall:
+        type: list
+        elements: dict
+        default:
+          - service: redhat_identity_management
+            short: Red Hat IdM
+            description: Red Hat Identity Management (IdM)
+            port:
+              - 53/tcp
+              - 53/udp
+              - 80/tcp
+              - 88/tcp
+              - 88/udp
+              - 123/udp
+              - 135/tcp
+              - 138/tcp
+              - 139/tcp
+              - 138/udp
+              - 139/udp
+              - 389/tcp
+              - 389/udp
+              - 443/tcp
+              - 445/tcp
+              - 445/udp
+              - 464/tcp
+              - 464/udp
+              - 636/tcp
+              - 1024-1300/tcp
+            runtime: true
+            permanent: true
+            state: present
+        description:
+          - firewalld definitions passed unchanged to redhat.rhel_system_roles.firewall by infra.soe.firewall. By default
+            a redhat_identity_management firewalld service with the IdM port set (DNS, HTTP and HTTPS, Kerberos, NTP, LDAP
+            and LDAPS, and the SMB, NetBIOS and RPC ports used by the trust controller).
+          - See https://console.redhat.com/ansible/automation-hub/repo/published/redhat/rhel_system_roles/content/role/firewall/
+            for the item schema.
+
+      redhat_identity_management_scap_profile:
+        type: str
+        description:
+          - XCCDF profile identifier that enables the SCAP stage, for example xccdf_org.ssgproject.content_profile_cis.
+          - The short profile name selects the tailoring shipped with the role in vars/scap/<name>.yml (cis is provided).
+            Unset skips the SCAP stage.
+
+      redhat_identity_management_scap_tailoring_title:
+        type: str
+        description:
+          - Title of the tailoring profile passed to infra.soe.redhat_scap.
+          - Loaded from vars/scap/<profile>.yml when the role ships one, which overrides inventory; for other profiles set
+            it in inventory.
+
+      redhat_identity_management_scap_tailoring_description:
+        type: str
+        description:
+          - Description of the tailoring profile passed to infra.soe.redhat_scap.
+          - Loaded from vars/scap/<profile>.yml when the role ships one, which overrides inventory; for other profiles set
+            it in inventory.
+
+      redhat_identity_management_scap_tailoring_exceptions:
+        type: list
+        elements: dict
+        description:
+          - Rule exceptions passed to infra.soe.redhat_scap (items with name, status, justification and the optional owner,
+            change_control and review_date keys).
+          - Loaded from vars/scap/<profile>.yml when the role ships one, which overrides inventory; for other profiles set
+            it in inventory.
+
+      idm_domain:
+        type: str
+        description:
+          - Shared inventory variable. Primary DNS domain of the realm. Used for the apex A record when
+            idm_domain_external_ip_address is set; the configure stage fails when it is unset.
+
+      idm_default_group:
+        type: str
+        description:
+          - Shared inventory variable. Default primary group for new users (ipaconfig defaultgroup). Required by the
+            configure stage.
+
+      idm_default_shell:
+        type: str
+        description:
+          - Shared inventory variable. Default login shell for new users (ipaconfig defaultshell). Required by the
+            configure stage.
+
+      idm_default_email_domain:
+        type: str
+        description:
+          - Shared inventory variable. Default e-mail domain for new users (ipaconfig emaildomain). Required by the
+            configure stage.
+
+      idm_default_home_directory:
+        type: str
+        description:
+          - Shared inventory variable. Parent directory of new users' home directories (ipaconfig homedirectory). Required
+            by the configure stage.
+
+      idm_default_search_size_limit:
+        type: int
+        description:
+          - Shared inventory variable. Maximum number of records returned by searches (ipaconfig searchrecordslimit).
+            Required by the configure stage.
+
+      idm_enable_sid:
+        type: bool
+        description:
+          - Shared inventory variable. Enable Security Identifier (SID) generation for users and groups (ipaconfig
+            enable_sid). Unset leaves the setting untouched.
+
+      idm_add_sids:
+        type: bool
+        description:
+          - Shared inventory variable. Add SIDs to existing users and groups (ipaconfig add_sids). Unset leaves the
+            setting untouched.
+
+      idm_service_account_max_life:
+        type: int
+        description:
+          - Shared inventory variable. Maximum password lifetime in days of the service-accounts password policy, which
+            is attached to the service-accounts group. Required by the configure stage.
+
+      idm_admin_account_max_life:
+        type: int
+        description:
+          - Shared inventory variable. Maximum password lifetime in days of the admin-accounts password policy, which is
+            attached to the admin-accounts group. Required by the configure stage.
+
+      idm_domain_external_ip_address:
+        type: str
+        description:
+          - Shared inventory variable. Public address published as the A record of the realm apex (idm_domain). Unset or
+            empty creates no record.
+
+      idm_global_forwarders:
+        type: list
+        elements: str
+        description:
+          - Shared inventory variable. DNS servers that IdM DNS forwards unknown queries to, with forward policy only.
+            Unset configures an empty forwarder list, so IdM answers only for its own zones.
+
+      idm_forwarder_zones:
+        type: list
+        elements: dict
+        description:
+          - Shared inventory variable. DNS forward zones to create, each with name, forwarders (a list) and policy keys and
+            the optional skip_overlap_check key. Unset creates none.
+
+      idm_dns_zones:
+        type: list
+        elements: str
+        description:
+          - Shared inventory variable. DNS zones managed by IdM. Each gets PTR synchronisation and dynamic updates enabled
+            and an A record for the server; required by the configure stage.
+
+      idm_ip:
+        type: str
+        description:
+          - Shared inventory variable. Address recorded for the server in every managed zone. When unset the default IPv4
+            address fact is used.
+
+      ipaserver_reverse_zones:
+        type: list
+        elements: str
+        description:
+          - Input of the redhat.rhel_idm.ipaserver role, also read here to enable PTR synchronisation and dynamic updates
+            on the reverse zones. Unset enables none.
+
+      bootstrap_user:
+        type: str
+        description:
+          - Shared inventory variable. Name of the local bootstrap account the cleanup stage removes once the account of
+            the same name resolves from IdM. Unset or empty skips the cleanup.
+
+      no_log_enabled:
+        type: bool
+        description:
+          - Shared inventory variable. Controls no_log on the Kerberos login task. Unset behaves as true.

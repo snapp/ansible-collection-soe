@@ -1,0 +1,24 @@
+---
+
+argument_specs:
+  main:
+    short_description: Enable or disable the IdM ACME certificate service
+    description:
+      - Probes the Automatic Certificate Management Environment (ACME) directory of a Red Hat Identity Management (IdM)
+        server and runs ipa-acme-manage to enable or disable the service and its certificate pruning so that the actual
+        state matches redhat_idm_acme_enabled.
+      - ACME lets clients such as the Caddy reverse proxy obtain certificates from the IdM certificate authority without
+        certmonger. The role runs on an IdM server and is composed by infra.soe.redhat_identity_management during the
+        configure stage.
+    options:
+      redhat_idm_acme_enabled:
+        type: bool
+        default: true
+        description:
+          - Desired state of the ACME service and of certificate pruning.
+
+      idm_primary_server:
+        type: str
+        description:
+          - Shared inventory variable. Host whose ACME directory (https://<host>/acme/directory) is probed to determine the
+            current state. When unset the role probes 127.0.0.1, which is correct when it runs on the IdM server itself.

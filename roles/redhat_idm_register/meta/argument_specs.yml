@@ -1,0 +1,72 @@
+---
+
+argument_specs:
+  main:
+    short_description: Enrol a RHEL host as a Red Hat Identity Management (IdM) client
+    description:
+      - Enrols the host in the IdM realm through redhat.rhel_idm.ipaclient, configuring SSSD, Kerberos and the host keytab,
+        with home directory creation and SSSD-provided subordinate ID ranges enabled by default.
+      - Every option falls back to a shared idm_* inventory variable, so a site sets the realm-wide values once and the
+        role carries them into the ipaclient role's own variables. The eight ipaclient_* variables the role sets take
+        precedence over inventory values of the same name.
+      - Enrolment is the sixth stage of site.yml, right after the IdM servers exist, and is what every later service
+        certificate, HBAC rule and sudo rule depends on. The collection playbook targets every Red Hat Enterprise Linux
+        (RHEL) host outside the identity_management group.
+    options:
+      redhat_idm_register_admin_user:
+        type: str
+        default: "{{ idm_admin_user | default('admin') }}"
+        description:
+          - Kerberos principal authorised to join hosts to the realm.
+
+      redhat_idm_register_admin_password:
+        type: str
+        no_log: true
+        default: "{{ idm_admin_password | default(omit) }}"
+        description:
+          - Secret. Password of the enrolment principal. Falls back to the shared idm_admin_password; when neither is set
+            the ipaclient role fails for lack of credentials.
+
+      redhat_idm_register_domain:
+        type: str
+        default: "{{ idm_domain | default(omit) }}"
+        description:
+          - DNS domain of the IdM realm used for client installation. Falls back to the shared idm_domain; when neither is
+            set the ipaclient role autodiscovers it from DNS.
+
+      redhat_idm_register_subid:
+        type: raw
+        default: "{{ idm_client_subid | default(true) | bool }}"
+        description:
+          - Boolean. Configure SSSD as the source of subordinate UID and GID ranges, so rootless Podman works for IdM
+            accounts without local /etc/subuid entries.
+
+      redhat_idm_register_mkhomedir:
+        type: raw
+        default: "{{ idm_client_mkhomedir | default(true) | bool }}"
+        description:
+          - Boolean. Configure PAM to create a user's home directory at first login.
+
+      redhat_idm_register_allow_repair:
+        type: raw
+        default: "{{ idm_client_allow_repair | default(false) | bool }}"
+        description:
+          - Boolean. Let the ipaclient role repair an already joined or partly set-up client.
+
+      redhat_idm_register_force:
+        type: raw
+        default: "{{ idm_client_force | default(false) | bool }}"
+        description:
+          - Boolean. Force the client settings even when the installer reports an error.
+
+      redhat_idm_register_force_join:
+        type: raw
+        default: "{{ idm_client_force_join | default(false) | bool }}"
+        description:
+          - Boolean. Join again even if a host entry with this name already exists in IdM, replacing its keytab.
+
+      redhat_idm_register_all_ip_addresses:
+        type: raw
+        default: "{{ idm_client_all_ip_addresses | default(false) | bool }}"
+        description:
+          - Boolean. Create DNS A and AAAA records for every address of the client, not only the one the server sees.

@@ -1,0 +1,47 @@
+---
+
+argument_specs:
+  main:
+    short_description: Manage Red Hat Identity Management (IdM) user accounts and subordinate ID ranges
+    description:
+      - Creates or updates IdM user accounts with the redhat.rhel_idm.ipauser module (names, initials, UID and GID, home,
+        shell, title, email, SSH public key and an initial password set only at creation) and, for accounts flagged with
+        enable_subid, generates a subordinate UID and GID range on the IdM server so that the account can run rootless
+        Podman containers on any enrolled host.
+      - The role is composed by infra.soe.redhat_identity_management for the site-wide accounts and by the product roles
+        for their service accounts (satellite, keycloak, aap, caddy), each passing its own administrator password. It can
+        also be run on its own against an IdM server.
+      - The ipauser module runs on the target host, which must be an IdM server or an enrolled client with the IdM Python
+        libraries. Subordinate ID generation is delegated to the first host of the idm_server group, which must exist in
+        inventory.
+    options:
+      redhat_idm_users_admin_password:
+        type: str
+        required: true
+        no_log: true
+        description:
+          - Secret. IdM administrator password used by the ipauser module.
+
+      redhat_idm_users:
+        type: list
+        elements: dict
+        description:
+          - Accounts to manage. Unset manages none.
+          - Each item has a name dictionary with username, first and last (required) and the optional full and display
+            names, plus initials (required) and the optional description, email, uid, gid (the uid when unset), home,
+            shell (/bin/bash when unset), title, password, ssh_public_key and enable_subid keys.
+          - password is a secret and is applied only when the account is created (update_password on_create); supply it
+            from Ansible Vault.
+
+      idm_admin_password:
+        type: str
+        no_log: true
+        description:
+          - Secret. Shared inventory variable. Read directly by the Kerberos login that precedes subordinate ID
+            generation on the IdM server; the role fails when it is unset, even if redhat_idm_users_admin_password is set.
+
+      no_log_enabled:
+        type: bool
+        description:
+          - Shared inventory variable. Controls no_log on the Kerberos login and, for items that carry a password, on the
+            user tasks. Unset behaves as true.

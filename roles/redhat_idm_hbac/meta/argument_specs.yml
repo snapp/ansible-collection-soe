@@ -1,0 +1,35 @@
+---
+
+argument_specs:
+  main:
+    short_description: Manage Red Hat Identity Management (IdM) host-based access control rules
+    description:
+      - Creates or updates HBAC rules with the redhat.rhel_idm.ipahbacrule module, granting users or groups access to
+        hosts or host categories for selected services or all services.
+      - The role is composed by infra.soe.redhat_identity_management for the site-wide rules and by every product role for
+        the rule that lets its administrator and user groups log in to the product host. It can also be run on its own
+        against an IdM server.
+      - The module runs on the target host, which must be an IdM server or an enrolled client with the IdM Python
+        libraries installed.
+    options:
+      redhat_idm_hbac_admin_password:
+        type: str
+        required: true
+        no_log: true
+        description:
+          - Secret. IdM administrator password used by the ipahbacrule module.
+
+      redhat_idm_hbac_rules:
+        type: list
+        elements: dict
+        description:
+          - Rules to manage. Unset manages none.
+          - Each item has name and description (both required) and the optional users, groups, hosts and services lists,
+            plus usercategory, hostcategory and servicecategory, which take all to match everything of that kind. Rules
+            are always ensured present.
+
+      no_log_enabled:
+        type: bool
+        description:
+          - Shared inventory variable. Controls no_log on the rule task, which also hides the loop items. Unset behaves as
+            true.
