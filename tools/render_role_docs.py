@@ -242,8 +242,11 @@ def process_role(role_dir, check):
         return ["meta/argument_specs.yml is missing"]
     if not os.path.exists(readme_path):
         return ["README.md is missing"]
-    spec = load_yaml(spec_path) or {}
-    defaults = load_defaults(role_dir)
+    try:
+        spec = load_yaml(spec_path) or {}
+        defaults = load_defaults(role_dir)
+    except yaml.YAMLError as exc:
+        return ["YAML error: %s" % exc]
     errors += check_spec(role, role_dir, spec, defaults)
     with open(readme_path, encoding="utf-8") as handle:
         readme = handle.read()
