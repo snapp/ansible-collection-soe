@@ -1,0 +1,29 @@
+---
+
+argument_specs:
+  main:
+    short_description: Grow the root partition and lay out LVM volumes with the storage system role
+    description:
+      - Grows the partition that backs the LVM physical volume with growpart so that a golden image deployed onto a larger
+        disk uses all of it, then hands the volume group and logical volume layout to redhat.rhel_system_roles.storage,
+        which creates or resizes volumes, file systems and mount points.
+      - Both steps are optional and gated on their variable being defined, so the role is safe to run on every Red Hat
+        Enterprise Linux (RHEL) or Fedora host while only hosts with a layout in inventory are changed.
+      - In site.yml the role runs right after registration and before updates, so that /var, /var/log and the
+        service-specific volumes exist before packages are installed into them.
+    options:
+      local_storage_pv:
+        type: dict
+        description:
+          - Partition to grow before the LVM layout is applied. Keys are device (the disk, for example /dev/vda) and
+            partition (the partition number on that disk). Other keys are ignored.
+          - Unset, or without a partition key, skips the growpart step.
+
+      local_storage_lv:
+        type: list
+        elements: dict
+        description:
+          - Pool definitions passed unchanged as storage_pools to redhat.rhel_system_roles.storage (name, type lvm, disks,
+            volumes with name, size, mount_point, fs_type, mount_options and the other keys that role accepts).
+          - Unset skips the storage role entirely.
+          - See https://console.redhat.com/ansible/automation-hub/repo/published/redhat/rhel_system_roles/content/role/storage/

@@ -1,0 +1,66 @@
+---
+
+argument_specs:
+  main:
+    short_description: Register a RHEL host with Red Hat Satellite or Red Hat Subscription Management through the rhc system role
+    description:
+      - Prepares /etc/rhsm, records the Satellite location as a subscription-manager fact, installs the Satellite CA
+        consumer package, registers the host with redhat.rhel_system_roles.rhc (activation keys, repositories and Insights
+        come from that role's rhc_* variables) and finally assigns the host to a Satellite host group with the
+        redhat.satellite.host module.
+      - When rhc_server.hostname is subscription.rhsm.redhat.com the Satellite-specific steps are skipped and the host is
+        registered directly with Red Hat Subscription Management; this is how the Satellite server itself is registered
+        before Satellite exists.
+      - Registration is the second stage of site.yml. Every later package installation depends on the repositories it
+        enables, and content views on the Satellite gate which package versions a host can see.
+    options:
+      rhc_server:
+        type: dict
+        required: true
+        description:
+          - Connection to the registration server, in the schema of redhat.rhel_system_roles.rhc (hostname, port, prefix,
+            insecure). The role reads hostname to decide between the Satellite path and direct Red Hat Subscription
+            Management.
+          - The remaining rhc_* inputs (rhc_state, rhc_auth, rhc_baseurl, rhc_organization, rhc_repositories, rhc_insights)
+            are read from inventory by the rhc role itself. See
+            https://console.redhat.com/ansible/automation-hub/repo/published/redhat/rhel_system_roles/content/role/rhc/
+
+      satellite_hostname:
+        type: str
+        description:
+          - Shared inventory variable. Satellite host the CA consumer package is downloaded from
+            (http://<hostname>/pub/katello-ca-consumer-latest.noarch.rpm). Required on the Satellite path.
+
+      satellite_location:
+        type: str
+        description:
+          - Shared inventory variable. Satellite location recorded in /etc/rhsm/facts/location.facts so the host is placed
+            in it at registration. Required on the Satellite path.
+
+      satellite_server_url:
+        type: str
+        description:
+          - Shared inventory variable. Satellite API URL used to assign the host group. Required on the Satellite path.
+
+      satellite_validate_certs:
+        type: bool
+        description:
+          - Shared inventory variable. Verify the Satellite API certificate when assigning the host group. Required on the
+            Satellite path.
+
+      satellite_username:
+        type: str
+        description:
+          - Shared inventory variable. Satellite API user used to assign the host group. Required on the Satellite path.
+
+      satellite_password:
+        type: str
+        no_log: true
+        description:
+          - Secret. Shared inventory variable. Password of satellite_username. Required on the Satellite path.
+
+      satellite_host_group:
+        type: str
+        description:
+          - Shared inventory variable. Satellite host group title the host is assigned to, for example prod/rhel/server.
+            Required on the Satellite path.

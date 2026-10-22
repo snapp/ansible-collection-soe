@@ -1,0 +1,24 @@
+---
+
+argument_specs:
+  main:
+    short_description: Load per-group bootstrap variable files from the site repository
+    description:
+      - Loads one vaulted variable file per inventory group of the current host, <bootstrap_directory>/<group>.vault.yml,
+        with include_vars. Groups without a file are skipped.
+      - This is how a site supplies day-0 secrets, such as the initial local user password used before Red Hat Identity
+        Management (IdM) exists, without committing them to inventory. The task runs on the control node and performs no
+        action on the managed host.
+      - The role does nothing unless the bootstrap variable is true, so it can be included unconditionally from a site
+        playbook and switched on with an extra variable for the first run.
+    options:
+      bootstrap_directory:
+        type: path
+        required: true
+        description:
+          - Directory on the control node that holds the <group>.vault.yml files, usually relative to playbook_dir.
+
+      bootstrap:
+        type: bool
+        description:
+          - Shared inventory variable or extra variable. The include runs only when it is true; unset behaves as false.

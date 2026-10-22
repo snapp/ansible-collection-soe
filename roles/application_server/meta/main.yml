@@ -1,5 +1,45 @@
 ---
+# https://docs.ansible.com/ansible/latest/galaxy/user_guide.html#using-meta-main-yml
 
+galaxy_info:
+  # The name of the role.
+  role_name: "application_server"
+
+  # A short summary description of the role.
+  description: "Prepare a Podman application host and open its web ports"
+
+  # The company claiming ownership of the role.
+  # company: ""
+
+  # A list of the role's content authors.
+  author: "snapp@redhat.com"
+
+  # The license for content inside of a role.
+  license: "GPL-3.0-or-later"
+
+  # The minimum Ansible version.
+  min_ansible_version: ">=2.15.0"
+
+  # The list of supported platforms
+  platforms:
+    - name: EL
+      versions:
+        - "9"
+        - "10"
+    - name: Fedora
+      versions:
+        - all
+
+  # A list of tags (20 max) you want to associate with the role for indexing/searching.
+  galaxy_tags:
+    - redhat
+    - rhel
+    - fedora
+    - podman
+    - containers
+    - firewall
+
+# The list of role dependencies
 dependencies:
   - name: Application Server Firewall
     role: infra.soe.firewall

@@ -6,7 +6,7 @@ galaxy_info:
   role_name: "local_users"
 
   # A short summary description of the role.
-  description: "Manage local user accounts."
+  description: "Manage local user accounts with SSH keys and sudo on RHEL, Fedora and Windows"
 
   # The company claiming ownership of the role.
   # company: ""
@@ -24,6 +24,10 @@ galaxy_info:
   platforms:
     - name: EL
       versions:
+        - "9"
+        - "10"
+    - name: Fedora
+      versions:
         - all
     - name: Windows
       versions:
@@ -31,7 +35,14 @@ galaxy_info:
 
   # A list of tags (20 max) you want to associate with the role for indexing/searching.
   galaxy_tags:
-    - "tools"
+    - redhat
+    - rhel
+    - fedora
+    - windows
+    - users
+    - accounts
+    - ssh
+    - sudo
 
 # The list of role dependencies
 # dependencies:

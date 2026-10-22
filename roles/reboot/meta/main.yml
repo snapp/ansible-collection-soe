@@ -6,7 +6,7 @@ galaxy_info:
   role_name: "reboot"
 
   # A short summary description of the role.
-  description: "Reboot managed hosts"
+  description: "Reboot a managed host and wait for it to return"
 
   # The company claiming ownership of the role.
   # company: ""
@@ -24,14 +24,16 @@ galaxy_info:
   platforms:
     - name: EL
       versions:
-        - all
-    - name: Windows
-      versions:
-        - all
+        - "9"
+        - "10"
 
   # A list of tags (20 max) you want to associate with the role for indexing/searching.
   galaxy_tags:
-    - "tools"
+    - redhat
+    - rhel
+    - reboot
+    - maintenance
+    - system
 
 # The list of role dependencies
 # dependencies:

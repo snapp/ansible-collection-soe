@@ -1,0 +1,27 @@
+---
+
+argument_specs:
+  main:
+    short_description: Manage local user accounts with SSH keys and sudo on RHEL, Fedora and Windows
+    description:
+      - Creates local accounts from a list and dispatches to platform-specific tasks by OS family. On Red Hat Enterprise
+        Linux (RHEL) and Fedora it creates the group and user, an optional /etc/sudoers.d entry, the home directory with
+        its SELinux context and the authorized_keys file. On Windows it creates the user with ansible.windows.win_user and
+        places the public key of administrators in the global administrators_authorized_keys file with restricted ACLs.
+      - The role is the first stage of site.yml, where it establishes the bootstrap and service accounts that later stages
+        connect with before Red Hat Identity Management (IdM) exists; afterwards it keeps the local service accounts that
+        products require, such as the rhbk account that infra.soe.redhat_keycloak creates through this role.
+      - Facts are gathered by the role itself (distribution and os_family), so plays can run with gather_facts false.
+    options:
+      local_users:
+        type: list
+        elements: dict
+        description:
+          - Accounts to manage. Unset or empty performs no action.
+          - Keys read on RHEL and Fedora are name, gid, group, comment, home (parent directory; the home is created as
+            <home>/<name>) and the optional sudo (a sudoers specification such as ALL=(ALL) NOPASSWD ALL), ssh_public_key
+            and selinux_home_equivalent (true unless set to false; disable for service accounts whose home is an
+            application directory such as /opt).
+          - Keys read on Windows are name, comment, groups (Users when unset, but the key must be present), and the
+            optional password, state and ssh_public_key (installed for members of Administrators only).
+          - Passwords and keys are secrets; supply them from Ansible Vault or an AAP credential injector.

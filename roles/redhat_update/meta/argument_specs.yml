@@ -1,0 +1,38 @@
+---
+
+argument_specs:
+  main:
+    short_description: Update installed packages on a RHEL host and optionally reboot
+    description:
+      - Runs dnf update on every installed package of a Red Hat Enterprise Linux (RHEL) host and, when enabled, reboots the
+        host through a handler once the play has finished if anything changed.
+      - The role is disabled by default and does nothing until redhat_update_enabled is true, so the update stage of
+        site.yml is opt-in per group or host; on a Satellite-registered host the content view decides which package
+        versions are visible, which is how patch cycles are gated.
+      - Every option is read with an in-task fallback; the role ships no defaults file.
+    options:
+      redhat_update_enabled:
+        type: bool
+        description:
+          - Run the update. Unset behaves as false and the role does nothing.
+
+      redhat_update_bugfix:
+        type: bool
+        description:
+          - Pass bugfix to dnf so that only bug fix advisories are applied. Unset behaves as false.
+
+      redhat_update_update_only:
+        type: bool
+        description:
+          - Pass update_only to dnf so that no new packages are installed, only installed ones are updated. Unset behaves
+            as true.
+
+      redhat_update_update_cache:
+        type: bool
+        description:
+          - Refresh the dnf metadata cache before updating. Unset behaves as false.
+
+      redhat_update_reboot_enabled:
+        type: bool
+        description:
+          - Reboot the host at the end of the play when the update changed something. Unset behaves as false.

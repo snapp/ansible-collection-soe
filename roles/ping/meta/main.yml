@@ -6,7 +6,7 @@ galaxy_info:
   role_name: "ping"
 
   # A short summary description of the role.
-  description: "Verify Ansible Connectivity"
+  description: "Verify Ansible connectivity to RHEL, Fedora and Windows hosts"
 
   # The company claiming ownership of the role.
   # company: ""
@@ -24,14 +24,20 @@ galaxy_info:
   platforms:
     - name: EL
       versions:
-        - all
+        - "9"
+        - "10"
     - name: Windows
       versions:
         - all
 
   # A list of tags (20 max) you want to associate with the role for indexing/searching.
   galaxy_tags:
-    - "tools"
+    - redhat
+    - rhel
+    - windows
+    - connectivity
+    - ping
+    - testing
 
 # The list of role dependencies
 # dependencies:

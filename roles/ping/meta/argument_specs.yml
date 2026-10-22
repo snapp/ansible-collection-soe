@@ -1,0 +1,10 @@
+---
+
+argument_specs:
+  main:
+    short_description: Verify Ansible connectivity to RHEL, Fedora and Windows hosts
+    description:
+      - Gathers the distribution fact and runs ansible.builtin.ping or, on Windows, ansible.windows.win_ping, so that a
+        single play confirms transport, authentication, privilege escalation where enabled and a working Python or
+        PowerShell interpreter on every host before any configuration stage runs.
+      - The role takes no variables.

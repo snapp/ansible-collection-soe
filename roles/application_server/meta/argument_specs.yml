@@ -1,0 +1,38 @@
+---
+
+argument_specs:
+  main:
+    short_description: Prepare a Podman application host and open its web ports
+    description:
+      - Installs Podman on a Red Hat Enterprise Linux (RHEL) or Fedora host so that the rootless Quadlet roles of the
+        collection (infra.soe.caddy, infra.soe.netbird) and other self-hosted services can run on it. On rpm-ostree systems
+        the packages are layered with rpm-ostree and the host is rebooted once when the layer changed.
+      - Through its meta dependency on infra.soe.firewall the role opens HTTP and HTTPS before its own tasks run, unless the
+        firewall stage is disabled.
+      - The role targets the application_server inventory group and is the last host stage of site.yml before the site-wide
+        firewall and reboot passes.
+    options:
+      application_server_firewall_enabled:
+        type: bool
+        default: true
+        description:
+          - Apply application_server_firewall through the infra.soe.firewall meta dependency.
+
+      application_server_firewall:
+        type: list
+        elements: dict
+        default:
+          - service: application_server
+            short: Application Server
+            description: Application Server
+            port:
+              - 80/tcp
+              - 443/tcp
+            runtime: true
+            permanent: true
+            state: present
+        description:
+          - firewalld definitions passed unchanged to redhat.rhel_system_roles.firewall by infra.soe.firewall. By default
+            an application_server firewalld service exposing 80/tcp and 443/tcp.
+          - See https://console.redhat.com/ansible/automation-hub/repo/published/redhat/rhel_system_roles/content/role/firewall/
+            for the item schema.

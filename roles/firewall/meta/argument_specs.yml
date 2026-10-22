@@ -1,0 +1,172 @@
+---
+
+argument_specs:
+  main:
+    short_description: Configure the host firewall with firewalld services, policies, denied-packet logging and nftables quiet drops
+    description:
+      - Applies firewalld zone and service definitions through redhat.rhel_system_roles.firewall, adds firewalld policy
+        objects (zone-to-zone rules rendered to /etc/firewalld/policies/<name>.xml), sets the LogDenied option of
+        firewalld.conf, and installs an nftables table that silently drops known-benign traffic before firewalld logs it.
+      - The master switch firewall_enabled is false by default so that targeting a host with the role is never enough on
+        its own to start filtering traffic. The product roles of the collection include this role with their own
+        definitions and switch it on; the standalone firewall playbook relies on inventory doing so.
+      - Runs on Red Hat Enterprise Linux (RHEL) and Fedora hosts.
+    options:
+      firewall_enabled:
+        type: bool
+        default: false
+        description:
+          - Master switch. When false every task is skipped.
+
+      firewall:
+        type: list
+        elements: dict
+        description:
+          - firewalld definitions passed straight through to redhat.rhel_system_roles.firewall (zones, services, ports,
+            rich rules, set_default_zone, previous replaced).
+          - Deliberately not defaulted so that the system role's own defaults govern it when unset.
+          - See https://console.redhat.com/ansible/automation-hub/repo/published/redhat/rhel_system_roles/content/role/firewall/
+
+      firewall_log_denied:
+        type: str
+        choices:
+          - 'off'
+          - all
+          - unicast
+          - broadcast
+          - multicast
+        description:
+          - Value written to LogDenied in /etc/firewalld/firewalld.conf.
+          - Deliberately not defaulted. The task runs only when the variable is defined, so firewalld.conf is left alone
+            otherwise.
+
+      firewall_policies:
+        type: list
+        elements: dict
+        default: []
+        description:
+          - firewalld policy objects, each rendered to /etc/firewalld/policies/<name>.xml. Policies filter traffic between
+            firewalld zones, for example from an internal zone to an external one.
+        options:
+          name:
+            type: str
+            required: true
+            description:
+              - Policy name, letters, digits, dashes and underscores only. Also the file name.
+          ingress_zones:
+            type: list
+            elements: str
+            required: true
+            description:
+              - firewalld zones the traffic comes from. Must not be empty.
+          egress_zones:
+            type: list
+            elements: str
+            required: true
+            description:
+              - firewalld zones the traffic goes to. Must not be empty.
+          target:
+            type: str
+            choices:
+              - ACCEPT
+              - REJECT
+              - DROP
+              - CONTINUE
+            default: CONTINUE
+            description:
+              - Verdict for traffic the policy does not otherwise match.
+          state:
+            type: str
+            choices:
+              - present
+              - absent
+            default: present
+            description:
+              - Whether the policy file is written or removed.
+          priority:
+            type: int
+            description:
+              - firewalld policy priority; lower values are evaluated first. Omitted from the file when unset.
+          short:
+            type: str
+            description:
+              - Short display name written to the policy file.
+          description:
+            type: str
+            description:
+              - Longer description written to the policy file.
+          service:
+            type: list
+            elements: str
+            description:
+              - firewalld services allowed by the policy.
+          port:
+            type: list
+            elements: str
+            description:
+              - Ports allowed by the policy, as <port>/<protocol>.
+          masquerade:
+            type: bool
+            description:
+              - Enable masquerading for traffic matched by the policy.
+
+      firewall_quiet_drops:
+        type: list
+        elements: dict
+        default: []
+        description:
+          - nftables rules rendered to /etc/nftables/quiet-drops.nft in a table that hooks before firewalld, so matching
+            packets are dropped without a LogDenied entry. These are real drops, not log suppression.
+          - When the list is non-empty the nftables service is enabled and the file is included from
+            /etc/sysconfig/nftables.conf.
+        options:
+          name:
+            type: str
+            required: true
+            description:
+              - Comment written above the rule.
+          chain:
+            type: str
+            choices:
+              - input
+              - forward
+            default: input
+            description:
+              - Chain the rule is placed in.
+          iifname:
+            type: raw
+            description:
+              - Input interface name or list of names.
+          oifname:
+            type: raw
+            description:
+              - Output interface name or list of names.
+          saddr:
+            type: raw
+            description:
+              - IPv4 source address or list of addresses and prefixes.
+          daddr:
+            type: raw
+            description:
+              - IPv4 destination address or list of addresses and prefixes.
+          proto:
+            type: str
+            description:
+              - Layer 4 protocol such as tcp, udp, icmp or icmpv6.
+          sport:
+            type: raw
+            description:
+              - Source port or list of ports; used with a tcp or udp proto.
+          dport:
+            type: raw
+            description:
+              - Destination port or list of ports; used with a tcp or udp proto.
+          icmp_type:
+            type: raw
+            description:
+              - ICMP type or list of types; used with an icmp or icmpv6 proto.
+          ct_state:
+            type: raw
+            default: invalid
+            description:
+              - Connection tracking state or list of states to match.

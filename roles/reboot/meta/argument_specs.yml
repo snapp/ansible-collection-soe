@@ -1,0 +1,42 @@
+---
+
+argument_specs:
+  main:
+    short_description: Reboot a managed host and wait for it to return
+    description:
+      - Reboots a Red Hat Enterprise Linux (RHEL) host with ansible.builtin.reboot and waits until a test command succeeds
+        again, with configurable delays, timeout and broadcast message.
+      - The role gathers the distribution fact and dispatches by OS family. Windows hosts are matched but no Windows tasks
+        are implemented yet, so they are skipped unchanged.
+      - site.yml imports the reboot playbook last and only runs the role when the reboot variable is true, so a full site
+        run never reboots hosts unless asked to.
+    options:
+      reboot_message:
+        type: str
+        default: Reboot initiated by Ansible
+        description:
+          - Message broadcast to logged-in users before the reboot.
+
+      reboot_pre_delay:
+        type: int
+        default: 0
+        description:
+          - Seconds to wait before issuing the reboot.
+
+      reboot_post_delay:
+        type: int
+        default: 5
+        description:
+          - Seconds to wait after the host answers again before continuing.
+
+      reboot_timeout:
+        type: int
+        default: 300
+        description:
+          - Seconds to wait for the host to come back before failing.
+
+      reboot_test_command:
+        type: str
+        default: whoami
+        description:
+          - Command that must succeed on the rebooted host before it counts as up.
