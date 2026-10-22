@@ -18,7 +18,7 @@ authors:
   - "snapp@redhat.com"
 
 # A short summary description of the collection.
-description: "Standard Operating Environments (SOE)"
+description: "Red Hat Standard Operating Environment (SOE) reference implementation: hardened RHEL images, IdM, Satellite, RHBK single sign-on and AAP bootstrapped with Ansible alone"
 
 # Either a single license or a list of licenses for content inside of a collection.
 # license:
@@ -32,6 +32,18 @@ tags:
   - infrastructure
   - linux
   - rhel
+  - redhat
+  - identity
+  - idm
+  - satellite
+  - keycloak
+  - sso
+  - aap
+  - imagebuilder
+  - podman
+  - security
+  - scap
+  - tls
 
 # The list of collection dependencies this collection requires to be installed for it to be usable.
 dependencies:
@@ -69,10 +81,10 @@ dependencies:
 repository: "https://github.com/snapp/ansible-collection-soe"
 
 # The URL to any online docs
-# documentation: "https://github.com/snapp/ansible-collection-soe/wiki"
+documentation: "https://github.com/snapp/ansible-collection-soe/blob/main/README.md"
 
 # The URL to the homepage of the collection/project
-# homepage: "https://github.com/snapp/ansible-collection-soe"
+homepage: "https://github.com/snapp/ansible-collection-soe"
 
 # The URL to the collection issue tracker
 issues: "https://github.com/snapp/ansible-collection-soe/issues"
@@ -86,6 +98,8 @@ build_ignore:
   - .vscode
   - extensions
   - tools
+  - AGENTS.md
+  - CLAUDE.md
   - .ansible
   - .cache
   - '*.tar.gz'
