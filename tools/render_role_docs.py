@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """Render and verify the role variable tables from meta/argument_specs.yml.
 
 The argument spec is the single source of truth for a role's variables. This

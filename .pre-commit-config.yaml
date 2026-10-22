@@ -26,6 +26,17 @@ repos:
       - id: yamllint
         language_version: python3.12
 
+  - repo: local
+    hooks:
+      - id: role-docs
+        name: role docs (argument spec drift)
+        entry: python tools/render_role_docs.py --check
+        language: python
+        additional_dependencies:
+          - PyYAML
+        pass_filenames: false
+        files: ^(roles/.*|tools/render_role_docs\.py)$
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
@@ -38,7 +49,6 @@ repos:
       - id: check-yaml
         exclude: .*/\.github/.*
       - id: end-of-file-fixer
-      - id: fix-encoding-pragma
       - id: mixed-line-ending
         args:
           - --fix=lf
