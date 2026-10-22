@@ -85,6 +85,10 @@ build_ignore:
   - .pre-commit-config.yaml
   - .vscode
   - extensions
+  - tools
+  - .ansible
+  - .cache
+  - '*.tar.gz'
 
 # A dict controlling use of manifest directives used in building the collection artifact.
 # manifest: null
