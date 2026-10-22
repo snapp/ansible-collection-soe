@@ -1,0 +1,236 @@
+---
+
+argument_specs:
+  main:
+    short_description: Install and configure Red Hat Satellite Server with IdM integration, firewall rules and SCAP remediation
+    description:
+      - Installs Red Hat Satellite Server through redhat.satellite_operations.installer and configures it declaratively with
+        the redhat.satellite roles (manifest, settings, organizations, locations, content credentials, repositories, sync
+        plans, host collections, lifecycle environments, content views and their version cleanup, activation keys, host
+        groups, domains, realms, subnets, operating systems, provisioning templates, compute resources and compute profiles).
+      - When an IdM administrator password is available the role also creates the Satellite automation account, the
+        satellite-admins and satellite-users groups and an HBAC rule in Red Hat Identity Management (IdM), joins the Satellite
+        realm proxy to the IdM realm, requests the Satellite web certificate from the IdM certificate authority and installs
+        it with satellite-installer.
+      - Host firewall rules and SCAP remediation with Satellite-specific tailoring are applied through infra.soe.firewall and
+        infra.soe.redhat_scap.
+      - The role targets the satellite_server inventory group and expects the host to be registered to Red Hat
+        (infra.soe.redhat_register) and enrolled in IdM (infra.soe.redhat_idm_register). The inputs of the redhat.satellite
+        roles (satellite_organizations, satellite_products and so on) are read from inventory by those roles directly.
+    options:
+      redhat_satellite_idm_admin_password:
+        type: str
+        no_log: true
+        default: "{{ idm_admin_password | default('') }}"
+        description:
+          - Secret. IdM administrator password used for the IdM users, groups, HBAC, realm and certificate stages.
+          - Falls back to the shared idm_admin_password inventory variable. An empty value skips every IdM stage.
+
+      redhat_satellite_idm_service_principal:
+        type: str
+        default: "HTTP/{{ inventory_hostname }}"
+        description:
+          - Kerberos service principal created for the Satellite web service.
+
+      redhat_satellite_idm_service_request_id:
+        type: str
+        default: satellite_idm_service
+        description:
+          - certmonger request identifier. The certificate, key and CA copy are kept under /etc/pki/<id>/ and handed to
+            satellite-installer with --certs-server-cert, --certs-server-key and --certs-server-ca-cert.
+
+      redhat_satellite_idm_service_tls_enabled:
+        type: bool
+        default: true
+        description:
+          - Request the Satellite web certificate from the IdM certificate authority.
+          - Keep it true. The certificate stage assumes the files exist and fails when they do not.
+
+      redhat_satellite_idm_service_tls_sans:
+        type: list
+        elements: str
+        default: []
+        description:
+          - Additional DNS names, such as a service alias, added to the Satellite certificate and to the IdM principal.
+          - Names inside idm_domain also receive a CNAME record pointing at the Satellite host.
+
+      redhat_satellite_idm_users:
+        type: list
+        elements: dict
+        default:
+          - description: Satellite Automation Account
+            name:
+              username: satellite
+              first: Satellite
+              last: Automation
+              full: Satellite Automation Account
+            initials: SAA
+        description:
+          - IdM user accounts created for Satellite through infra.soe.redhat_idm_users; by default the satellite
+            automation account.
+          - Items use the redhat_idm_users item shape (name.username, name.first, name.last, name.full, initials and the
+            optional description, email, uid, gid, home, shell, title, password, ssh_public_key and enable_subid keys).
+
+      redhat_satellite_idm_groups:
+        type: list
+        elements: dict
+        default:
+          - name: satellite-admins
+            description: Red Hat Satellite Administrators
+          - name: satellite-users
+            description: Red Hat Satellite Users
+        description:
+          - IdM groups created through infra.soe.redhat_idm_groups.
+          - Items use the redhat_idm_groups item shape (name, description and the optional gid, users and groups keys).
+
+      redhat_satellite_idm_hbac_rules:
+        type: list
+        elements: dict
+        default:
+          - name: allow_satellite
+            description: Allow users to access Red Hat Satellite
+            servicecategory: all
+            groups:
+              - satellite-admins
+              - satellite-users
+        description:
+          - IdM host-based access control rules created through infra.soe.redhat_idm_hbac. By default allow_satellite grants
+            both groups access to every service on the host.
+          - Items use the redhat_idm_hbac_rules item shape (name, description and the optional users, groups, hosts,
+            services, usercategory, hostcategory and servicecategory keys).
+
+      redhat_satellite_firewall_enabled:
+        type: bool
+        default: true
+        description:
+          - Apply redhat_satellite_firewall through infra.soe.firewall.
+
+      redhat_satellite_firewall:
+        type: list
+        elements: dict
+        default:
+          - service: redhat_satellite
+            short: Red Hat Satellite
+            description: |-
+              Red Hat Satellite
+            port:
+              - 53/tcp
+              - 53/udp
+              - 67/udp
+              - 69/udp
+              - 80/tcp
+              - 443/tcp
+              - 5646-5647/tcp
+              - 5910-5930/tcp
+              - 8000/tcp
+              - 9090/tcp
+            runtime: true
+            permanent: true
+            state: present
+        description:
+          - firewalld definitions passed unchanged to redhat.rhel_system_roles.firewall by infra.soe.firewall. By default a
+            redhat_satellite firewalld service with the ports documented for Satellite Server (DNS, DHCP, TFTP, HTTP, HTTPS,
+            AMQP, virtual consoles, template retrieval and the smart proxy).
+          - See https://console.redhat.com/ansible/automation-hub/repo/published/redhat/rhel_system_roles/content/role/firewall/
+            for the item schema.
+
+      redhat_satellite_scap_profile:
+        type: str
+        description:
+          - XCCDF profile identifier that enables the SCAP stage, for example xccdf_org.ssgproject.content_profile_cis.
+          - The short profile name selects the tailoring shipped with the role in vars/scap/<name>.yml (cis is provided).
+            Unset skips the SCAP stage.
+
+      redhat_satellite_scap_tailoring_title:
+        type: str
+        description:
+          - Title of the tailoring profile passed to infra.soe.redhat_scap.
+          - Loaded from vars/scap/<profile>.yml when the role ships one, which overrides inventory; for other profiles set
+            it in inventory.
+
+      redhat_satellite_scap_tailoring_description:
+        type: str
+        description:
+          - Description of the tailoring profile passed to infra.soe.redhat_scap.
+          - Loaded from vars/scap/<profile>.yml when the role ships one, which overrides inventory; for other profiles set
+            it in inventory.
+
+      redhat_satellite_scap_tailoring_exceptions:
+        type: list
+        elements: dict
+        description:
+          - Rule exceptions passed to infra.soe.redhat_scap (items with name, status, justification and the optional owner,
+            change_control and review_date keys).
+          - Loaded from vars/scap/<profile>.yml when the role ships one, which overrides inventory; for other profiles set
+            it in inventory.
+
+      satellite_hostname:
+        type: str
+        description:
+          - Shared inventory variable. Fully qualified name the Satellite certificates are issued for, used to locate
+            /root/ssl-build/<hostname>/<hostname>-apache.crt and to verify the certificate served on port 443.
+          - Required when the IdM stages run.
+
+      satellite_manifest_import:
+        type: bool
+        description:
+          - Shared inventory variable. Run redhat.satellite.manifest to import the subscription manifest. Unset behaves as
+            false.
+
+      satellite_server_url:
+        type: str
+        description:
+          - Shared inventory variable. URL of the Satellite API used by the host-collection and realm tasks and by every
+            redhat.satellite role.
+
+      satellite_username:
+        type: str
+        description:
+          - Shared inventory variable. Satellite API user used by the host-collection and realm tasks and by every
+            redhat.satellite role.
+
+      satellite_password:
+        type: str
+        no_log: true
+        description:
+          - Secret. Shared inventory variable. Password of satellite_username.
+
+      satellite_validate_certs:
+        type: bool
+        description:
+          - Shared inventory variable. Verify the Satellite API certificate. Unset leaves the module default in place.
+
+      satellite_organization:
+        type: str
+        description:
+          - Shared inventory variable. Organization that owns the host collections. Required by the configure stage.
+
+      satellite_host_collections:
+        type: list
+        elements: dict
+        description:
+          - Shared inventory variable. Host collections to manage with the redhat.satellite.host_collection module (items
+            with name and the optional description and state keys). Unset manages none.
+          - See https://console.redhat.com/ansible/automation-hub/repo/published/redhat/satellite/content/module/host_collection/
+
+      satellite_realms:
+        type: list
+        elements: dict
+        description:
+          - Shared inventory variable. Realms to manage with the redhat.satellite.realm module (items with name,
+            realm_proxy, realm_type, organizations, locations and the optional state keys).
+          - A non-empty list, together with an IdM administrator password, also enables the realm-capsule stage. Unset
+            skips both.
+          - See https://console.redhat.com/ansible/automation-hub/repo/published/redhat/satellite/content/module/realm/
+
+      idm_domain:
+        type: str
+        description:
+          - Shared inventory variable. Primary DNS domain of the IdM realm, upper-cased to form the realm-capsule principal
+            handed to satellite-installer. Required when the realm stage runs.
+
+      no_log_enabled:
+        type: bool
+        description:
+          - Shared inventory variable. Controls no_log on the tasks that handle passwords.
+          - Unset behaves as true; set it to false only while debugging.
