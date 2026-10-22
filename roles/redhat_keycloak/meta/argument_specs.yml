@@ -1,0 +1,269 @@
+---
+
+argument_specs:
+  main:
+    short_description: Install Red Hat build of Keycloak (RHBK) with IdM integration and configure its realms, clients and role mappings
+    description:
+      - Installs Red Hat build of Keycloak (RHBK) through redhat.rhbk.rhbk under a local service account, then configures
+        the master and primary realms with redhat.rhbk.rhbk_realm, the OpenID Connect clients with the rhbk_client module
+        and client and service-account role mappings with the community.general Keycloak modules. The configuration tasks
+        run from the control node against the RHBK API.
+      - When an IdM administrator password is available the role creates the keycloak automation account, the
+        keycloak-admins group and an HBAC rule in Red Hat Identity Management (IdM) and requests the RHBK TLS certificate
+        from the IdM certificate authority, owned by the service account. Firewall rules and RHBK-specific SCAP tailoring
+        complete the host.
+      - RHBK is the single sign-on layer of the reference implementation. IdM stays the source of identity (through LDAP
+        user federation and Kerberos, configured through the redhat.rhbk inventory inputs) and RHBK issues the OpenID
+        Connect tokens that Red Hat Ansible Automation Platform (AAP), Red Hat Satellite, the Caddy forward-auth sidecars
+        and NetBird consume. It is the ninth stage of site.yml and targets the keycloak inventory group.
+    options:
+      redhat_keycloak_admin_user:
+        type: str
+        default: "{{ rhbk_bootstrap_admin_user | default('admin') }}"
+        description:
+          - Bootstrap administrator created at installation and used to configure the realms and clients. Falls back to the
+            shared rhbk_bootstrap_admin_user.
+
+      redhat_keycloak_admin_password:
+        type: str
+        no_log: true
+        default: "{{ rhbk_bootstrap_admin_password | default('') }}"
+        description:
+          - Secret. Password of the bootstrap administrator. Falls back to the shared rhbk_bootstrap_admin_password; the
+            role asserts that the result is non-empty before doing anything.
+
+      redhat_keycloak_service_user:
+        type: str
+        default: rhbk
+        description:
+          - Local account RHBK runs as; created through infra.soe.local_users and passed to redhat.rhbk.rhbk as
+            rhbk_service_user.
+
+      redhat_keycloak_service_user_id:
+        type: int
+        default: 900
+        description:
+          - UID of the service account.
+
+      redhat_keycloak_service_group:
+        type: str
+        default: "{{ redhat_keycloak_service_user }}"
+        description:
+          - Primary group of the service account, passed to redhat.rhbk.rhbk as rhbk_service_group.
+
+      redhat_keycloak_service_group_id:
+        type: raw
+        default: "{{ redhat_keycloak_service_user_id }}"
+        description:
+          - Integer. GID of the service group.
+
+      redhat_keycloak_local_users:
+        type: list
+        elements: dict
+        default:
+          - name: "{{ redhat_keycloak_service_user }}"
+            uid: "{{ redhat_keycloak_service_user_id }}"
+            group: "{{ redhat_keycloak_service_group }}"
+            gid: "{{ redhat_keycloak_service_group_id }}"
+            groups: ''
+            comment: Keycloak Application Account
+            home: /opt
+            shell: /sbin/nologin
+            selinux_home_equivalent: false
+        description:
+          - Local accounts created through infra.soe.local_users before installation; by default the service account with
+            its home under /opt and no SELinux home equivalence, because redhat.rhbk installs into that directory.
+          - Items use the local_users item shape.
+
+      redhat_keycloak_base_url:
+        type: str
+        default: "{{ keycloak_base_url | default(omit) }}"
+        description:
+          - Public URL of the single sign-on service behind the reverse proxy. Defined for the role's consumers; no task
+            of this role reads it today (the redhat.rhbk inputs rhbk_hostname and rhbk_url carry the URLs).
+
+      redhat_keycloak_primary_realm:
+        type: str
+        default: "{{ keycloak_primary_realm | default(omit) }}"
+        description:
+          - Name of the realm created for the site's users and clients, alongside master. Falls back to the shared
+            keycloak_primary_realm; the configure stage fails when neither is set.
+
+      redhat_keycloak_idm_admin_password:
+        type: str
+        no_log: true
+        default: "{{ idm_admin_password | default('') }}"
+        description:
+          - Secret. IdM administrator password used for the IdM users, groups, HBAC and certificate stages. Falls back to
+            the shared idm_admin_password; an empty value skips every IdM stage.
+
+      redhat_keycloak_idm_service_principal:
+        type: str
+        default: "HTTP/{{ inventory_hostname }}"
+        description:
+          - Kerberos service principal the RHBK certificate is issued for; also the principal RHBK uses for Kerberos
+            authentication of federated users.
+
+      redhat_keycloak_idm_service_request_id:
+        type: str
+        default: keycloak_idm_service
+        description:
+          - certmonger request identifier. The certificate and key under /etc/pki/<id>/ are what the redhat.rhbk inputs
+            rhbk_cert_file and rhbk_key_file point at.
+
+      redhat_keycloak_idm_service_user:
+        type: str
+        default: "{{ redhat_keycloak_service_user }}"
+        description:
+          - Owner of the TLS material, so the RHBK process can read its key.
+
+      redhat_keycloak_idm_service_group:
+        type: str
+        default: "{{ redhat_keycloak_service_group }}"
+        description:
+          - Group owner of the TLS material.
+
+      redhat_keycloak_idm_service_tls_enabled:
+        type: bool
+        default: true
+        description:
+          - Defined for parity with the other product roles, but the certificate stage always requests the certificate;
+            this value is not consulted.
+
+      redhat_keycloak_idm_service_tls_sans:
+        type: list
+        elements: str
+        default: []
+        description:
+          - Additional DNS names, such as the public single sign-on name, added to the RHBK certificate and the IdM
+            principal.
+
+      redhat_keycloak_idm_users:
+        type: list
+        elements: dict
+        default:
+          - description: Keycloak Automation Account
+            name:
+              username: keycloak
+              first: Keycloak
+              last: Automation
+              full: Keycloak Automation Account
+            initials: KAA
+            home: /var/lib/keycloak
+            shell: /sbin/nologin
+        description:
+          - IdM user accounts created through infra.soe.redhat_idm_users; by default the keycloak account that RHBK binds
+            to IdM LDAP with for user federation.
+          - Items use the redhat_idm_users item shape (name.username, name.first, name.last, name.full, initials and the
+            optional description, email, uid, gid, home, shell, title, password, ssh_public_key and enable_subid keys).
+
+      redhat_keycloak_idm_groups:
+        type: list
+        elements: dict
+        default:
+          - name: keycloak-admins
+            description: Keycloak Administrators
+        description:
+          - IdM groups created through infra.soe.redhat_idm_groups; by default keycloak-admins.
+          - Items use the redhat_idm_groups item shape (name, description and the optional gid, users and groups keys).
+
+      redhat_keycloak_idm_hbac_rules:
+        type: list
+        elements: dict
+        default:
+          - name: allow_keycloak
+            description: Allow administrators to access Keycloak
+            servicecategory: all
+            groups:
+              - keycloak-admins
+        description:
+          - IdM host-based access control rules created through infra.soe.redhat_idm_hbac. By default allow_keycloak grants
+            the keycloak-admins group access to every service on the host.
+          - Items use the redhat_idm_hbac_rules item shape (name, description and the optional users, groups, hosts,
+            services, usercategory, hostcategory and servicecategory keys).
+
+      redhat_keycloak_firewall_enabled:
+        type: bool
+        default: true
+        description:
+          - Apply redhat_keycloak_firewall through infra.soe.firewall.
+
+      redhat_keycloak_firewall:
+        type: list
+        elements: dict
+        default:
+          - service: redhat_keycloak
+            short: Red Hat Keycloak
+            description: Red Hat Build of Keycloak (RHBK)
+            port:
+              - 443/tcp
+              - 7800/tcp
+              - 57800/tcp
+            runtime: true
+            permanent: true
+            state: present
+        description:
+          - firewalld definitions passed unchanged to redhat.rhel_system_roles.firewall by infra.soe.firewall. By default a
+            redhat_keycloak firewalld service with HTTPS and the JGroups cluster ports.
+          - See https://console.redhat.com/ansible/automation-hub/repo/published/redhat/rhel_system_roles/content/role/firewall/
+            for the item schema.
+
+      redhat_keycloak_scap_profile:
+        type: str
+        description:
+          - XCCDF profile identifier that enables the SCAP stage, for example xccdf_org.ssgproject.content_profile_cis.
+          - The short profile name selects a tailoring shipped with the role in vars/scap/<name>.yml; none is shipped
+            today, so the tailoring values come from inventory. Unset skips the SCAP stage.
+
+      redhat_keycloak_scap_tailoring_title:
+        type: str
+        description:
+          - Title of the tailoring profile passed to infra.soe.redhat_scap. Unset lets redhat_scap derive one.
+
+      redhat_keycloak_scap_tailoring_description:
+        type: str
+        description:
+          - Description of the tailoring profile passed to infra.soe.redhat_scap. Unset lets redhat_scap derive one.
+
+      redhat_keycloak_scap_tailoring_exceptions:
+        type: list
+        elements: dict
+        description:
+          - Rule exceptions passed to infra.soe.redhat_scap (items with name, status, justification and the optional owner,
+            change_control and review_date keys). Unset remediates the profile unmodified.
+
+      rhbk_url:
+        type: str
+        description:
+          - Input of redhat.rhbk, also read here as the API endpoint the client and role mapping tasks authenticate against
+            from the control node, for example https://kc1.mtj1.prod.example.org. Required by the configure stage.
+
+      rhbk_clients:
+        type: list
+        elements: dict
+        description:
+          - OpenID Connect clients managed with the redhat.rhbk.rhbk_client module, each with realm and client_id and the
+            optional name, description, public_client, client_authenticator_type, service_accounts_enabled,
+            direct_access_grants_enabled, standard_flow_enabled, redirect_uris, web_origins, optional_client_scopes,
+            attributes, secret, protocol_mappers and state keys. Client secrets inside are secrets. Unset manages none.
+          - See https://console.redhat.com/ansible/automation-hub/repo/published/redhat/rhbk/content/module/rhbk_client/
+
+      rhbk_client_rolemappings:
+        type: list
+        elements: dict
+        description:
+          - Client role mappings for groups, applied with community.general.keycloak_client_rolemapping; each item has
+            realm, client_id, group_name and roles (a list of dictionaries with a name key). Unset manages none.
+
+      rhbk_user_rolemappings:
+        type: list
+        elements: dict
+        description:
+          - Client role mappings for service account users, applied with community.general.keycloak_user_rolemapping;
+            each item has realm, client_id, service_account_user_client_id and roles. Unset manages none.
+
+      no_log_enabled:
+        type: bool
+        description:
+          - Shared inventory variable. Controls no_log on the client and role mapping tasks, which also hides the loop
+            items. Unset behaves as true.

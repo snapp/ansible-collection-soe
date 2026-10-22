@@ -1,0 +1,348 @@
+---
+
+argument_specs:
+  main:
+    short_description: Install containerized Red Hat Ansible Automation Platform (AAP) with IdM integration and configure it from inventory
+    description:
+      - Installs Red Hat Ansible Automation Platform (AAP) with the containerized installer through the infra.aap_utilities
+        roles (download, prepare, install) under a dedicated rootless service account, then imports the subscription
+        manifest and dispatches the declarative configuration of gateway, controller, hub and Event-Driven Ansible
+        objects through infra.aap_configuration.
+      - When an IdM administrator password is available the role creates the AAP service account with a subordinate ID
+        range, the aap-admins and aap-users groups and an HBAC rule in Red Hat Identity Management (IdM), and requests the
+        platform certificate from the IdM certificate authority so every AAP component serves an IdM-issued certificate.
+        Firewall rules and SCAP remediation with AAP tailoring complete the host.
+      - AAP is the twelfth stage of site.yml, after Caddy and NetBird; it is the automation control plane that runs the
+        collection's own playbooks as job templates afterwards. The role targets the aap_installer inventory group. The
+        installer inventory (aap_setup_prep_inv_nodes, aap_setup_prep_inv_vars) and the configuration objects
+        (gateway_*, controller_*, hub_*, eda_*) are read from inventory by the upstream roles.
+    options:
+      redhat_ansible_automation_platform_idm_admin_password:
+        type: str
+        no_log: true
+        default: "{{ idm_admin_password | default('') }}"
+        description:
+          - Secret. IdM administrator password used for the IdM users, groups, HBAC and certificate stages. Falls back to
+            the shared idm_admin_password; an empty value skips every IdM stage.
+
+      redhat_ansible_automation_platform_service_user:
+        type: str
+        default: aap
+        description:
+          - Account that owns the installer, runs the containerized platform and owns the TLS material. Created in IdM by
+            the users stage and expected to exist as aap_service_user for the installer roles.
+
+      redhat_ansible_automation_platform_service_group:
+        type: str
+        default: "{{ redhat_ansible_automation_platform_service_user }}"
+        description:
+          - Group that owns the TLS material.
+
+      redhat_ansible_automation_platform_idm_service_principal:
+        type: str
+        default: "HTTP/{{ inventory_hostname }}"
+        description:
+          - Kerberos service principal the platform certificate is issued for.
+
+      redhat_ansible_automation_platform_idm_service_request_id:
+        type: str
+        default: aap_idm_service
+        description:
+          - certmonger request identifier. The certificate, key and CA copy are kept under /etc/pki/<id>/ and referenced
+            from the installer inventory (gateway_tls_cert, controller_tls_cert, custom_ca_cert and so on).
+
+      redhat_ansible_automation_platform_idm_service_tls_enabled:
+        type: bool
+        default: true
+        description:
+          - Request the platform certificate through infra.soe.redhat_idm_service.
+
+      redhat_ansible_automation_platform_idm_service_tls_sans:
+        type: list
+        elements: str
+        default: []
+        description:
+          - Additional DNS names, such as the public platform name served by the reverse proxy, added to the certificate
+            and the IdM principal.
+
+      redhat_ansible_automation_platform_idm_users:
+        type: list
+        elements: dict
+        default:
+          - description: AAP Service Account
+            name:
+              username: "{{ redhat_ansible_automation_platform_service_user }}"
+              first: AAP
+              last: Service Account
+              full: Ansible Automation Platform Service Account
+            initials: AAP
+            home: /var/lib/aap
+            shell: /bin/bash
+            enable_subid: true
+        description:
+          - IdM user accounts created through infra.soe.redhat_idm_users; by default the service account with a
+            subordinate ID range for rootless Podman.
+          - Items use the redhat_idm_users item shape (name.username, name.first, name.last, name.full, initials and the
+            optional description, email, uid, gid, home, shell, title, password, ssh_public_key and enable_subid keys).
+
+      redhat_ansible_automation_platform_idm_groups:
+        type: list
+        elements: dict
+        default:
+          - name: aap-admins
+            description: Ansible Automation Platform (AAP) Super Users
+          - name: aap-users
+            description: Ansible Automation Platform (AAP) Users
+        description:
+          - IdM groups created through infra.soe.redhat_idm_groups.
+          - Items use the redhat_idm_groups item shape (name, description and the optional gid, users and groups keys).
+
+      redhat_ansible_automation_platform_idm_hbac_rules:
+        type: list
+        elements: dict
+        default:
+          - name: allow_ansible_automation_platform
+            description: Allow users to access Ansible Automation Platform
+            servicecategory: all
+            groups:
+              - aap-admins
+              - aap-users
+        description:
+          - IdM host-based access control rules created through infra.soe.redhat_idm_hbac. By default
+            allow_ansible_automation_platform grants both groups access to every service on the host.
+          - Items use the redhat_idm_hbac_rules item shape (name, description and the optional users, groups, hosts,
+            services, usercategory, hostcategory and servicecategory keys).
+
+      redhat_ansible_automation_platform_firewall_enabled:
+        type: bool
+        default: true
+        description:
+          - Apply redhat_ansible_automation_platform_firewall through infra.soe.firewall.
+
+      redhat_ansible_automation_platform_firewall:
+        type: list
+        elements: dict
+        default:
+          - service: redhat_ansible_automation_platform
+            short: Red Hat AAP
+            description: Red Hat Ansible Automation Platform (AAP)
+            port:
+              - 443/tcp
+              - 5432/tcp
+              - 6379/tcp
+              - 8443/tcp
+              - 8444/tcp
+              - 8445/tcp
+              - 8446/tcp
+              - 27199/tcp
+            runtime: true
+            permanent: true
+            state: present
+          - service: redhat_aap_frontend
+            short: Red Hat AAP Frontend
+            description: Red Hat Ansible Automation Platform (AAP) Frontend
+            port:
+              - 443/tcp
+            runtime: true
+            permanent: true
+            state: present
+          - service: redhat_aap_internal
+            short: Red Hat AAP Internal
+            description: Red Hat Ansible Automation Platform (AAP) Internal
+            port:
+              - 5432/tcp
+              - 6379/tcp
+              - 8443/tcp
+              - 8444/tcp
+              - 8445/tcp
+              - 8446/tcp
+              - 27199/tcp
+            runtime: true
+            permanent: true
+            state: present
+        description:
+          - firewalld definitions passed unchanged to redhat.rhel_system_roles.firewall by infra.soe.firewall. Three
+            firewalld services are defined so a site can bind the frontend (443/tcp) and the internal component ports
+            (PostgreSQL, Redis, controller, hub, Event-Driven Ansible, gateway and receptor) to different firewalld zones.
+          - See https://console.redhat.com/ansible/automation-hub/repo/published/redhat/rhel_system_roles/content/role/firewall/
+            for the item schema.
+
+      redhat_ansible_automation_platform_scap_profile:
+        type: str
+        description:
+          - XCCDF profile identifier that enables the SCAP stage, for example xccdf_org.ssgproject.content_profile_cis.
+          - The short profile name selects the tailoring shipped with the role in vars/scap/<name>.yml (cis is provided).
+            Unset skips the SCAP stage.
+
+      redhat_ansible_automation_platform_scap_tailoring_title:
+        type: str
+        description:
+          - Title of the tailoring profile passed to infra.soe.redhat_scap.
+          - Loaded from vars/scap/<profile>.yml when the role ships one, which overrides inventory; for other profiles set
+            it in inventory.
+
+      redhat_ansible_automation_platform_scap_tailoring_description:
+        type: str
+        description:
+          - Description of the tailoring profile passed to infra.soe.redhat_scap.
+          - Loaded from vars/scap/<profile>.yml when the role ships one, which overrides inventory; for other profiles set
+            it in inventory.
+
+      redhat_ansible_automation_platform_scap_tailoring_exceptions:
+        type: list
+        elements: dict
+        description:
+          - Rule exceptions passed to infra.soe.redhat_scap (items with name, status, justification and the optional owner,
+            change_control and review_date keys).
+          - Loaded from vars/scap/<profile>.yml when the role ships one, which overrides inventory; for other profiles set
+            it in inventory.
+
+      aap_service_user:
+        type: str
+        default: "{{ redhat_ansible_automation_platform_service_user }}"
+        description:
+          - Pass-through to infra.aap_utilities. Account the installer runs as; also used by this role for lingering,
+            temporary sudo, SELinux home equivalence and installer ownership.
+
+      aap_setup_rhel_version:
+        type: int
+        default: 10
+        description:
+          - Pass-through to infra.aap_utilities.aap_setup_download. Major RHEL version of the host, which selects the
+            installer build.
+          - See https://console.redhat.com/ansible/automation-hub/repo/validated/infra/aap_utilities/content/role/aap_setup_download/
+
+      aap_setup_down_version:
+        type: raw
+        default: 2.7
+        description:
+          - Pass-through to infra.aap_utilities.aap_setup_download. AAP version to download, for example 2.7. Typed raw
+            because YAML reads the default as a number.
+
+      aap_setup_down_version_patch:
+        type: raw
+        default: false
+        description:
+          - Pass-through to infra.aap_utilities.aap_setup_download. Patch level of the installer, for example 9 for 2.7-9,
+            or false for the latest.
+
+      aap_setup_down_type:
+        type: str
+        default: setup
+        description:
+          - Pass-through to infra.aap_utilities.aap_setup_download. setup for the online installer or setup-bundle for the
+            bundle with container images.
+
+      aap_setup_containerized:
+        type: bool
+        default: true
+        description:
+          - Pass-through to infra.aap_utilities.aap_setup_download. Download the containerized installer.
+
+      aap_setup_down_dest_dir:
+        type: path
+        default: "/var/lib/{{ aap_service_user }}"
+        description:
+          - Pass-through to infra.aap_utilities.aap_setup_download. Directory the installer archive is downloaded to.
+
+      aap_setup_down_offline_token:
+        type: str
+        no_log: true
+        description:
+          - Secret. Pass-through to infra.aap_utilities.aap_setup_download. Red Hat API offline token used to download the
+            installer; required for the download, supply it from Ansible Vault or an AAP credential injector.
+
+      aap_setup_prep_containerized:
+        type: bool
+        default: true
+        description:
+          - Pass-through to infra.aap_utilities.aap_setup_prepare. Prepare a containerized installation.
+
+      aap_setup_prep_working_dir:
+        type: path
+        default: "/var/lib/{{ aap_service_user }}"
+        description:
+          - Pass-through to infra.aap_utilities.aap_setup_prepare. Directory the installer is unpacked into; created by
+            this role with mode 0750 and owned by the service account.
+          - See https://console.redhat.com/ansible/automation-hub/repo/validated/infra/aap_utilities/content/role/aap_setup_prepare/
+
+      aap_setup_prep_setup_dir:
+        type: path
+        default: "/var/lib/{{ aap_service_user }}/ansible-automation-platform-containerized-setup-{{ aap_setup_down_version }}"
+        description:
+          - Pass-through to infra.aap_utilities.aap_setup_prepare. Directory of the unpacked installer.
+
+      aap_setup_prep_inv_nodes:
+        type: dict
+        description:
+          - Pass-through to infra.aap_utilities.aap_setup_prepare. Installer inventory groups (automationgateway,
+            automationcontroller, automationhub, automationeda, automationmetrics, database and so on) mapped to the hosts
+            in each. Required by the installer; usually set in host_vars of the installer host.
+
+      aap_setup_prep_inv_vars:
+        type: dict
+        description:
+          - Pass-through to infra.aap_utilities.aap_setup_prepare. Installer inventory variables per group (admin and
+            database passwords, registry credentials, TLS certificate paths, routable hostname). Contains secrets; keep it in
+            Ansible Vault. Required by the installer.
+          - See https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.7/html/containerized_installation/
+
+      aap_setup_inst_force:
+        type: bool
+        default: true
+        description:
+          - Pass-through to infra.aap_utilities.aap_setup_install. Run the installer even when AAP is already installed,
+            which is how configuration changes in the installer inventory are applied.
+          - See https://console.redhat.com/ansible/automation-hub/repo/validated/infra/aap_utilities/content/role/aap_setup_install/
+
+      aap_setup_ignore_preflight_errors:
+        type: bool
+        default: false
+        description:
+          - Pass-through to infra.aap_utilities and to the installer through aap_setup_inst_extra_vars. When true this role
+            also patches the containerized installer's playbook so that its variable preflight checks are skipped.
+
+      aap_setup_inst_extra_vars:
+        type: dict
+        default:
+          aap_setup_ignore_preflight_errors: "{{ aap_setup_ignore_preflight_errors }}"
+        description:
+          - Pass-through to infra.aap_utilities.aap_setup_install. Extra variables handed to the installer run.
+
+      aap_backup_dest:
+        type: path
+        default: "/var/lib/{{ aap_service_user }}/backups"
+        description:
+          - Pass-through to infra.aap_utilities. Directory for platform backups.
+
+      aap_routable_hostname:
+        type: str
+        description:
+          - Shared inventory variable. Fully qualified name the platform gateway answers on; used as aap_hostname when
+            importing the manifest and dispatching the configuration. Required by the configure stage.
+
+      aap_gateway_admin_password:
+        type: str
+        no_log: true
+        description:
+          - Secret. Shared inventory variable. Password of the gateway admin user, used to authenticate the manifest import
+            and the configuration dispatch. Required by the configure stage.
+
+      aap_gateway_validate_certs:
+        type: bool
+        default: false
+        description:
+          - Verify the gateway certificate when the configure stage talks to the platform API.
+
+      aap_manifest_import:
+        type: bool
+        description:
+          - Shared inventory variable. Import the subscription manifest through infra.aap_configuration.controller_license.
+            Unset behaves as false.
+
+      aap_controller_license:
+        type: dict
+        description:
+          - Pass-through to infra.aap_configuration.controller_license, for example a manifest_file key pointing at the
+            manifest archive. Required when aap_manifest_import is true.
+          - See https://console.redhat.com/ansible/automation-hub/repo/validated/infra/aap_configuration/content/role/controller_license/

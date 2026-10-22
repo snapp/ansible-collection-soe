@@ -1,0 +1,128 @@
+---
+
+argument_specs:
+  main:
+    short_description: Remediate a RHEL host against a SCAP profile with a tailoring of justified exceptions
+    description:
+      - Runs oscap xccdf eval --remediate against the SCAP Security Guide datastream of the host's Red Hat Enterprise Linux
+        (RHEL) release for the selected profile, writes the remediation log, results and HTML report under a results
+        directory on the host and, when a report directory is set, fetches them to the control node.
+      - When exceptions are given, the role first renders an XCCDF tailoring file that extends the profile and deselects
+        (or re-selects) the listed rules, recording owner, change control reference, review date and justification as
+        comments, so every deviation from the baseline is documented next to the rule it affects.
+      - The role does nothing unless redhat_scap_profile is set. It is composed by the product roles with their own
+        tailoring (infra.soe.redhat_identity_management, redhat_satellite, redhat_keycloak,
+        redhat_ansible_automation_platform, redhat_image_builder) and can be run on its own through the redhat_scap
+        playbook against hosts no product role covers.
+    options:
+      redhat_scap_profile:
+        type: str
+        description:
+          - XCCDF profile identifier to remediate against, for example xccdf_org.ssgproject.content_profile_cis for CIS
+            Level 2 Server or xccdf_org.ssgproject.content_profile_cis_server_l1 for Level 1. Discover profiles with oscap
+            info --profiles <datastream>.
+          - Unset or empty skips every task.
+
+      redhat_scap_tailoring_title:
+        type: str
+        description:
+          - Title of the tailored profile. When unset a title is derived from the profile name and the inventory hostname.
+
+      redhat_scap_tailoring_description:
+        type: str
+        description:
+          - Description of the tailored profile. When unset a description with the number of exceptions is derived from
+            the profile name and the inventory hostname.
+
+      redhat_scap_tailoring_exceptions:
+        type: list
+        elements: dict
+        description:
+          - Rules to deselect from, or re-select in, the profile. Unset or empty remediates the upstream profile unmodified
+            and writes no tailoring file.
+        options:
+          name:
+            type: str
+            required: true
+            description:
+              - XCCDF rule identifier, for example xccdf_org.ssgproject.content_rule_package_bind_removed.
+          status:
+            type: str
+            required: true
+            choices:
+              - deselected
+              - selected
+            description:
+              - deselected skips the rule; selected re-enables a rule the base profile has turned off.
+          justification:
+            type: str
+            description:
+              - Why the rule is excepted. Written as a comment into the tailoring file; expected on every exception.
+          owner:
+            type: str
+            description:
+              - Person or team accountable for the exception.
+          change_control:
+            type: str
+            description:
+              - Change control reference for the exception.
+          review_date:
+            type: raw
+            description:
+              - Date by which the exception must be reviewed, as a string or YAML date.
+
+      redhat_scap_report_dir:
+        type: path
+        description:
+          - Directory on the control node that the log, results, report and tailoring files are fetched into (one
+            subdirectory per host). When unset or empty the remediation summary is printed instead and nothing is
+            fetched.
+
+      redhat_scap_results_dir:
+        type: path
+        default: /var/log/scap
+        description:
+          - Directory on the host that receives the log, results, report and tailoring files (mode 0750).
+
+      redhat_scap_report_prefix:
+        type: str
+        default: scap-remediation
+        description:
+          - File name prefix of every generated file.
+
+      redhat_scap_timestamp:
+        type: str
+        default: "{{ ansible_date_time.iso8601_basic_short }}"
+        description:
+          - Timestamp embedded in every generated file name, so each run leaves its own set of files.
+
+      redhat_scap_datastream:
+        type: path
+        default: "/usr/share/xml/scap/ssg/content/ssg-rhel{{ ansible_distribution_major_version }}-ds.xml"
+        description:
+          - SCAP Security Guide datastream evaluated. Selected by RHEL major version; the scap-security-guide package must
+            be installed.
+
+      redhat_scap_log_file:
+        type: path
+        default: "{{ redhat_scap_results_dir }}/{{ redhat_scap_report_prefix }}-{{ redhat_scap_timestamp }}.log"
+        description:
+          - Path of the remediation log (standard output and error of oscap), mode 0640.
+
+      redhat_scap_report_file:
+        type: path
+        default: "{{ redhat_scap_results_dir }}/{{ redhat_scap_report_prefix }}-report-{{ redhat_scap_timestamp }}.html"
+        description:
+          - Path of the HTML report generated from the results.
+
+      redhat_scap_results_file:
+        type: path
+        default: "{{ redhat_scap_results_dir }}/{{ redhat_scap_report_prefix }}-results-{{ redhat_scap_timestamp }}.xml"
+        description:
+          - Path of the XCCDF results file written by oscap.
+
+      redhat_scap_tailoring_file:
+        type: path
+        default: "{{ redhat_scap_results_dir }}/{{ redhat_scap_report_prefix }}-tailoring-{{ redhat_scap_timestamp }}.xml"
+        description:
+          - Path of the rendered XCCDF tailoring file (mode 0640), written only when exceptions are given.

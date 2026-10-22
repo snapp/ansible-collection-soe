@@ -1,0 +1,89 @@
+---
+
+argument_specs:
+  main:
+    short_description: Configure the RHEL web console (Cockpit) with an IdM-issued TLS certificate
+    description:
+      - Requests a TLS certificate for the host's HTTP service principal from Red Hat Identity Management (IdM) through
+        infra.soe.redhat_idm_service and, when enabled, installs and configures the RHEL web console through
+        redhat.rhel_system_roles.cockpit, unmasking its units and labelling the console port for SELinux.
+      - The certificate stage runs whenever an IdM administrator password is available, so every enrolled host ends up
+        with an IdM-issued certificate under /etc/pki/cockpit_idm_service that the cockpit system role can be pointed at;
+        the console itself is only installed when redhat_cockpit_enabled is true.
+      - Cockpit is the seventh stage of site.yml and runs on every Red Hat Enterprise Linux (RHEL) host outside the
+        identity_management and satellite groups.
+    options:
+      redhat_cockpit_enabled:
+        type: bool
+        default: false
+        description:
+          - Install and configure the web console. When false only the certificate stage runs.
+
+      redhat_cockpit_port:
+        type: int
+        default: 9090
+        description:
+          - TCP port labelled websm_port_t for SELinux so the console may listen on it. Only applied when the shared
+            cockpit_port is not 443; set both to the same value.
+
+      redhat_cockpit_started:
+        type: bool
+        default: false
+        description:
+          - Reserved for parity with the cockpit system role's cockpit_started; no task reads it today. Set cockpit_started
+            for the system role instead.
+
+      redhat_cockpit_zone:
+        type: str
+        default: public
+        description:
+          - Reserved for parity with the cockpit system role's firewall zone handling; no task reads it today.
+
+      redhat_cockpit_packages:
+        type: list
+        elements: str
+        default:
+          - cockpit-system
+          - cockpit-ws
+        description:
+          - Reserved for parity with the cockpit system role's cockpit_packages; no task reads it today. Set
+            cockpit_packages for the system role instead.
+
+      redhat_cockpit_idm_admin_password:
+        type: str
+        no_log: true
+        default: "{{ idm_admin_password | default('') }}"
+        description:
+          - Secret. IdM administrator password used by the certificate stage. Falls back to the shared idm_admin_password;
+            an empty value skips the certificate stage.
+
+      redhat_cockpit_idm_service_principal:
+        type: str
+        default: "HTTP/{{ inventory_hostname }}"
+        description:
+          - Kerberos service principal the certificate is issued for.
+
+      redhat_cockpit_idm_service_request_id:
+        type: str
+        default: cockpit_idm_service
+        description:
+          - certmonger request identifier; the certificate, key and CA copy are kept under /etc/pki/<id>/.
+
+      redhat_cockpit_idm_service_tls_enabled:
+        type: bool
+        default: true
+        description:
+          - Request the certificate (as opposed to only creating the principal) through infra.soe.redhat_idm_service.
+
+      redhat_cockpit_idm_service_tls_sans:
+        type: list
+        elements: str
+        default: []
+        description:
+          - Additional DNS names for the console certificate and the IdM principal.
+
+      cockpit_port:
+        type: int
+        description:
+          - Input of redhat.rhel_system_roles.cockpit, also read here to decide which port receives the websm_port_t SELinux
+            label. Unset behaves as 9090.

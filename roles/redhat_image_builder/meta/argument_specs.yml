@@ -2,95 +2,121 @@
 
 argument_specs:
   main:
-    short_description: Red Hat Image Builder
-    description: Install Red Hat Image Builder and configure local users, IdM integration, and osbuild-composer repositories.
+    short_description: Install RHEL image builder and point its repositories at Satellite content views
+    description:
+      - Installs RHEL image builder (osbuild-composer, composer-cli and the Cockpit web interface), enables its services,
+        adds the designated users to the weldr group that may build images and, when the host is registered to Red Hat
+        Satellite, replaces the default Red Hat CDN repository definitions of osbuild-composer with repositories served
+        from Satellite content views, trusting the Satellite CA for RHSM-protected content.
+      - When an IdM administrator password is available the role creates the imagebuilder-users group and an HBAC rule in
+        Red Hat Identity Management (IdM). SCAP remediation with Image Builder tailoring is applied through
+        infra.soe.redhat_scap.
+      - Image builder is where the golden images of the reference implementation are composed, so building from Satellite
+        content views rather than the CDN is what makes an image reproducible against a promoted content version. The role
+        targets the image_builder inventory group and runs after Red Hat Ansible Automation Platform (AAP) in site.yml.
     options:
       redhat_image_builder_users:
         type: list
         elements: str
-        required: false
-        default: []
         description:
-          - Local users to add to the weldr group, granting access to Image Builder.
+          - Local or IdM user names added to the weldr group, which grants access to the composer socket and the web
+            interface. Unset adds none.
+
+      redhat_image_builder_idm_admin_password:
+        type: str
+        no_log: true
+        default: "{{ idm_admin_password | default('') }}"
+        description:
+          - Secret. IdM administrator password used for the IdM group and HBAC stages. Falls back to the shared
+            idm_admin_password; an empty value skips both stages.
 
       redhat_image_builder_idm_groups:
         type: list
         elements: dict
-        required: false
+        default:
+          - name: imagebuilder-users
+            description: Image Builder Users
         description:
-          - IdM groups to create via the infra.soe.redhat_idm_groups role.
-          - Defaults to the redhat_idm_groups variable, if defined.
+          - IdM groups created through infra.soe.redhat_idm_groups; by default imagebuilder-users.
+          - Items use the redhat_idm_groups item shape (name, description and the optional gid, users and groups keys).
 
       redhat_image_builder_idm_hbac_rules:
         type: list
         elements: dict
-        required: false
+        default:
+          - name: allow_image_builder
+            description: Allow users to access Image Builder
+            servicecategory: all
+            groups:
+              - imagebuilder-users
         description:
-          - IdM Host-Based Access Control rules to create via the
-            infra.soe.redhat_idm_hbac role.
-          - Defaults to the redhat_idm_hbac_rules variable, if defined.
+          - IdM host-based access control rules created through infra.soe.redhat_idm_hbac. By default allow_image_builder
+            grants the imagebuilder-users group access to every service on the host.
+          - Items use the redhat_idm_hbac_rules item shape (name, description and the optional users, groups, hosts,
+            services, usercategory, hostcategory and servicecategory keys).
 
       redhat_image_builder_satellite:
         type: dict
-        required: false
+        default:
+          baseurl: "{{ satellite_baseurl | default(omit) }}"
+          organization: "{{ satellite_organization | default(omit) }}"
+          lifecycle_environment: test
         description:
-          - Satellite content source used to build osbuild-composer repositories.
+          - Satellite content source the default repository definitions are built from.
         options:
           baseurl:
             type: str
-            required: false
             default: "{{ satellite_baseurl | default(omit) }}"
             description:
-              - Base URL of the Satellite server.
-              - Defaults to the satellite_baseurl variable, if defined.
-
+              - Pulp content base URL of the Satellite, for example https://sat1.mtj1.prod.example.org/pulp/content.
+                Falls back to the shared satellite_baseurl.
           organization:
             type: str
-            required: false
             default: "{{ satellite_organization | default(omit) }}"
             description:
-              - Satellite organization label.
-              - Defaults to the satellite_organization variable, if defined.
-
+              - Satellite organization label in the content path. Falls back to the shared satellite_organization.
           lifecycle_environment:
             type: str
-            required: false
             default: test
             description:
-              - Satellite lifecycle environment label used in the content view path.
+              - Lifecycle environment label in the content path, which decides the promotion level images are built from.
 
       redhat_image_builder_repositories:
+        type: raw
+        default: "{{ (satellite_baseurl is defined and satellite_baseurl != '') | ternary(_redhat_image_builder_repositories_default, omit) }}"
+        description:
+          - Repository definitions rendered to /etc/osbuild-composer/repositories/<name>.json, each a dictionary with
+            name, baseos_repo_url, appstream_repo_url and the optional rhsm (true unless set to false) keys.
+          - By default, when satellite_baseurl is set, RHEL 8, 9 and 10 repositories built from redhat_image_builder_satellite
+            and the rhel content view path; otherwise the option is omitted and the osbuild-composer defaults remain.
+          - Typed raw because the default is either a list or omitted.
+
+      redhat_image_builder_scap_profile:
+        type: str
+        description:
+          - XCCDF profile identifier that enables the SCAP stage, for example xccdf_org.ssgproject.content_profile_cis.
+          - The short profile name selects the tailoring shipped with the role in vars/scap/<name>.yml (cis is provided).
+            Unset skips the SCAP stage.
+
+      redhat_image_builder_scap_tailoring_title:
+        type: str
+        description:
+          - Title of the tailoring profile passed to infra.soe.redhat_scap.
+          - Loaded from vars/scap/<profile>.yml when the role ships one, which overrides inventory; for other profiles set
+            it in inventory.
+
+      redhat_image_builder_scap_tailoring_description:
+        type: str
+        description:
+          - Description of the tailoring profile passed to infra.soe.redhat_scap.
+          - Loaded from vars/scap/<profile>.yml when the role ships one, which overrides inventory; for other profiles set
+            it in inventory.
+
+      redhat_image_builder_scap_tailoring_exceptions:
         type: list
         elements: dict
-        required: false
         description:
-          - Osbuild-composer repository definitions rendered to
-            /etc/osbuild-composer/repositories/.
-          - Defaults to RHEL 8, 9, and 10 repositories built from
-            redhat_image_builder_satellite when satellite_baseurl is defined;
-            otherwise omitted so upstream defaults are used.
-        options:
-          name:
-            type: str
-            required: true
-            description:
-              - Repository file name, written as <name>.json.
-
-          baseos_repo_url:
-            type: str
-            required: true
-            description:
-              - URL of the BaseOS repository.
-
-          appstream_repo_url:
-            type: str
-            required: true
-            description:
-              - URL of the AppStream repository.
-
-          rhsm:
-            type: bool
-            required: false
-            default: true
-            description:
-              - Whether the repository requires RHSM entitlement.
+          - Rule exceptions passed to infra.soe.redhat_scap (items with name, status, justification and the optional owner,
+            change_control and review_date keys).
+          - Loaded from vars/scap/<profile>.yml when the role ships one, which overrides inventory; for other profiles set
+            it in inventory.

@@ -57,21 +57,21 @@ aap_setup_prep_containerized: true  # noqa: var-naming[no-role-prefix]
 # Dictionary of dictionaries of nodes in the cluster, where each top level key is a group name, and 2nd level is the host's name
 # aap_setup_prep_inv_nodes:
 #   automationgateway:
-#     aap-27.dc1.lab.example.org:
+#     aap1.mtj1.prod.example.org:
 #   automationcontroller:
-#     aap-27.dc1.lab.example.org:
+#     aap1.mtj1.prod.example.org:
 #   automationhub:
-#     aap-27.dc1.lab.example.org:
+#     aap1.mtj1.prod.example.org:
 #   automationeda:
-#     aap-27.dc1.lab.example.org:
+#     aap1.mtj1.prod.example.org:
 #   automationmetrics:
-#     aap-27.dc1.lab.example.org:
+#     aap1.mtj1.prod.example.org:
 #   ansiblelightspeed:
-#     aap-27.dc1.lab.example.org:
+#     aap1.mtj1.prod.example.org:
 #   ansiblemcp:
-#     aap-27.dc1.lab.example.org:
+#     aap1.mtj1.prod.example.org:
 #   database:
-#     aap-27.dc1.lab.example.org:
+#     aap1.mtj1.prod.example.org:
 
 aap_setup_inst_extra_vars:  # noqa: var-naming[no-role-prefix]
   aap_setup_ignore_preflight_errors: "{{ aap_setup_ignore_preflight_errors }}"
@@ -108,8 +108,8 @@ aap_setup_inst_extra_vars:  # noqa: var-naming[no-role-prefix]
 #   # https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.7/html/containerized_installation/appendix-inventory-files-vars#ref-gateway-variables
 #   automationgateway:
 #     gateway_admin_password: "{{ _vault_aap_gateway_admin_password }}"
-#     gateway_hostname: aap-27.dc1.lab.example.org
-#     gateway_pg_host: aap-27.dc1.lab.example.org
+#     gateway_hostname: aap1.mtj1.prod.example.org
+#     gateway_pg_host: aap1.mtj1.prod.example.org
 #     gateway_pg_password: "{{ _vault_aap_gateway_pg_password }}"
 #     gateway_tls_cert: /etc/pki/aap_idm_service/service.crt
 #     gateway_tls_key: /etc/pki/aap_idm_service/private/service.key
@@ -117,7 +117,7 @@ aap_setup_inst_extra_vars:  # noqa: var-naming[no-role-prefix]
 #   # https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.7/html/containerized_installation/appendix-inventory-files-vars#ref-controller-variables
 #   automationcontroller:
 #     controller_admin_password: "{{ _vault_aap_controller_admin_password }}"
-#     controller_pg_host: aap-27.dc1.lab.example.org
+#     controller_pg_host: aap1.mtj1.prod.example.org
 #     controller_pg_password: "{{ _vault_aap_controller_pg_password }}"
 #     controller_percent_memory_capacity: 0.5
 #     controller_tls_cert: /etc/pki/aap_idm_service/service.crt
@@ -126,7 +126,7 @@ aap_setup_inst_extra_vars:  # noqa: var-naming[no-role-prefix]
 #   # https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.7/html/containerized_installation/appendix-inventory-files-vars#ref-hub-variables
 #   automationhub:
 #     hub_admin_password: "{{ _vault_aap_hub_admin_password }}"
-#     hub_pg_host: aap-27.dc1.lab.example.org
+#     hub_pg_host: aap1.mtj1.prod.example.org
 #     hub_pg_password: "{{ _vault_aap_hub_pg_password }}"
 #     hub_seed_collections: false
 #     hub_tls_cert: /etc/pki/aap_idm_service/service.crt
@@ -137,24 +137,24 @@ aap_setup_inst_extra_vars:  # noqa: var-naming[no-role-prefix]
 #   # https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.7/html/containerized_installation/appendix-inventory-files-vars#event-driven-ansible-controller
 #   automationeda:
 #     eda_admin_password: "{{ _vault_aap_eda_admin_password }}"
-#     eda_pg_host: aap-27.dc1.lab.example.org
+#     eda_pg_host: aap1.mtj1.prod.example.org
 #     eda_pg_password: "{{ _vault_aap_eda_pg_password }}"
 #     eda_tls_cert: /etc/pki/aap_idm_service/service.crt
 #     eda_tls_key: /etc/pki/aap_idm_service/private/service.key
 
 #   automationmetrics:
 #     automationmetrics_admin_password: "{{ _vault_aap_automationmetrics_admin_password }}"
-#     automationmetrics_pg_host: aap-27.dc1.lab.example.org
+#     automationmetrics_pg_host: aap1.mtj1.prod.example.org
 #     automationmetrics_pg_password: "{{ _vault_aap_automationmetrics_pg_password }}"
 #     automationmetrics_tls_key: /etc/pki/aap_idm_service/private/service.key
 #     automationmetrics_tls_cert: /etc/pki/aap_idm_service/service.crt
-#     automationmetrics_controller_read_pg_host: aap-27.dc1.lab.example.org
+#     automationmetrics_controller_read_pg_host: aap1.mtj1.prod.example.org
 #     automationmetrics_controller_read_pg_password: "{{ _vault_aap_automationmetrics_controller_read_pg_password }}"
 
 #   # https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.7/html/containerized_installation/appendix-inventory-files-vars#ref-lightspeed-variables
 #   ansiblelightspeed:
 #     lightspeed_admin_password: "{{ _vault_aap_lightspeed_admin_password }}"
-#     lightspeed_pg_host: aap-27.dc1.lab.example.org
+#     lightspeed_pg_host: aap1.mtj1.prod.example.org
 #     lightspeed_pg_password: "{{ _vault_aap_lightspeed_pg_password }}"
 
 #   # ansiblemcp:

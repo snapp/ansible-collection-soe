@@ -6,7 +6,7 @@ redhat_ansible_automation_platform_scap_tailoring_description: >-
   Exceptions derived from a post-install CIS L2 Server remediation run on RHEL 10 running
   AAP containerized (Controller + EDA + Hub via Podman). Each disabled rule was a
   persistent post-remediation failure whose remediation either breaks the AAP installation
-  or is incompatible with the infrastructure-as-code lifecycle used in this lab.
+  or is incompatible with the infrastructure-as-code lifecycle of this reference implementation.
 
 redhat_ansible_automation_platform_scap_tailoring_exceptions:
 
@@ -25,7 +25,7 @@ redhat_ansible_automation_platform_scap_tailoring_exceptions:
     status: deselected
     justification: >-
       Single-user mode authentication depends on a root password being set.
-      Root interactive login is intentionally disabled on all lab hosts;
+      Root interactive login is intentionally disabled on all hosts of this reference implementation;
       emergency access is provided via AAP credential vault break-glass
       procedure (console → sulogin bypass via rescue kernel parameter).
       Linked to grub2_password — both cover the same boot-time access-control
@@ -49,7 +49,7 @@ redhat_ansible_automation_platform_scap_tailoring_exceptions:
     status: deselected
     justification: >-
       systemd-journal-upload forwards journal entries to a remote
-      systemd-journal-remote receiver. This lab uses rsyslog → Satellite Server
+      systemd-journal-remote receiver. This reference implementation uses rsyslog → Satellite Server
       for centralized log aggregation instead. Enabling journal-upload would
       create a redundant, unmonitored log stream.
       CIS L2-only requirement; not present in CIS L1 Server.
