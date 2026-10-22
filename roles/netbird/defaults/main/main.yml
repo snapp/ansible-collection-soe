@@ -2,7 +2,7 @@
 
 # ---------------------------------------------------------------------------
 # Service identity — runs as a dedicated rootless IdM user, exactly like the
-# caddy and ai_webui roles. The 'netbird' user must exist with linger enabled:
+# caddy role. The 'netbird' user must exist with linger enabled:
 #   ipa user-add netbird --shell=/sbin/nologin --home=/var/lib/netbird
 #   loginctl enable-linger netbird
 # ---------------------------------------------------------------------------

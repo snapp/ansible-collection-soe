@@ -46,7 +46,7 @@ caddy_oauth2_proxy_image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.3
 #
 # caddy_oauth2_proxies:
 #   - name: code                          # -> container + DNS name oauth2-proxy-code
-#     domain: code.lab.example.org        # the vhost it protects; drives the redirect URI
+#     domain: code.mtj1.prod.example.org        # the vhost it protects; drives the redirect URI
 #     port: 4180                          # container-internal only; never published
 #     allowed_groups:
 #       - code-server-users

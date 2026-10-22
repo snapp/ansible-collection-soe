@@ -1,0 +1,209 @@
+---
+
+argument_specs:
+  main:
+    short_description: Deploy Caddy as a rootless Podman Quadlet reverse proxy with optional Keycloak forward-auth sidecars
+    description:
+      - Deploys Caddy as a rootless Podman Quadlet under a dedicated service account, as the TLS-terminating reverse proxy
+        for the self-hosted services of a site. Site blocks are supplied as raw Caddyfile fragments in caddy_domains and
+        concatenated into the Caddyfile, so each service can publish its own block. The role lets rootless Podman bind the
+        published privileged ports by lowering net.ipv4.ip_unprivileged_port_start and lets the container read the host
+        trust bundle, which is how Caddy trusts the Red Hat Identity Management (IdM) certificate authority and requests
+        its own certificates from the IdM ACME directory.
+      - Optionally deploys one oauth2-proxy sidecar per protected virtual host (caddy_oauth2_proxies), each acting as the
+        Red Hat build of Keycloak (RHBK) OpenID Connect client for an application that has no single sign-on of its own.
+        Caddy's forward_auth directive asks the sidecar on every request; the sidecars share a private container network
+        with Caddy and publish no host port. Their credentials are stored as Podman secrets.
+      - When an IdM administrator password is available the role creates the caddy service account in IdM with a
+        subordinate ID range. Host firewall rules are applied through infra.soe.firewall. Caddy is the tenth stage of
+        site.yml and targets the caddy inventory group.
+    options:
+      caddy_domains:
+        type: list
+        elements: str
+        required: true
+        description:
+          - Caddyfile fragments, concatenated verbatim in order into the Caddyfile. Entries are Jinja-templated, so they may
+            reference other inventory variables. The first entry is usually the global options block or a shared snippet.
+          - Address backends by their network address, not 127.0.0.1, because Caddy runs in its own network namespace.
+
+      caddy_oauth2_proxies:
+        type: list
+        elements: dict
+        default: []
+        description:
+          - Forward-auth sidecars, one per protected virtual host. When non-empty the role creates the shared container
+            network named by caddy_network and joins Caddy to it; when empty Caddy keeps Podman's default networking.
+        options:
+          name:
+            type: str
+            required: true
+            description:
+              - DNS-safe name (lowercase letters, digits and dashes). The container and its DNS name on the shared network
+                are oauth2-proxy-<name>, which the Caddyfile's forward_auth directive points at.
+          domain:
+            type: str
+            required: true
+            description:
+              - Virtual host the sidecar protects. Drives the OpenID Connect redirect URL
+                (https://<domain>/oauth2/callback) and the cookie domain.
+          port:
+            type: int
+            default: 4180
+            description:
+              - Port the sidecar listens on inside the container network; never published to the host.
+          allowed_groups:
+            type: list
+            elements: str
+            required: true
+            description:
+              - Group names from the token's groups claim that may use the application. Bare names, without a leading
+                slash, because the realm's group mappers set full.path to false.
+          client_id:
+            type: str
+            required: true
+            no_log: true
+            description:
+              - Secret. Client identifier of the RHBK client the sidecar authenticates as.
+          client_secret:
+            type: str
+            required: true
+            no_log: true
+            description:
+              - Secret. Client secret of that RHBK client.
+          cookie_secret:
+            type: str
+            required: true
+            no_log: true
+            description:
+              - Secret. Session cookie signing key, for example from openssl rand -base64 32 with + and / replaced by - and _.
+
+      caddy_keycloak_base_url:
+        type: str
+        default: "{{ keycloak_base_url | default(omit) }}"
+        description:
+          - Public URL of the RHBK service, used to build the OpenID Connect issuer of the sidecars. Falls back to the
+            shared keycloak_base_url. Required when caddy_oauth2_proxies is non-empty.
+
+      caddy_keycloak_primary_realm:
+        type: str
+        default: "{{ keycloak_primary_realm | default(omit) }}"
+        description:
+          - RHBK realm the sidecars authenticate against. Falls back to the shared keycloak_primary_realm. Required when
+            caddy_oauth2_proxies is non-empty.
+
+      caddy_service_user:
+        type: str
+        default: caddy
+        description:
+          - Rootless account that owns the configuration and runs the Quadlet units. Must exist on the host with systemd
+            lingering enabled; by default it is created in IdM by the users stage.
+
+      caddy_service_group:
+        type: str
+        default: caddy
+        description:
+          - Group that owns the configuration directory and the Caddyfile.
+
+      caddy_config_dir:
+        type: path
+        default: /var/lib/caddy/config
+        description:
+          - Host directory (mode 0750) holding the rendered Caddyfile, which is mounted read-only into the container.
+
+      caddy_acme_ca:
+        type: str
+        default: https://acme-v02.api.letsencrypt.org/directory
+        description:
+          - ACME directory URL kept for Caddyfile fragments to reference (for example an IdM ACME directory). No task reads
+            it; the certificate authority is chosen inside the fragments.
+
+      caddy_publish_ports:
+        type: list
+        elements: str
+        default:
+          - '80:80'
+          - '443:443'
+        description:
+          - Ports published from the host to the Caddy container, as <host port>:<container port> with an optional address
+            prefix and protocol suffix. The lowest host port decides the value of net.ipv4.ip_unprivileged_port_start.
+
+      caddy_network:
+        type: str
+        default: caddy
+        description:
+          - Name of the Podman network shared by Caddy and the sidecars, created only when caddy_oauth2_proxies is
+            non-empty.
+
+      caddy_oauth2_proxy_image:
+        type: str
+        default: quay.io/oauth2-proxy/oauth2-proxy:v7.15.3
+        description:
+          - Pinned oauth2-proxy image. The default tag is distroless (no shell, no curl), so the sidecars carry no
+            in-container health check; switch to the -alpine tag if one is needed.
+
+      caddy_idm_admin_password:
+        type: str
+        no_log: true
+        default: "{{ idm_admin_password | default('') }}"
+        description:
+          - Secret. IdM administrator password used to create the service account. Falls back to the shared
+            idm_admin_password; an empty value skips the IdM stage.
+
+      caddy_idm_users:
+        type: list
+        elements: dict
+        default:
+          - description: Caddy Service Account
+            name:
+              username: caddy
+              first: Caddy
+              last: Service Account
+              full: Caddy Service Account
+            initials: CSA
+            home: /var/lib/caddy
+            shell: /sbin/nologin
+            enable_subid: true
+        description:
+          - IdM user accounts created through infra.soe.redhat_idm_users; by default the caddy service account with a
+            subordinate ID range for rootless Podman.
+          - Items use the redhat_idm_users item shape (name.username, name.first, name.last, name.full, initials and the
+            optional description, email, uid, gid, home, shell, title, password, ssh_public_key and enable_subid keys).
+
+      caddy_firewall_enabled:
+        type: bool
+        default: true
+        description:
+          - Apply caddy_firewall through infra.soe.firewall.
+
+      caddy_firewall:
+        type: list
+        elements: dict
+        default:
+          - service: caddy
+            short: Caddy
+            description: Caddy Transport Layer Security (TLS) Reverse Proxy
+            port:
+              - 80/tcp
+              - 443/tcp
+              - 443/udp
+            runtime: true
+            permanent: true
+            state: present
+        description:
+          - firewalld definitions passed unchanged to redhat.rhel_system_roles.firewall by infra.soe.firewall. By default a
+            caddy firewalld service with HTTP (needed for the ACME HTTP-01 challenge), HTTPS and HTTP/3 over UDP.
+          - See https://console.redhat.com/ansible/automation-hub/repo/published/redhat/rhel_system_roles/content/role/firewall/
+            for the item schema.
+
+      podman_pull_image:
+        type: bool
+        description:
+          - Input of redhat.rhel_system_roles.podman, also read here to decide whether the Caddy and sidecar images are
+            pulled when the units are written. Unset behaves as false, so images are pulled on first start instead.
+
+      no_log_enabled:
+        type: bool
+        description:
+          - Shared inventory variable. Controls no_log on the sidecar validation task, which would otherwise print the
+            client secrets. Unset behaves as true.

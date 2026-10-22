@@ -1,0 +1,314 @@
+---
+
+argument_specs:
+  main:
+    short_description: Deploy a self-hosted NetBird mesh VPN control plane as rootless Podman Quadlets behind Caddy and RHBK
+    description:
+      - Deploys the NetBird control plane as rootless Podman Quadlets under a dedicated service account, following
+        NetBird's combined-server model, the netbird-server container (management, signal, relay, embedded STUN and the
+        embedded Dex identity provider) and the dashboard container on their own container network, with configuration
+        rendered to the service account's home. TLS is terminated by infra.soe.caddy in front of the published ports.
+      - Red Hat build of Keycloak (RHBK) is meant to be registered as an external OpenID Connect connector behind the
+        embedded identity provider. The role mints and caches an administrator API token for that purpose; the tasks that
+        would register the connector are present but disabled, so the connector is added through the dashboard today.
+      - Through its meta dependency on infra.soe.firewall the role opens the dashboard, server, STUN, WireGuard and DNS
+        forwarder ports. NetBird is the eleventh stage of site.yml and targets the netbird inventory group; the service
+        account must exist with systemd lingering before the role runs.
+    options:
+      netbird_relay_secret:
+        type: str
+        required: true
+        no_log: true
+        description:
+          - Secret. Shared HMAC secret between the relay and the peers (server.authSecret). Generate once with openssl rand
+            -base64 32 and store it in Ansible Vault or an AAP credential injector.
+
+      netbird_datastore_encryption_key:
+        type: str
+        required: true
+        no_log: true
+        description:
+          - Secret. Base64 32-byte key encrypting the SQLite store (store.encryptionKey). Losing it makes the store
+            unreadable.
+
+      netbird_session_cookie_key:
+        type: str
+        required: true
+        no_log: true
+        description:
+          - Secret. Encryption key of the dashboard session cookie (server.auth.sessionCookieEncryptionKey).
+
+      netbird_idp_client_secret:
+        type: str
+        required: true
+        no_log: true
+        description:
+          - Secret. Client secret of the RHBK client that the embedded identity provider brokers to. Asserted present even
+            though the registration tasks are disabled.
+
+      netbird_service_user:
+        type: str
+        default: netbird
+        description:
+          - Rootless account that owns the configuration and runs the Quadlet units. Must exist with systemd lingering;
+            the role does not create it.
+
+      netbird_service_group:
+        type: str
+        default: netbird
+        description:
+          - Group that owns the configuration directory and files.
+
+      netbird_home_dir:
+        type: path
+        default: /var/lib/netbird
+        description:
+          - Home directory of the service account. Rootless Podman keeps its image store under it, so when it is outside
+            /home the role registers it as /home-equivalent for SELinux.
+
+      netbird_selinux_home_equivalent:
+        type: bool
+        default: true
+        description:
+          - Register netbird_home_dir as SELinux-equivalent to /home/<user> so the container store is labelled
+            container_file_t, and relabel an existing store. Disable only when the home already lives under /home.
+
+      netbird_config_dir:
+        type: path
+        default: "{{ netbird_home_dir }}/config"
+        description:
+          - Host directory (mode 0750) holding the rendered config.yaml, dashboard.env and the cached administrator API
+            token.
+
+      netbird_dns_static_hosts:
+        type: list
+        elements: str
+        default: []
+        description:
+          - AddHost entries (<name>:<address>) for the netbird-server container, for names it must resolve without DNS.
+
+      netbird_domain:
+        type: str
+        default: netbird.selfhosted
+        description:
+          - Public fully qualified name of the control plane as served by Caddy, for example netbird.mtj1.prod.example.org.
+            Used as the exposed address, the embedded issuer host and the dashboard redirect URIs.
+
+      netbird_dashboard_url:
+        type: str
+        default: "https://{{ netbird_domain }}"
+        description:
+          - URL the dashboard uses for the management API and gRPC endpoints.
+
+      netbird_dashboard_image:
+        type: str
+        default: docker.io/netbirdio/dashboard:v2.91.1
+        description:
+          - Pinned dashboard image. Bump it together with netbird_server_image to a matched release pair.
+
+      netbird_server_image:
+        type: str
+        default: docker.io/netbirdio/netbird-server:0.77.1
+        description:
+          - Pinned combined server image. Bump it together with netbird_dashboard_image.
+
+      netbird_dashboard_port:
+        type: int
+        default: 8090
+        description:
+          - Host port the dashboard is published on for Caddy; also opened in the firewall definition.
+
+      netbird_dashboard_publish_ports:
+        type: list
+        elements: str
+        default:
+          - "127.0.0.1:{{ netbird_dashboard_port }}:80"
+        description:
+          - PublishPort entries of the dashboard container. By default bound to loopback, where Caddy reaches it through
+            host.containers.internal.
+
+      netbird_server_port:
+        type: int
+        default: 8091
+        description:
+          - Host port the server's single HTTP endpoint (API, gRPC, relay and OpenID Connect) is published on for Caddy;
+            also opened in the firewall definition.
+
+      netbird_server_publish_ports:
+        type: list
+        elements: str
+        default:
+          - "127.0.0.1:{{ netbird_server_port }}:80"
+        description:
+          - PublishPort entries of the server container. By default bound to loopback for Caddy.
+
+      netbird_stun_publish_ip:
+        type: str
+        default: 0.0.0.0
+        description:
+          - Address the embedded STUN service is published on and advertised to peers. STUN is UDP and cannot be reverse
+            proxied, so it is published on all addresses by default.
+
+      netbird_stun_port:
+        type: int
+        default: 3478
+        description:
+          - UDP port of the embedded STUN service.
+
+      netbird_stun_publish_ports:
+        type: list
+        elements: str
+        default:
+          - "{{ netbird_stun_publish_ip }}:{{ netbird_stun_port }}:{{ netbird_stun_port }}/udp"
+        description:
+          - PublishPort entries for STUN on the server container.
+
+      netbird_client_wireguard_port:
+        type: int
+        default: 51820
+        description:
+          - UDP port of the WireGuard data plane of peers on this host, opened in the firewall definition so direct
+            peer-to-peer connections can be established instead of relaying.
+
+      netbird_oidc_issuer:
+        type: str
+        default: "https://{{ netbird_domain }}/oauth2"
+        description:
+          - Issuer of the embedded identity provider (Dex) that the dashboard authenticates against. Not the RHBK issuer.
+
+      netbird_local_auth_disabled:
+        type: bool
+        default: false
+        description:
+          - Disable local password login on the embedded identity provider. Keep false until single sign-on through the
+            RHBK connector is confirmed working, then enable in a deliberate run.
+
+      netbird_cli_redirect_urls:
+        type: list
+        elements: str
+        default:
+          - "http://localhost:53000/"
+        description:
+          - Redirect URIs accepted for the native client's OAuth login with PKCE.
+
+      netbird_trusted_reverse_proxies:
+        type: list
+        elements: str
+        default:
+          - "127.0.0.1/32"
+        description:
+          - Addresses or prefixes trusted to set X-Forwarded-* headers, normally the reverse proxy. Confirm the address
+            the server actually sees from Caddy under rootless Podman networking.
+
+      netbird_idp_name:
+        type: str
+        default: RHBK
+        description:
+          - Display name of the RHBK connector. Used only by the disabled registration tasks.
+
+      netbird_idp_issuer:
+        type: str
+        default: https://sso.example.org/realms/netbird
+        description:
+          - Issuer URL of the RHBK realm the connector brokers to. Used only by the disabled registration tasks.
+
+      netbird_idp_client_id:
+        type: str
+        default: netbird
+        description:
+          - Client identifier of the RHBK client. Used only by the disabled registration tasks.
+
+      netbird_manage_firewall:
+        type: bool
+        default: true
+        description:
+          - Defined for an earlier firewalld task that is now commented out; no task reads it. Firewall rules are applied
+            through the meta dependency controlled by netbird_firewall_enabled.
+
+      netbird_firewall_enabled:
+        type: bool
+        default: true
+        description:
+          - Apply netbird_firewall through the infra.soe.firewall meta dependency.
+
+      netbird_firewall:
+        type: list
+        elements: dict
+        default:
+          - service: netbird-dashboard
+            short: Web UI
+            description: Management web UI for NetBird.
+            port:
+              - "{{ netbird_dashboard_port }}/tcp"
+            runtime: true
+            permanent: true
+            state: present
+          - service: netbird-server
+            short: NetBird Server API
+            description: >-
+              HTTP endpoint of the combined netbird-server container, serving the
+              management API, signal exchange, and relay. Published on the internal
+              VLAN for the Caddy reverse proxy; external clients reach it via Caddy
+              on 443 rather than this port directly.
+            port:
+              - "{{ netbird_server_port }}/tcp"
+            runtime: true
+            permanent: true
+            state: present
+          - service: netbird-stun
+            short: NetBird Session Traversal Utilities for NAT (STUN)
+            description: >-
+              Embedded STUN service of the combined netbird-server. Peers send
+              binding requests here to learn the public address a NAT presents them
+              as, producing the server-reflexive ICE candidate needed for direct
+              connections. UDP only and cannot be reverse proxied.
+            port:
+              - "{{ netbird_stun_port }}/udp"
+            runtime: true
+            permanent: true
+            state: present
+          - service: netbird-client
+            short: NetBird Peer Data Plane
+            description: >-
+              Inbound WireGuard data plane for NetBird peers. Carries ICE
+              connectivity checks during hole punching and, once a direct pair is
+              selected, the encrypted peer-to-peer tunnel itself. Peers probe every
+              host candidate a host advertises, so this must be open on the zone
+              whose address should win candidate selection; leaving it closed forces
+              the connection onto the relay. Not required for control plane traffic.
+            port:
+              - "{{ netbird_client_wireguard_port }}/udp"
+            runtime: true
+            permanent: true
+            state: present
+          - service: netbird-dns-forwarder
+            short: NetBird DNS Forwarder
+            description: >-
+              Local DNS forwarder on routing peers, used to resolve domain-based
+              Network Resources on behalf of clients. Moved from 5353 to 22054 in
+              v0.59.0 to avoid mDNS collisions; 5353 retained for legacy peers.
+            port:
+              - 22054/udp
+              - 22054/tcp
+              - 5353/udp
+            runtime: true
+            permanent: true
+            state: present
+        description:
+          - firewalld definitions passed unchanged to redhat.rhel_system_roles.firewall by the meta dependency. By default
+            one firewalld service each for the dashboard, the server endpoint, STUN, the WireGuard data plane and the DNS
+            forwarder.
+          - See https://console.redhat.com/ansible/automation-hub/repo/published/redhat/rhel_system_roles/content/role/firewall/
+            for the item schema.
+
+      podman_pull_image:
+        type: bool
+        description:
+          - Input of redhat.rhel_system_roles.podman, also read here to decide whether the images are pulled when the
+            units are written. Unset behaves as false, so images are pulled on first start instead.
+
+      no_log_enabled:
+        type: bool
+        description:
+          - Shared inventory variable. Controls no_log on the tasks that render config.yaml and read the administrator API
+            token. Unset behaves as true.

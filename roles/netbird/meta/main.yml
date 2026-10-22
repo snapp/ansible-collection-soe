@@ -1,5 +1,46 @@
 ---
+# https://docs.ansible.com/ansible/latest/galaxy/user_guide.html#using-meta-main-yml
 
+galaxy_info:
+  # The name of the role.
+  role_name: "netbird"
+
+  # A short summary description of the role.
+  description: "Deploy a self-hosted NetBird mesh VPN control plane as rootless Podman Quadlets behind Caddy and RHBK"
+
+  # The company claiming ownership of the role.
+  # company: ""
+
+  # A list of the role's content authors.
+  author: "snapp@redhat.com"
+
+  # The license for content inside of a role.
+  license: "GPL-3.0-or-later"
+
+  # The minimum Ansible version.
+  min_ansible_version: ">=2.15.0"
+
+  # The list of supported platforms
+  platforms:
+    - name: EL
+      versions:
+        - "9"
+        - "10"
+
+  # A list of tags (20 max) you want to associate with the role for indexing/searching.
+  galaxy_tags:
+    - redhat
+    - rhel
+    - netbird
+    - vpn
+    - wireguard
+    - mesh
+    - podman
+    - containers
+    - quadlet
+    - sso
+
+# The list of role dependencies
 dependencies:
   - name: Netbird Firewall
     role: infra.soe.firewall
